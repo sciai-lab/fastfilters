@@ -52,7 +52,7 @@ def configure(cfg):
 		cfg.check_python_headers()
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include', 'include/fastfilters'])
-	cfg.env.append_value('CXXFLAGS', ['-std=c++11'])
+	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-W', '-Wall'])
 
 def build(bld):
 	src_dir = bld.path.find_dir('src/')
@@ -63,11 +63,13 @@ def build(bld):
 
 	bld.objects(
 		source  = sources_noavx,
-		target  = 'objs_noavx')
+		target  = 'objs_noavx',
+		uselib  = 'cxxshlib')
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_avx',
-		cxxflags = bld.env.CXXFLAGS_AVX2_FMA)
+		cxxflags = bld.env.CXXFLAGS_AVX2_FMA,
+		uselib  = 'cxxshlib')
 
 	bld.shlib(features='pyext', source=sources_python, target='libfastfilters', use="objs_avx objs_noavx")
 	bld.shlib(features='cxx', source=[], target='libfastfilters', use="objs_avx objs_noavx")
