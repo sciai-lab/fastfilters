@@ -1,0 +1,6 @@
+#ifndef FASTFILTERS_CONFIG_HXX
+#define FASTFILTERS_CONFIG_HXX
+
+#define EXPORT_FUNCTION
+
+#endif
