@@ -51,7 +51,7 @@ def configure(cfg):
 		cfg.check_python_version((2,3))
 		cfg.check_python_headers()
 
-	cfg.env.append_value('INCLUDES', ['pybind11/include'])
+	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include', 'include/fastfilters'])
 	cfg.env.append_value('CXXFLAGS', ['-std=c++11'])
 
 def build(bld):

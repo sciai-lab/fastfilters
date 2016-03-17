@@ -1,2 +1,2 @@
-#include "config.hxx"
-#include "avx.hxx"
+#include "fastfilters/config.hxx"
+#include "fastfilters/avx.hxx"
