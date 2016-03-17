@@ -1,5 +1,4 @@
-#include "fastfilters/config.hxx"
-#include "fastfilters/avx.hxx"
+#include "fastfilters.hxx"
 
 namespace fastfilters
 {
@@ -7,7 +6,7 @@ namespace fastfilters
 namespace detail
 {
 
-EXPORT_FUNCTION bool cpu_has_avx2()
+bool cpu_has_avx2()
 {
 #if defined(__AVX2__)
 
