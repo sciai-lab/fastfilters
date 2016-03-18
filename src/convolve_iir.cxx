@@ -1,6 +1,9 @@
 #include "fastfilters.hxx"
 
-
+// the AVX versions need these scalar functions for up to the last 7 values.
+// this hack allows these functions to be compiled with much
+// more agressive optimizations (such as enabling the
+// fused multiply-add instructions)
 #ifndef CONVOLVE_IIR_FUNCTION
 #define CONVOLVE_IIR_FUNCTION(x) void x
 #endif
