@@ -1,6 +1,7 @@
 from waflib import Task, Options, Configure, TaskGen, Logs, Build, Utils, Errors
 from waflib.TaskGen import feature, before_method
 from waflib.Configure import conf
+from waflib.Tools import waf_unit_test
 
 VERSION='0.0.1'
 APPNAME='libfastfilters'
@@ -39,11 +40,14 @@ def test_avx2(self):
 def options(opt):
 	opt.load('compiler_cxx')
 	opt.load('python')
+	opt.load('waf_unit_test')
 
 	opt.add_option('--disable-python', help=("Don't build python bindings."), action='store_true', default=False, dest='python_disable')
+	opt.add_option('--disable-tests', help=("Don't run tests."), action='store_true', default=False, dest='tests_disable')
 
 def configure(cfg):
 	cfg.load('compiler_cxx')
+	conf.load('waf_unit_test')
 	cfg.test_avx2()
 
 	if not Options.options.python_disable:
@@ -56,6 +60,7 @@ def configure(cfg):
 
 def build(bld):
 	src_dir = bld.path.find_dir('src/')
+	tests_dir = bld.path.find_dir('tests/')
 
 	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx"]
 	sources_avx = ["src/fastfilters.cxx"]
@@ -73,3 +78,11 @@ def build(bld):
 
 	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_avx objs_noavx")
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='libfastfilters', use="objs_avx objs_noavx")
+
+	if not Options.options.tests_disable:
+		tests = tests_dir.ant_glob("*.cxx")
+		for test in tests:
+			bld.program(features='cxx test', source=[test], target="test_" + test.name[:-4], use="libfastfilters")
+
+		bld.options.all_tests = True
+		bld.add_post_fun(waf_unit_test.summary)
