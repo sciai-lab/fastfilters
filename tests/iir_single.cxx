@@ -63,10 +63,10 @@ int main()
 		32);
 
 	for (unsigned i = 0; i < 512; ++i)
-		assert(abs(output[i] - result[i]) < 1e-6);
+		assert(abs(output[i] - result[i]) < 1e-12);
 
 	for (unsigned i = 0; i < 511; ++i)
-		assert(abs(output[512+i] - result[i+1]) < 1e-6);
+		assert(abs(output[512+i] - result[i+1]) < 1e-12);
 
 
 	static float input2[512*50];
@@ -85,7 +85,7 @@ int main()
 		32);
 
 	for (unsigned i = 0; i < 512; ++i)
-		assert(abs(output2[i*50] - result[i]) < 1e-6);
+		assert(abs(output2[i*50] - result[i]) < 1e-12);
 
 	return 0;
 }

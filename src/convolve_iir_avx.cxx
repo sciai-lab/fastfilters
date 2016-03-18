@@ -25,11 +25,10 @@ void convolve_iir_inner_single_avx(
 	const unsigned n_times_avx = n_times & ~7;
 	const unsigned n_times_normal = n_times - n_times_avx;
 
-
 	for (unsigned int i = 0; i < 4; ++i) {
 		mm_n_causal[i] = _mm256_set1_ps(n_causal[i]);
-		mm_n_anticausal[i] = _mm256_set1_ps(n_anticausal[4+i]);
-		mm_d[i] = _mm256_set1_ps(-d[8+i]);
+		mm_n_anticausal[i] = _mm256_set1_ps(n_anticausal[i]);
+		mm_d[i] = _mm256_set1_ps(-d[i]);
 	}
 
 	float *tmp = NULL;

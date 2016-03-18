@@ -46,27 +46,28 @@ static const float result[] = {
 int main()
 {
 	float n_causal[4], n_anticausal[4], d[4];
-	static float input[2*512];
-	static float output[2*512];
+	static float input[10*512];
+	static float output[10*512];
 
 	memset(input, 0, sizeof(input));
 
-	input[256] = 1.0;
-	input[512+257] = 1.0;
+	for (unsigned int i = 0; i < 10; ++i)
+		input[512*i + 256] = 1.0;
 
 	fastfilters::deriche::compute_coefs(5.0, 0, n_causal, n_anticausal, d);
 	fastfilters::detail::convolve_iir_inner_single_avx(
 		input,
-		512, 2,
+		512, 10,
 		output,
 		n_causal, n_anticausal, d,
 		32);
 
-	for (unsigned i = 0; i < 512; ++i)
-		assert(abs(output[i] - result[i]) < 1e-6);
-
-	for (unsigned i = 0; i < 511; ++i)
-		assert(abs(output[512+i] - result[i+1]) < 1e-6);
+	for (unsigned i = 0; i < 512; ++i) {
+		for (unsigned int j = 0; j < 10; ++j) {
+			std::cout << output[512*j + i] << " " << result[i] << " " << abs(output[512*j + i] - result[i]) << "\n";
+			assert(abs(output[512*j + i] - result[i]) < 1e-12);
+		}
+	}
 #if 0
 
 	static float input2[512*50];
