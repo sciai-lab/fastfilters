@@ -20,3 +20,4 @@ addons:
 script:
   - CXX=g++-4.9 ./waf configure
   - ./waf
+  - cat build/config.log

@@ -10,11 +10,15 @@ srcdir = 'src'
 blddir = 'build'
 
 AVXTEST = '''#include <immintrin.h>
+    #include <stdlib.h>
+    #include <stdio.h>
     int main()
     {
-    __m256 a = _mm256_setzero_ps();
-    __m256 b = _mm256_setzero_ps();
+    __m256 a = _mm256_set1_ps(rand());
+    __m256 b = _mm256_set1_ps(rand());
     b = _mm256_fmadd_ps(a, a, b);
+    float result = _mm_cvtss_f32(_mm256_extractf128_ps(b, 0));
+    printf("%f\\n", result);
     return 0;
     }
 '''
@@ -24,7 +28,7 @@ def test_avx2(self):
 	flags = ["/arch:AVX2", "-mavx -mavx2 -mfma"]
 	msg='Testing AVX2/FMA support'
 
-	self.start_msg('Checking AVX2/FMA support')
+	self.start_msg('Checking AVX2/FMA compiler support')
 	for flag in flags:
 		try:
 			self.check(header_name='immintrin.h', define_name='HAVE_AVX2_FMA', msg=msg,
@@ -36,6 +40,20 @@ def test_avx2(self):
 			self.end_msg("yes (%s)" % flag)
 			return flag
 	self.fatal('Compiler does not support AVX2/FMA instruction set.')
+
+@conf
+def test_cpu_avx2(self):
+	self.start_msg('Checking AVX2/FMA CPU support')
+	try:
+		self.check(header_name='immintrin.h', msg='',
+			fragment=AVXTEST, errmsg='CPU does not support AVX2/FMA instruction set.',
+			features='cxx cxxprogram', cxxflags=self.env.CXXFLAGS_AVX2_FMA, uselib_store="AVX2_FMA_CPU",
+			execute=True)
+	except self.errors.ConfigurationError:
+		self.end_msg("no. AVX tests will be skipped.", color='RED')
+	else:
+		self.end_msg("yes.")
+
 
 def options(opt):
 	opt.load('compiler_cxx')
@@ -49,6 +67,7 @@ def configure(cfg):
 	cfg.load('compiler_cxx')
 	cfg.load('waf_unit_test')
 	cfg.test_avx2()
+	cfg.test_cpu_avx2()
 
 	if not Options.options.python_disable:
 		cfg.load('python')
@@ -80,9 +99,17 @@ def build(bld):
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx")
 
 	if not Options.options.tests_disable:
-		tests = tests_dir.ant_glob("*.cxx")
+
+		tests = ["iir_single.cxx"]
+		tests_avx = ["iir_single_avx.cxx"]
+
 		for test in tests:
-			bld.program(features='cxx test', source=[test], target="test_" + test.name[:-4], use="fastfilters")
+			bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+
+
+		if 'CXXFLAGS_AVX2_FMA_CPU' in bld.env.keys():
+			for test in tests:
+				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)
