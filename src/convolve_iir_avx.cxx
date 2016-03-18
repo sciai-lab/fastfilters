@@ -49,8 +49,43 @@ void convolve_iir_inner_single_avx(
 
 		float *tmpptr = tmp;
 
-		// TODO: border
 
+		// left border
+		for (unsigned int i = n_border; i > 0; --i) {
+			// load next eight pixels (one from each row)
+			__m256 pixels = _mm256_set_ps(
+				*(input + dim*n_pixels + i),
+				*(input + (dim+1)*n_pixels + i),
+				*(input + (dim+2)*n_pixels + i),
+				*(input + (dim+3)*n_pixels + i),
+				*(input + (dim+4)*n_pixels + i),
+				*(input + (dim+5)*n_pixels + i),
+				*(input + (dim+6)*n_pixels + i),
+				*(input + (dim+7)*n_pixels + i)
+				);
+
+			// compute sum of products between ins/outs and kernel coefficients
+			__m256 pixels_res = _mm256_mul_ps(pixels, mm_n_causal[0]);
+			pixels_res = _mm256_fmadd_ps(prev_in0, mm_n_causal[1], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_in1, mm_n_causal[2], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_in2, mm_n_causal[3], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out0, mm_d[0], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out1, mm_d[1], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out2, mm_d[2], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
+
+			// move to next pixel
+			prev_out3 = prev_out2;
+			prev_out2 = prev_out1;
+			prev_out1 = prev_out0;
+			prev_out0 = pixels_res;
+
+			prev_in2 = prev_in1;
+			prev_in1 = prev_in0;
+			prev_in0 = pixels;
+		}
+
+		// causal pass
 		for (unsigned int i = 0; i < n_pixels; ++i) {
 			// load next eight pixels (one from each row)
 			__m256 pixels = _mm256_set_ps(
@@ -95,6 +130,40 @@ void convolve_iir_inner_single_avx(
 		prev_out3 = prev_out2 = prev_out1 = prev_out0 = _mm256_setzero_ps();
 		prev_in3 = prev_in2 = prev_in1 = prev_in0 = _mm256_setzero_ps();
 
+		// right border
+		for (unsigned int i = n_pixels - 1 - n_border; i < n_pixels; ++i) {
+			// add products between pixels and kernel coefficients
+			__m256 pixels_res = _mm256_mul_ps(prev_in0, mm_n_anticausal[0]);
+			pixels_res = _mm256_fmadd_ps(prev_in1, mm_n_anticausal[1], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_in2, mm_n_anticausal[2], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_in3, mm_n_anticausal[3], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out0, mm_d[0], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out1, mm_d[1], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out2, mm_d[2], pixels_res);
+			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
+
+			// move to next pixel
+			prev_out3 = prev_out2;
+			prev_out2 = prev_out1;
+			prev_out1 = prev_out0;
+			prev_out0 = pixels_res;
+
+			prev_in3 = prev_in2;
+			prev_in2 = prev_in1;
+			prev_in1 = prev_in0;
+			prev_in0 = _mm256_set_ps(
+				*(input + dim*n_pixels + i),
+				*(input + (dim+1)*n_pixels + i),
+				*(input + (dim+2)*n_pixels + i),
+				*(input + (dim+3)*n_pixels + i),
+				*(input + (dim+4)*n_pixels + i),
+				*(input + (dim+5)*n_pixels + i),
+				*(input + (dim+6)*n_pixels + i),
+				*(input + (dim+7)*n_pixels + i)
+				);
+		}
+
+		// anti-causal pass
 		for (int i = n_pixels - 1; i >= 0; --i) {
 			// add products between pixels and kernel coefficients
 			__m256 pixels_res = _mm256_mul_ps(prev_in0, mm_n_anticausal[0]);
