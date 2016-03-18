@@ -52,12 +52,12 @@ def configure(cfg):
 		cfg.check_python_headers()
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
-	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-W', '-Wall'])
+	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-W', '-Wall', '-O3'])
 
 def build(bld):
 	src_dir = bld.path.find_dir('src/')
 
-	sources_noavx = ["src/avx.cxx"]
+	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx"]
 	sources_avx = ["src/fastfilters.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
@@ -71,5 +71,5 @@ def build(bld):
 		cxxflags = bld.env.CXXFLAGS_AVX2_FMA,
 		uselib  = 'cxxshlib')
 
-	bld.shlib(features='pyext', source=sources_python, target='libfastfilters', use="objs_avx objs_noavx")
-	bld.shlib(features='cxx', source=[], target='libfastfilters', use="objs_avx objs_noavx")
+	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_avx objs_noavx")
+	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='libfastfilters', use="objs_avx objs_noavx")
