@@ -47,7 +47,7 @@ def options(opt):
 
 def configure(cfg):
 	cfg.load('compiler_cxx')
-	conf.load('waf_unit_test')
+	cfg.load('waf_unit_test')
 	cfg.test_avx2()
 
 	if not Options.options.python_disable:
