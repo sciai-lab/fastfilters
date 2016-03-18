@@ -62,7 +62,7 @@ def build(bld):
 	src_dir = bld.path.find_dir('src/')
 	tests_dir = bld.path.find_dir('tests/')
 
-	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx"]
+	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
 	sources_avx = ["src/fastfilters.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
@@ -77,12 +77,12 @@ def build(bld):
 		uselib  = 'cxxshlib')
 
 	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_avx objs_noavx")
-	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='libfastfilters', use="objs_avx objs_noavx")
+	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx")
 
 	if not Options.options.tests_disable:
 		tests = tests_dir.ant_glob("*.cxx")
 		for test in tests:
-			bld.program(features='cxx test', source=[test], target="test_" + test.name[:-4], use="libfastfilters")
+			bld.program(features='cxx test', source=[test], target="test_" + test.name[:-4], use="fastfilters")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)

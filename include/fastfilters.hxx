@@ -26,57 +26,62 @@ public:
 
 namespace detail
 {
-template<unsigned N>
-void gaussian_fir_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
-{
-	(void)input;
-	(void)output;
-	(void)sigma;
-}
+	template<unsigned N>
+	void gaussian_fir_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
+	{
+		(void)input;
+		(void)output;
+		(void)sigma;
+	}
 
-template<unsigned N>
-void gaussian_fir_outer(FastFilterArrayView<N> &input, const unsigned n_dim, float *output, const unsigned order, const double sigma)
-{
-	(void)input;
-	(void)output;
-	(void)sigma;
-	(void)n_dim;
-}
+	template<unsigned N>
+	void gaussian_fir_outer(FastFilterArrayView<N> &input, const unsigned n_dim, float *output, const unsigned order, const double sigma)
+	{
+		(void)input;
+		(void)output;
+		(void)sigma;
+		(void)n_dim;
+	}
 
-template<unsigned N>
-void gaussian_iir_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
-{
-	(void)input;
-	(void)output;
-	(void)sigma;
-}
+	template<unsigned N>
+	void gaussian_iir_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
+	{
+		(void)input;
+		(void)output;
+		(void)sigma;
+	}
 
-template<unsigned N>
-void gaussian_iir_outer(FastFilterArrayView<N> &input, const unsigned n_dim, float *output, const unsigned order, const double sigma)
-{
-	(void)input;
-	(void)output;
-	(void)sigma;
-	(void)n_dim;
-}
+	template<unsigned N>
+	void gaussian_iir_outer(FastFilterArrayView<N> &input, const unsigned n_dim, float *output, const unsigned order, const double sigma)
+	{
+		(void)input;
+		(void)output;
+		(void)sigma;
+		(void)n_dim;
+	}
 
-template<unsigned N>
-void gaussian_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
-{
-	if (sigma < 3)
-		gaussian_fir_inner(input, output, order, sigma);
-	else
-		gaussian_iir_inner(input, output, order, sigma);
-}
+	template<unsigned N>
+	void gaussian_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
+	{
+		if (sigma < 3)
+			gaussian_fir_inner(input, output, order, sigma);
+		else
+			gaussian_iir_inner(input, output, order, sigma);
+	}
 
-template<unsigned N>
-void gaussian_outer(FastFilterArrayView<N> &input, const unsigned n_dim, float *output, const unsigned order, const double sigma)
+	template<unsigned N>
+	void gaussian_outer(FastFilterArrayView<N> &input, const unsigned n_dim, float *output, const unsigned order, const double sigma)
+	{
+		if (sigma < 3)
+			gaussian_fir_outer(input, n_dim, output, order, sigma);
+		else
+			gaussian_iir_outer(input, n_dim, output, order, sigma);
+	}
+} // namespace detail
+
+namespace deriche
 {
-	if (sigma < 3)
-		gaussian_fir_outer(input, n_dim, output, order, sigma);
-	else
-		gaussian_iir_outer(input, n_dim, output, order, sigma);
-}
+	void compute_coefs(const double sigma, const unsigned order, float *n_causal, float *n_anticausal, float *d);
 }
 
 template<unsigned N>
@@ -88,6 +93,6 @@ void gaussian(FastFilterArrayView<N> &input, float *output, const unsigned order
 		detail::gaussian_outer(input, i, output, order, sigma);
 }
 
-}
+} // namespace fastfilters
 
 #endif
