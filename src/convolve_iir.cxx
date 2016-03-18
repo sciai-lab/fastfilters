@@ -80,7 +80,7 @@ void convolve_iir_inner_single(
 		}
 
 		// anti-causal pass
-		for (int i = n_pixels; i > 0; --i) {
+		for (int i = n_pixels - 1; i >= 0; --i) {
 			float sum = 0.0;
 
 			for (unsigned int j = 0; j < 4; ++j)
