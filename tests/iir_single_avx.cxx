@@ -62,13 +62,9 @@ int main()
 		n_causal, n_anticausal, d,
 		32);
 
-	for (unsigned i = 0; i < 512; ++i) {
-		for (unsigned int j = 0; j < 10; ++j) {
-			std::cout << output[512*j + i] << " " << result[i] << " " << abs(output[512*j + i] - result[i]) << "\n";
+	for (unsigned i = 0; i < 512; ++i)
+		for (unsigned int j = 0; j < 10; ++j)
 			assert(abs(output[512*j + i] - result[i]) < 1e-12);
-		}
-	}
-#if 0
 
 	static float input2[512*50];
 	static float output2[512*50];
@@ -78,7 +74,7 @@ int main()
 	for (unsigned int i = 0; i < 50; ++i)
 		input2[256*50+i] = 1.0;
 
-	fastfilters::detail::convolve_iir_outer_single(
+	fastfilters::detail::convolve_iir_outer_single_avx(
 		input2,
 		512, 50,
 		output2,
@@ -86,8 +82,8 @@ int main()
 		32);
 
 	for (unsigned i = 0; i < 512; ++i)
-		assert(abs(output2[i*50] - result[i]) < 1e-6);
-#endif
+		for (unsigned j = 0; j < 50; ++j)
+			assert(abs(output2[i*50+j] - result[i]) < 1e-12);
 
 	return 0;
 }

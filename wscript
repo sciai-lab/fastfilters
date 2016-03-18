@@ -108,7 +108,7 @@ def build(bld):
 
 
 		if 'CXXFLAGS_AVX2_FMA_CPU' in bld.env.keys():
-			for test in tests:
+			for test in tests_avx:
 				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
 
 		bld.options.all_tests = True
