@@ -55,7 +55,7 @@ int main()
 	input[512+257] = 1.0;
 
 	fastfilters::deriche::compute_coefs(5.0, 0, n_causal, n_anticausal, d);
-	fastfilters::detail::convolve_iir_inner_single(
+	fastfilters::iir::convolve_iir_inner_single(
 		input,
 		512, 2,
 		output,
@@ -77,7 +77,7 @@ int main()
 	for (unsigned int i = 0; i < 50; ++i)
 		input2[256*50+i] = 1.0;
 
-	fastfilters::detail::convolve_iir_outer_single(
+	fastfilters::iir::convolve_iir_outer_single(
 		input2,
 		512, 50,
 		output2,

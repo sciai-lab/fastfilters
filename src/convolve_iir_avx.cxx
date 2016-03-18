@@ -12,7 +12,7 @@
 namespace fastfilters
 {
 
-namespace detail
+namespace iir
 {
 
 void convolve_iir_inner_single_avx(

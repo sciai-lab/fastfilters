@@ -23,8 +23,7 @@ public:
 	}
 };
 
-
-namespace detail
+namespace iir
 {
 	void convolve_iir_inner_single(
 		const float *input,
@@ -54,7 +53,10 @@ namespace detail
 		float *output,
 		const float *n_causal, const float *n_anticausal, const float *d,
 		const unsigned n_border);
+}
 
+namespace detail
+{
 	template<unsigned N>
 	void gaussian_fir_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
 	{

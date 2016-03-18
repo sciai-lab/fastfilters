@@ -11,7 +11,7 @@
 namespace fastfilters
 {
 
-namespace detail
+namespace iir
 {
 
 CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(
