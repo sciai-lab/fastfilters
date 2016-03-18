@@ -8,14 +8,6 @@ matrix:
       sudo: false
       language: python
       python: "3.2"
-    - os: osx
-      osx_image: xcode7.3
-      language: generic
-      env: TRAVIS_PYTHON_VERSION="2" BREW_DEPS="python"
-    - os: osx
-      osx_image: xcode7.3
-      language: generic
-      env: TRAVIS_PYTHON_VERSION="3" BREW_DEPS="python3"
 
 addons:
  apt:
