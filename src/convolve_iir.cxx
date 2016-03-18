@@ -1,12 +1,17 @@
 #include "fastfilters.hxx"
 
+
+#ifndef CONVOLVE_IIR_FUNCTION
+#define CONVOLVE_IIR_FUNCTION(x) void x
+#endif
+
 namespace fastfilters
 {
 
 namespace detail
 {
 
-void convolve_iir_inner_single(
+CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(
 	const float *input,
 	const unsigned int n_pixels, const unsigned n_times,
 	float *output,
@@ -99,14 +104,14 @@ void convolve_iir_inner_single(
 	}
 }
 
-void convolve_iir_outer_single(
+CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(
 	const float *input,
 	const unsigned int n_pixels, const unsigned n_times,
 	float *output,
 	const float *n_causal, const float *n_anticausal, const float *d,
-	const unsigned n_border)
+	const unsigned n_border,
+	unsigned int stride)
 {
-
 	for (unsigned int dim = 0; dim < n_times; dim++) {
 		const float *cur_line = input + dim;
 		float *cur_output = output + dim;
@@ -120,7 +125,7 @@ void convolve_iir_outer_single(
 		for (unsigned int i = 0; i < n_border; ++i) {
 			float sum = 0.0;
 
-			xtmp[0] = cur_line[(n_border - i)*n_times];
+			xtmp[0] = cur_line[(n_border - i)*stride];
 			for (unsigned int j = 0; j < 4; ++j)
 				sum += n_causal[j] * xtmp[j];
 			for (unsigned int j = 0; j < 4; ++j)
@@ -137,7 +142,7 @@ void convolve_iir_outer_single(
 		for (unsigned int i = 0; i < n_pixels; ++i) {
 			float sum = 0.0;
 
-			xtmp[0] = cur_line[i*n_times];
+			xtmp[0] = cur_line[i*stride];
 			for (unsigned int j = 0; j < 4; ++j)
 				sum += n_causal[j] * xtmp[j];
 			for (unsigned int j = 0; j < 4; ++j)
@@ -147,7 +152,7 @@ void convolve_iir_outer_single(
 				ytmp[j] = ytmp[j - 1];
 			}
 
-			cur_output[i*n_times] = sum;
+			cur_output[i*stride] = sum;
 			ytmp[0] = sum;
 		}
 
@@ -168,7 +173,7 @@ void convolve_iir_outer_single(
 				ytmp[j] = ytmp[j - 1];
 			}
 
-			xtmp[0] = cur_line[(n_pixels - i)*n_times];
+			xtmp[0] = cur_line[(n_pixels - i)*stride];
 			ytmp[0] = sum;
 		}
 
@@ -187,7 +192,7 @@ void convolve_iir_outer_single(
 
 			xtmp[0] = cur_line[i];
 			ytmp[0] = sum;
-			cur_output[i*n_times] += sum;
+			cur_output[i*stride] += sum;
 		}
 	}
 }

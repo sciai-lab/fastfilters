@@ -82,7 +82,7 @@ int main()
 		512, 50,
 		output2,
 		n_causal, n_anticausal, d,
-		32);
+		32, 50);
 
 	for (unsigned i = 0; i < 512; ++i)
 		assert(abs(output2[i*50] - result[i]) < 1e-12);

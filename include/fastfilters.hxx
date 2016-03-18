@@ -38,7 +38,8 @@ namespace detail
 		const unsigned int n_pixels, const unsigned n_times,
 		float *output,
 		const float *n_causal, const float *n_anticausal, const float *d,
-		const unsigned n_border);
+		const unsigned n_border,
+		const unsigned stride);
 
 	void convolve_iir_inner_single_avx(
 		const float *input,
