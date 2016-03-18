@@ -17,6 +17,14 @@ matrix:
       language: generic
       env: TRAVIS_PYTHON_VERSION="3" BREW_DEPS="python3"
 
+addons:
+ apt:
+   sources:
+   - ubuntu-toolchain-r-test
+   packages:
+   - gcc-4.9
+   - g++-4.9
+
 script:
-  - ./waf configure
+  - CXX=g++-4.9 ./waf configure
   - ./waf
