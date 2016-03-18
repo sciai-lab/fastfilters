@@ -67,5 +67,25 @@ int main()
 
 	for (unsigned i = 0; i < 511; ++i)
 		assert(abs(output[512+i] - result[i+1]) < 1e-6);
+
+
+	float input2[512*50];
+	float output2[512*50];
+
+	memset(input2, 0, sizeof(input2));
+	memset(output2, 0, sizeof(output2));
+	for (unsigned int i = 0; i < 50; ++i)
+		input2[256*50+i] = 1.0;
+
+	fastfilters::detail::convolve_iir_outer_single(
+		input2,
+		512, 50,
+		output2,
+		n_causal, n_anticausal, d,
+		32);
+
+	for (unsigned i = 0; i < 512; ++i)
+		assert(abs(output2[i*50] - result[i]) < 1e-6);
+
 	return 0;
 }

@@ -33,6 +33,13 @@ namespace detail
 		const float *n_causal, const float *n_anticausal, const float *d,
 		const unsigned n_border);
 
+	void convolve_iir_outer_single(
+		const float *input,
+		const unsigned int n_pixels, const unsigned n_times,
+		float *output,
+		const float *n_causal, const float *n_anticausal, const float *d,
+		const unsigned n_border);
+
 	template<unsigned N>
 	void gaussian_fir_inner(FastFilterArrayView<N> &input, float *output, const unsigned order, const double sigma)
 	{
