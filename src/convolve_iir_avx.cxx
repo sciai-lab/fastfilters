@@ -115,8 +115,8 @@ void convolve_iir_inner_single_avx(
 			pixels_res_causal = _mm256_add_ps(pixels_res_causal, pixels_res);
 
 			// store outputs in correct row
-			float out[8];
-			_mm256_storeu_ps(out, pixels_res_causal);
+			alignas(16) float out[8];
+			_mm256_store_ps(out, pixels_res_causal);
 			for (unsigned int j = 0; j < 8; ++j)
 				*(output + (dim+j)*n_pixels + i) = out[7-j];
 
