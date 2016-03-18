@@ -63,7 +63,7 @@ def build(bld):
 	tests_dir = bld.path.find_dir('tests/')
 
 	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
-	sources_avx = ["src/fastfilters.cxx"]
+	sources_avx = ["src/convolve_iir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
 	bld.objects(
