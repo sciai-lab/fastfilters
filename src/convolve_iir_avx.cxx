@@ -75,7 +75,7 @@ void convolve_iir_inner_single_avx(
 			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
 			// store causal output in temporary buffer
-			_mm256_stream_ps(tmpptr, pixels_res);
+			_mm256_store_ps(tmpptr, pixels_res);
 
 			// move to next pixel
 			prev_out3 = prev_out2;
@@ -177,17 +177,16 @@ void convolve_iir_outer_single_avx(
 		mm_d[i] = _mm256_set1_ps(-d[i]);
 	}
 
-	for (unsigned int dim = 0; dim < n_times_avx; ++dim) {
+	for (unsigned int dim = 0; dim < n_times_avx; dim += 8) {
 		__m256 prev_in0, prev_in1, prev_in2, prev_in3;
 		__m256 prev_out0, prev_out1, prev_out2, prev_out3;
 		prev_out3 = prev_out2 = prev_out1 = prev_out0 = _mm256_setzero_ps();
 		prev_in3 = prev_in2 = prev_in1 = prev_in0 = _mm256_setzero_ps();
 
 		// TODO: border
-
 		for (unsigned int i = 0; i < n_pixels; ++i) {
 			// load next eight pixels (one from each row)
-			__m256 pixels = _mm256_loadu_ps(input + dim*8);
+			__m256 pixels = _mm256_loadu_ps(input + dim + i*n_times);
 
 			// compute sum of products between ins/outs and kernel coefficients
 			__m256 pixels_res = _mm256_mul_ps(pixels, mm_n_causal[0]);
@@ -200,7 +199,7 @@ void convolve_iir_outer_single_avx(
 			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
 			// store causal output in temporary buffer
-			_mm256_stream_ps(output + dim * 8, pixels_res);
+			_mm256_storeu_ps(output + dim + i*n_times, pixels_res);
 
 			// move to next pixel
 			prev_out3 = prev_out2;
@@ -229,11 +228,11 @@ void convolve_iir_outer_single_avx(
 			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
 			// add output from causal pass
-			__m256 pixels_res_causal = _mm256_load_ps(output + dim*8);
+			__m256 pixels_res_causal = _mm256_load_ps(output + dim + i*n_times);
 			pixels_res_causal = _mm256_add_ps(pixels_res_causal, pixels_res);
 
 			// store outputs in correct row
-			_mm256_storeu_ps(output + dim*8, pixels_res_causal);
+			_mm256_storeu_ps(output + dim + i*n_times, pixels_res_causal);
 
 			if (i == 0)
 				break;
@@ -247,7 +246,7 @@ void convolve_iir_outer_single_avx(
 			prev_in3 = prev_in2;
 			prev_in2 = prev_in1;
 			prev_in1 = prev_in0;
-			prev_in0 = _mm256_loadu_ps(input + dim*8);
+			prev_in0 = _mm256_loadu_ps(input + dim + i*n_times);
 
 		}
 	}
