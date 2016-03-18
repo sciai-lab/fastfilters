@@ -79,9 +79,9 @@ namespace deriche
     // licensed under the terms of the simplified BSD license.
     void compute_coefs(const double sigma, const unsigned order, float *n_causal, float *n_anticausal, float *d)
     {
-        std::complex<double> alpha[order];
-        std::complex<double> lambda[order];
-        std::complex<double> beta[order];
+        std::complex<double> alpha[4];
+        std::complex<double> lambda[4];
+        std::complex<double> beta[4];
 
         for (unsigned int i = 0; i < 4; ++i) {
             alpha[i] = deriche_precomputed_coefs[order].get_alpha(i);
