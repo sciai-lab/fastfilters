@@ -15,7 +15,7 @@ namespace iir
 {
 
 void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const Coefficients &coefs, const unsigned n_border)
+                                   float *output, const Coefficients &coefs)
 {
     __m256 mm_n_causal[4];
     __m256 mm_n_anticausal[4];
@@ -45,7 +45,7 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
         float *tmpptr = tmp;
 
         // left border
-        for (unsigned int i = n_border; i > 0; --i) {
+        for (unsigned int i = coefs.n_border; i > 0; --i) {
             // load next eight pixels (one from each row)
             __m256 pixels = _mm256_set_ps(*(input + dim * n_pixels + i), *(input + (dim + 1) * n_pixels + i),
                                           *(input + (dim + 2) * n_pixels + i), *(input + (dim + 3) * n_pixels + i),
@@ -113,7 +113,7 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
         prev_in3 = prev_in2 = prev_in1 = prev_in0 = _mm256_setzero_ps();
 
         // right border
-        for (unsigned int i = n_pixels - 1 - n_border; i < n_pixels; ++i) {
+        for (unsigned int i = n_pixels - 1 - coefs.n_border; i < n_pixels; ++i) {
             // add products between pixels and kernel coefficients
             __m256 pixels_res = _mm256_mul_ps(prev_in0, mm_n_anticausal[0]);
             pixels_res = _mm256_fmadd_ps(prev_in1, mm_n_anticausal[1], pixels_res);
@@ -185,13 +185,13 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
     }
 
     optimized_convolve_iir_inner_single(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
-                                        output + n_times_avx * n_pixels, coefs, n_border);
+                                        output + n_times_avx * n_pixels, coefs);
 
     free(tmp);
 }
 
 void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const Coefficients &coefs, const unsigned n_border)
+                                   float *output, const Coefficients &coefs)
 {
     __m256 mm_n_causal[4];
     __m256 mm_n_anticausal[4];
@@ -219,7 +219,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
         prev_in3 = prev_in2 = prev_in1 = prev_in0 = _mm256_setzero_ps();
 
         // left border
-        for (unsigned int i = n_border; i > 0; --i) {
+        for (unsigned int i = coefs.n_border; i > 0; --i) {
             __m256 pixels = _mm256_loadu_ps(input + dim + i * n_times);
 
             // compute sum of products between ins/outs and kernel coefficients
@@ -277,7 +277,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
         prev_in3 = prev_in2 = prev_in1 = prev_in0 = _mm256_setzero_ps();
 
         // right border
-        for (unsigned int i = n_pixels - 1 - n_border; i < n_pixels; ++i) {
+        for (unsigned int i = n_pixels - 1 - coefs.n_border; i < n_pixels; ++i) {
             // add products between pixels and kernel coefficients
             __m256 pixels_res = _mm256_mul_ps(prev_in0, mm_n_anticausal[0]);
             pixels_res = _mm256_fmadd_ps(prev_in1, mm_n_anticausal[1], pixels_res);
@@ -336,7 +336,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
     }
 
     optimized_convolve_iir_outer_single(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
-                                        output + n_times_avx * n_pixels, coefs, n_border, n_times);
+                                        output + n_times_avx * n_pixels, coefs, n_times);
 
     free(tmp);
 }

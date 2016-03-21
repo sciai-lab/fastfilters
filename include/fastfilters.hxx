@@ -41,21 +41,22 @@ struct Coefficients
     std::array<float, 4> d;
     double sigma;
     unsigned order;
+    unsigned n_border;
 
     Coefficients(const double sigma, const unsigned order);
 };
 
 void convolve_iir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const Coefficients &coefs, const unsigned n_border);
+                               const Coefficients &coefs);
 
 void convolve_iir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const Coefficients &coefs, const unsigned n_border, const unsigned stride);
+                               const Coefficients &coefs, const unsigned stride);
 
 void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const Coefficients &coefs, const unsigned n_border);
+                                   float *output, const Coefficients &coefs);
 
 void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const Coefficients &coefs, const unsigned n_border);
+                                   float *output, const Coefficients &coefs);
 }
 
 namespace detail

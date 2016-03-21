@@ -20,8 +20,6 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
     const float *inptr = (float *)info_in.ptr;
     float *outptr = (float *)info_out.ptr;
 
-    unsigned int n_border = 0;
-
     unsigned int n_times = 1;
     for (unsigned int i = 1; i < ndim; ++i)
         n_times *= info_in.shape[i];
@@ -30,7 +28,7 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
     //	fastfilters::iir::convolve_iir_inner_single_avx(inptr, info_in.shape[0], n_times, outptr, coefs.n_causal,
     // coefs.n_anticausal, coefs.d, n_border);
     // else
-    fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[0], n_times, outptr, coefs, n_border);
+    fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[0], n_times, outptr, coefs);
 
     for (unsigned int i = 1; i < ndim; ++i) {
         n_times = 1;
@@ -43,8 +41,7 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
         //	fastfilters::iir::convolve_iir_outer_single_avx(inptr, info_in.shape[i], n_times, outptr, coefs.n_causal,
         // coefs.n_anticausal, coefs.d, n_border);
         // else
-        fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs, n_border,
-                                                    n_times);
+        fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs, n_times);
     }
 
     return result;
@@ -66,6 +63,8 @@ PYBIND11_PLUGIN(pyfastfilters)
         .def_readonly("order", &fastfilters::iir::Coefficients::order);
 
     m.def("iir_filter", &iir_filter, "apply IIR filter to all dimensions of array and return result.");
+
+    m.def("cpu_has_avx2", &fastfilters::detail::cpu_has_avx2);
 
     return m.ptr();
 }

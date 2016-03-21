@@ -92,7 +92,7 @@ int main()
         input[512 * i + 256] = 1.0;
 
     fastfilters::iir::Coefficients coefs(5.0, 0);
-    fastfilters::iir::convolve_iir_inner_single_avx(input, 512, 10, output, coefs, 32);
+    fastfilters::iir::convolve_iir_inner_single_avx(input, 512, 10, output, coefs);
 
     for (unsigned i = 0; i < 512; ++i)
         for (unsigned int j = 0; j < 10; ++j)
@@ -106,7 +106,7 @@ int main()
     for (unsigned int i = 0; i < 50; ++i)
         input2[256 * 50 + i] = 1.0;
 
-    fastfilters::iir::convolve_iir_outer_single_avx(input2, 512, 50, output2, coefs, 32);
+    fastfilters::iir::convolve_iir_outer_single_avx(input2, 512, 50, output2, coefs);
 
     for (unsigned i = 0; i < 512; ++i)
         for (unsigned j = 0; j < 50; ++j)

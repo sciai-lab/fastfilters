@@ -17,8 +17,7 @@ namespace iir
 {
 
 CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsigned int n_pixels,
-                                                 const unsigned n_times, float *output, const Coefficients &coefs,
-                                                 const unsigned n_border)
+                                                 const unsigned n_times, float *output, const Coefficients &coefs)
 {
     std::vector<float> tmpbfr(n_pixels);
 
@@ -32,10 +31,10 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
             xtmp[i] = ytmp[i] = 0.0;
 
         // left border
-        for (unsigned int i = 0; i < n_border; ++i) {
+        for (unsigned int i = 0; i < coefs.n_border; ++i) {
             float sum = 0.0;
 
-            xtmp[0] = cur_line[n_border - i];
+            xtmp[0] = cur_line[coefs.n_border - i];
             for (unsigned int j = 0; j < 4; ++j)
                 sum += coefs.n_causal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
@@ -71,7 +70,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
             xtmp[i] = ytmp[i] = 0.0;
 
         // right border
-        for (int i = n_border; i > 0; --i) {
+        for (int i = coefs.n_border; i > 0; --i) {
             float sum = 0.0;
 
             for (unsigned int j = 0; j < 4; ++j)
@@ -109,7 +108,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
 
 CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsigned int n_pixels,
                                                  const unsigned n_times, float *output, const Coefficients &coefs,
-                                                 const unsigned n_border, unsigned int stride)
+                                                 unsigned int stride)
 {
     std::vector<float> tmpbfr(n_pixels);
 
@@ -123,10 +122,10 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsig
             xtmp[i] = ytmp[i] = 0.0;
 
         // left border
-        for (unsigned int i = 0; i < n_border; ++i) {
+        for (unsigned int i = 0; i < coefs.n_border; ++i) {
             float sum = 0.0;
 
-            xtmp[0] = cur_line[(n_border - i) * stride];
+            xtmp[0] = cur_line[(coefs.n_border - i) * stride];
             for (unsigned int j = 0; j < 4; ++j)
                 sum += coefs.n_causal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
@@ -162,7 +161,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsig
             xtmp[i] = ytmp[i] = 0.0;
 
         // right border
-        for (int i = n_border; i > 0; --i) {
+        for (int i = coefs.n_border; i > 0; --i) {
             float sum = 0.0;
 
             for (unsigned int j = 0; j < 4; ++j)

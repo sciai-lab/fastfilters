@@ -162,6 +162,7 @@ Coefficients::Coefficients(const double sigma, const unsigned order)
 {
     this->sigma = sigma;
     this->order = order;
+    this->n_border = (3.0 + 0.5 * order) * sigma;
     deriche::compute_coefs(sigma, order, n_causal, n_anticausal, d);
 }
 
