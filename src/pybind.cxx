@@ -59,6 +59,20 @@ PYBIND11_PLUGIN(pyfastfilters)
         .def_readonly("sigma", &fastfilters::iir::Coefficients::sigma)
         .def_readonly("order", &fastfilters::iir::Coefficients::order);
 
+    py::class_<fastfilters::fir::Kernel>(m, "FIRKernel")
+        .def(py::init<const bool, const std::vector<float>>())
+        .def("__repr__", [](const fastfilters::fir::Kernel &a) {
+            std::ostringstream oss;
+            oss << "<pyfastfilters.FIRKernel with symmetric = " << a.is_symmetric << " and length = " << a.len() << ">";
+
+            return oss.str();
+        })
+        .def("__getitem__", [](const fastfilters::fir::Kernel &s, size_t i) {
+            if (i >= s.len())
+                throw py::index_error();
+            return s[i];
+        });
+
     m.def("iir_filter", &iir_filter, "apply IIR filter to all dimensions of array and return result.");
 
     m.def("cpu_has_avx2", &fastfilters::detail::cpu_has_avx2);

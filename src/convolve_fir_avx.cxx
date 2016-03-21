@@ -13,9 +13,9 @@ namespace fir
 
 template <bool is_symmetric>
 static void internal_convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels,
-                                                   const unsigned n_times, float *output, const float *kernel,
-                                                   const unsigned int kernel_len)
+                                                   const unsigned n_times, float *output, Kernel &kernel)
 {
+    const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = (kernel_len - 1) / 2;
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
@@ -139,21 +139,19 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
 }
 
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const float *kernel, const unsigned int kernel_len)
+                                   float *output, Kernel &kernel)
 {
-    const unsigned int half_kernel_len = (kernel_len - 1) / 2;
-
-    if (kernel[half_kernel_len - 1] == kernel[half_kernel_len + 1])
-        internal_convolve_fir_inner_single_avx<true>(input, n_pixels, n_times, output, kernel, kernel_len);
+    if (kernel.is_symmetric)
+        internal_convolve_fir_inner_single_avx<true>(input, n_pixels, n_times, output, kernel);
     else
-        internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, output, kernel, kernel_len);
+        internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, output, kernel);
 }
 
 template <bool is_symmetric>
 static void internal_convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels,
-                                                   const unsigned n_times, float *output, const float *kernel,
-                                                   const unsigned int kernel_len)
+                                                   const unsigned n_times, float *output, Kernel &kernel)
 {
+    const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = (kernel_len - 1) / 2;
     const unsigned int dim_avx_end = n_times & ~7;
     const unsigned int dim_left = n_times - dim_avx_end;
@@ -370,14 +368,12 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
 }
 
 void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const float *kernel, const unsigned int kernel_len)
+                                   float *output, Kernel &kernel)
 {
-    const unsigned int half_kernel_len = (kernel_len - 1) / 2;
-
-    if (kernel[half_kernel_len - 1] == kernel[half_kernel_len + 1])
-        internal_convolve_fir_outer_single_avx<true>(input, n_pixels, n_times, output, kernel, kernel_len);
+    if (kernel.is_symmetric)
+        internal_convolve_fir_outer_single_avx<true>(input, n_pixels, n_times, output, kernel);
     else
-        internal_convolve_fir_outer_single_avx<false>(input, n_pixels, n_times, output, kernel, kernel_len);
+        internal_convolve_fir_outer_single_avx<false>(input, n_pixels, n_times, output, kernel);
 }
 
 } // namespace detail

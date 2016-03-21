@@ -2,20 +2,59 @@
 #define FASTFILTERS_HXX
 
 #include <array>
+#include <vector>
 
 namespace fastfilters
 {
 
 namespace fir
 {
+
+struct Kernel
+{
+    const bool is_symmetric;
+    const std::vector<float> coefs;
+
+    Kernel(bool is_symmetric, const std::vector<float> &coefs) : is_symmetric(is_symmetric), coefs(coefs)
+    {
+    }
+
+    float operator[](std::size_t idx) const
+    {
+        if (idx == half_len())
+            return coefs[0];
+
+        if (idx < half_len()) {
+            if (is_symmetric)
+                return coefs[half_len() - idx];
+            else
+                return -coefs[half_len() - idx];
+        }
+
+        return coefs[idx - half_len()];
+    };
+
+    std::size_t len() const
+    {
+        return 2 * coefs.size() - 1;
+    }
+    std::size_t half_len() const
+    {
+        return coefs.size() - 1;
+    }
+};
+
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const float *kernel, const unsigned int kernel_len);
+                                   float *output, Kernel &kernel);
 
 void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const float *kernel, const unsigned int kernel_len);
+                                   float *output, Kernel &kernel, const unsigned int kernel_len);
 
 void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const float *kernel, const unsigned int kernel_len);
+                               Kernel &kernel);
+
+void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
+                               Kernel &kernel);
 }
 
 namespace iir

@@ -3,12 +3,14 @@
 namespace fastfilters
 {
 
-namespace detail
+namespace fir
 {
 
 void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const float *kernel, const unsigned int kernel_len)
+                               Kernel &kernel)
 {
+    const unsigned int kernel_len = kernel.len();
+
     for (unsigned int i = 0; i < n_times; ++i) {
 
         // take next line of pixels
@@ -61,8 +63,10 @@ void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, 
 }
 
 void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const float *kernel, const unsigned int kernel_len)
+                               Kernel &kernel)
 {
+    const unsigned int kernel_len = kernel.len();
+
     for (unsigned int i = 0; i < n_times; ++i) {
 
         // take next line of pixels
