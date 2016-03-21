@@ -15,9 +15,7 @@ namespace iir
 {
 
 void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const std::array<float, 4> &n_causal,
-                                   const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
-                                   const unsigned n_border)
+                                   float *output, const Coefficients &coefs, const unsigned n_border)
 {
     __m256 mm_n_causal[4];
     __m256 mm_n_anticausal[4];
@@ -27,9 +25,9 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
     const unsigned n_times_normal = n_times - n_times_avx;
 
     for (unsigned int i = 0; i < 4; ++i) {
-        mm_n_causal[i] = _mm256_set1_ps(n_causal[i]);
-        mm_n_anticausal[i] = _mm256_set1_ps(n_anticausal[i]);
-        mm_d[i] = _mm256_set1_ps(-d[i]);
+        mm_n_causal[i] = _mm256_set1_ps(coefs.n_causal[i]);
+        mm_n_anticausal[i] = _mm256_set1_ps(coefs.n_anticausal[i]);
+        mm_d[i] = _mm256_set1_ps(-coefs.d[i]);
     }
 
     float *tmp = NULL;
@@ -187,15 +185,13 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
     }
 
     optimized_convolve_iir_inner_single(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
-                                        output + n_times_avx * n_pixels, n_causal, n_anticausal, d, n_border);
+                                        output + n_times_avx * n_pixels, coefs, n_border);
 
     free(tmp);
 }
 
 void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const std::array<float, 4> &n_causal,
-                                   const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
-                                   const unsigned n_border)
+                                   float *output, const Coefficients &coefs, const unsigned n_border)
 {
     __m256 mm_n_causal[4];
     __m256 mm_n_anticausal[4];
@@ -211,9 +207,9 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
         throw std::runtime_error("posix_memalign failed.");
 
     for (unsigned int i = 0; i < 4; ++i) {
-        mm_n_causal[i] = _mm256_set1_ps(n_causal[i]);
-        mm_n_anticausal[i] = _mm256_set1_ps(n_anticausal[i]);
-        mm_d[i] = _mm256_set1_ps(-d[i]);
+        mm_n_causal[i] = _mm256_set1_ps(coefs.n_causal[i]);
+        mm_n_anticausal[i] = _mm256_set1_ps(coefs.n_anticausal[i]);
+        mm_d[i] = _mm256_set1_ps(-coefs.d[i]);
     }
 
     for (unsigned int dim = 0; dim < n_times_avx; dim += 8) {
@@ -340,7 +336,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
     }
 
     optimized_convolve_iir_outer_single(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
-                                        output + n_times_avx * n_pixels, n_causal, n_anticausal, d, n_border, n_times);
+                                        output + n_times_avx * n_pixels, coefs, n_border, n_times);
 
     free(tmp);
 }

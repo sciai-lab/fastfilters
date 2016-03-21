@@ -99,8 +99,8 @@ static const DerichePrecomputed deriche_precomputed_coefs[3] = {
 // based on code Copyright (c) 2012-2013, Pascal Getreuer
 // <getreuer@cmla.ens-cachan.fr>
 // licensed under the terms of the simplified BSD license.
-void compute_coefs(const double sigma, const unsigned order, std::array<float, 4> &n_causal,
-                   std::array<float, 4> &n_anticausal, std::array<float, 4> &d)
+static void compute_coefs(const double sigma, const unsigned order, std::array<float, 4> &n_causal,
+                          std::array<float, 4> &n_anticausal, std::array<float, 4> &d)
 {
     std::complex<double> alpha[4];
     std::complex<double> lambda[4];
@@ -154,5 +154,17 @@ void compute_coefs(const double sigma, const unsigned order, std::array<float, 4
 }
 
 } // namespace deriche
+
+namespace iir
+{
+
+Coefficients::Coefficients(const double sigma, const unsigned order)
+{
+    this->sigma = sigma;
+    this->order = order;
+    deriche::compute_coefs(sigma, order, n_causal, n_anticausal, d);
+}
+
+} // namespace iir
 
 } // namespace fastfilters

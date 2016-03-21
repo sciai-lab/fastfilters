@@ -19,12 +19,6 @@ template <unsigned N> class FastFilterArrayView
     }
 };
 
-namespace deriche
-{
-void compute_coefs(const double sigma, const unsigned order, std::array<float, 4> &n_causal,
-                   std::array<float, 4> &n_anticausal, std::array<float, 4> &d);
-} // namespace deriche
-
 namespace fir
 {
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
@@ -39,23 +33,29 @@ void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, 
 
 namespace iir
 {
+
+struct Coefficients
+{
+    std::array<float, 4> n_causal;
+    std::array<float, 4> n_anticausal;
+    std::array<float, 4> d;
+    double sigma;
+    unsigned order;
+
+    Coefficients(const double sigma, const unsigned order);
+};
+
 void convolve_iir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const std::array<float, 4> &n_causal, const std::array<float, 4> &n_anticausal,
-                               const std::array<float, 4> &d, const unsigned n_border);
+                               const Coefficients &coefs, const unsigned n_border);
 
 void convolve_iir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const std::array<float, 4> &n_causal, const std::array<float, 4> &n_anticausal,
-                               const std::array<float, 4> &d, const unsigned n_border, const unsigned stride);
+                               const Coefficients &coefs, const unsigned n_border, const unsigned stride);
 
 void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const std::array<float, 4> &n_causal,
-                                   const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
-                                   const unsigned n_border);
+                                   float *output, const Coefficients &coefs, const unsigned n_border);
 
 void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, const std::array<float, 4> &n_causal,
-                                   const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
-                                   const unsigned n_border);
+                                   float *output, const Coefficients &coefs, const unsigned n_border);
 }
 
 namespace detail

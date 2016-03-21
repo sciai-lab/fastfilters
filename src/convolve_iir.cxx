@@ -17,10 +17,8 @@ namespace iir
 {
 
 CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsigned int n_pixels,
-                                                 const unsigned n_times, float *output,
-                                                 const std::array<float, 4> &n_causal,
-                                                 const std::array<float, 4> &n_anticausal,
-                                                 const std::array<float, 4> &d, const unsigned n_border)
+                                                 const unsigned n_times, float *output, const Coefficients &coefs,
+                                                 const unsigned n_border)
 {
     std::vector<float> tmpbfr(n_pixels);
 
@@ -39,9 +37,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
 
             xtmp[0] = cur_line[n_border - i];
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_causal[j] * xtmp[j];
+                sum += coefs.n_causal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -56,9 +54,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
 
             xtmp[0] = cur_line[i];
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_causal[j] * xtmp[j];
+                sum += coefs.n_causal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -77,9 +75,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
             float sum = 0.0;
 
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_anticausal[j] * xtmp[j];
+                sum += coefs.n_anticausal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -94,9 +92,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
             float sum = 0.0;
 
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_anticausal[j] * xtmp[j];
+                sum += coefs.n_anticausal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -110,11 +108,8 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
 }
 
 CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsigned int n_pixels,
-                                                 const unsigned n_times, float *output,
-                                                 const std::array<float, 4> &n_causal,
-                                                 const std::array<float, 4> &n_anticausal,
-                                                 const std::array<float, 4> &d, const unsigned n_border,
-                                                 unsigned int stride)
+                                                 const unsigned n_times, float *output, const Coefficients &coefs,
+                                                 const unsigned n_border, unsigned int stride)
 {
     std::vector<float> tmpbfr(n_pixels);
 
@@ -133,9 +128,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsig
 
             xtmp[0] = cur_line[(n_border - i) * stride];
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_causal[j] * xtmp[j];
+                sum += coefs.n_causal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -150,9 +145,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsig
 
             xtmp[0] = cur_line[i * stride];
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_causal[j] * xtmp[j];
+                sum += coefs.n_causal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -171,9 +166,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsig
             float sum = 0.0;
 
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_anticausal[j] * xtmp[j];
+                sum += coefs.n_anticausal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];
@@ -188,9 +183,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsig
             float sum = 0.0;
 
             for (unsigned int j = 0; j < 4; ++j)
-                sum += n_anticausal[j] * xtmp[j];
+                sum += coefs.n_anticausal[j] * xtmp[j];
             for (unsigned int j = 0; j < 4; ++j)
-                sum -= d[j] * ytmp[j];
+                sum -= coefs.d[j] * ytmp[j];
             for (unsigned int j = 3; j > 0; --j) {
                 xtmp[j] = xtmp[j - 1];
                 ytmp[j] = ytmp[j - 1];

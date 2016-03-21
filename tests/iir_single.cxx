@@ -92,8 +92,8 @@ int main()
     input[256] = 1.0;
     input[512 + 257] = 1.0;
 
-    fastfilters::deriche::compute_coefs(5.0, 0, n_causal, n_anticausal, d);
-    fastfilters::iir::convolve_iir_inner_single(input, 512, 2, output, n_causal, n_anticausal, d, 32);
+    fastfilters::iir::Coefficients coefs(5.0, 0);
+    fastfilters::iir::convolve_iir_inner_single(input, 512, 2, output, coefs, 32);
 
     for (unsigned i = 0; i < 512; ++i)
         assert(abs(output[i] - result[i]) < 1e-12);
@@ -109,7 +109,7 @@ int main()
     for (unsigned int i = 0; i < 50; ++i)
         input2[256 * 50 + i] = 1.0;
 
-    fastfilters::iir::convolve_iir_outer_single(input2, 512, 50, output2, n_causal, n_anticausal, d, 32, 50);
+    fastfilters::iir::convolve_iir_outer_single(input2, 512, 50, output2, coefs, 32, 50);
 
     for (unsigned i = 0; i < 512; ++i)
         assert(abs(output2[i * 50] - result[i]) < 1e-12);

@@ -83,7 +83,6 @@ static const float result[] = {
 
 int main()
 {
-    std::array<float, 4> n_causal, n_anticausal, d;
     static float input[10 * 512];
     static float output[10 * 512];
 
@@ -92,8 +91,8 @@ int main()
     for (unsigned int i = 0; i < 10; ++i)
         input[512 * i + 256] = 1.0;
 
-    fastfilters::deriche::compute_coefs(5.0, 0, n_causal, n_anticausal, d);
-    fastfilters::iir::convolve_iir_inner_single_avx(input, 512, 10, output, n_causal, n_anticausal, d, 32);
+    fastfilters::iir::Coefficients coefs(5.0, 0);
+    fastfilters::iir::convolve_iir_inner_single_avx(input, 512, 10, output, coefs, 32);
 
     for (unsigned i = 0; i < 512; ++i)
         for (unsigned int j = 0; j < 10; ++j)
@@ -107,7 +106,7 @@ int main()
     for (unsigned int i = 0; i < 50; ++i)
         input2[256 * 50 + i] = 1.0;
 
-    fastfilters::iir::convolve_iir_outer_single_avx(input2, 512, 50, output2, n_causal, n_anticausal, d, 32);
+    fastfilters::iir::convolve_iir_outer_single_avx(input2, 512, 50, output2, coefs, 32);
 
     for (unsigned i = 0; i < 512; ++i)
         for (unsigned j = 0; j < 50; ++j)

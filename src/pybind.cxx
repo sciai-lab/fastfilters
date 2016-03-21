@@ -5,6 +5,7 @@
 
 namespace py = pybind11;
 
+#if 0
 struct IIRCoefficients
 {
     double sigma;
@@ -24,8 +25,9 @@ struct IIRCoefficients
         return oss.str();
     }
 };
+#endif
 
-static py::array_t<float> iir_filter(IIRCoefficients &coefs, py::array_t<float> input)
+static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::array_t<float> input)
 {
     py::buffer_info info_in = input.request();
     const unsigned int ndim = (unsigned int)info_in.ndim;
@@ -50,8 +52,7 @@ static py::array_t<float> iir_filter(IIRCoefficients &coefs, py::array_t<float> 
     //	fastfilters::iir::convolve_iir_inner_single_avx(inptr, info_in.shape[0], n_times, outptr, coefs.n_causal,
     // coefs.n_anticausal, coefs.d, n_border);
     // else
-    fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[0], n_times, outptr, coefs.n_causal,
-                                                coefs.n_anticausal, coefs.d, n_border);
+    fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[0], n_times, outptr, coefs, n_border);
 
     for (unsigned int i = 1; i < ndim; ++i) {
         n_times = 1;
@@ -64,8 +65,8 @@ static py::array_t<float> iir_filter(IIRCoefficients &coefs, py::array_t<float> 
         //	fastfilters::iir::convolve_iir_outer_single_avx(inptr, info_in.shape[i], n_times, outptr, coefs.n_causal,
         // coefs.n_anticausal, coefs.d, n_border);
         // else
-        fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs.n_causal,
-                                                    coefs.n_anticausal, coefs.d, n_border, n_times);
+        fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs, n_border,
+                                                    n_times);
     }
 
     return result;
@@ -75,11 +76,10 @@ PYBIND11_PLUGIN(pyfastfilters)
 {
     py::module m("pyfastfilters", "fast gaussian kernel and derivative filters");
 
-    py::class_<IIRCoefficients>(m, "IIRCoefficients")
+    py::class_<fastfilters::iir::Coefficients>(m, "IIRCoefficients")
         .def(py::init<const double, const unsigned int>())
-        .def("__repr__", &IIRCoefficients::repr)
-        .def_readonly("sigma", &IIRCoefficients::sigma)
-        .def_readonly("order", &IIRCoefficients::order);
+        .def_readonly("sigma", &fastfilters::iir::Coefficients::sigma)
+        .def_readonly("order", &fastfilters::iir::Coefficients::order);
 
     m.def("iir_filter", &iir_filter, "apply IIR filter to all dimensions of array and return result.");
 
