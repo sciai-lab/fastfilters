@@ -117,8 +117,8 @@ def build(bld):
 	if not bld.env.tests_disable:
 		tests_common = bld.path.ant_glob("tests/*.bin")
 
-		tests = ["iir_single.cxx"]
-		tests_avx = ["iir_single_avx.cxx"]
+		tests = ["iir.cxx"]
+		tests_avx = []
 
 		for test in tests:
 			bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters")

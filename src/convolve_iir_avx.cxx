@@ -255,7 +255,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
             pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
             // store causal output in temporary buffer
-            _mm256_store_ps(tmp + dim, pixels_res);
+            _mm256_store_ps(tmp + i * 8, pixels_res);
 
             // move to next pixel
             prev_out3 = prev_out2;
@@ -309,7 +309,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
             pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
             // add output from causal pass
-            __m256 pixels_res_causal = _mm256_load_ps(tmp + dim);
+            __m256 pixels_res_causal = _mm256_load_ps(tmp + i * 8);
             pixels_res_causal = _mm256_add_ps(pixels_res_causal, pixels_res);
 
             // move to next pixel

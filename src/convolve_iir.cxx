@@ -108,7 +108,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(const float *input, const unsig
 
 CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(const float *input, const unsigned int n_pixels,
                                                  const unsigned n_times, float *output, const Coefficients &coefs,
-                                                 unsigned int stride)
+                                                 const unsigned int stride)
 {
     std::vector<float> tmpbfr(n_pixels);
 
