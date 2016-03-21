@@ -113,7 +113,7 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
         prev_in3 = prev_in2 = prev_in1 = prev_in0 = _mm256_setzero_ps();
 
         // right border
-        for (unsigned int i = n_pixels - 1 - coefs.n_border; i < n_pixels; ++i) {
+        for (unsigned int i = n_pixels - coefs.n_border; i < n_pixels; ++i) {
             // add products between pixels and kernel coefficients
             __m256 pixels_res = _mm256_mul_ps(prev_in0, mm_n_anticausal[0]);
             pixels_res = _mm256_fmadd_ps(prev_in1, mm_n_anticausal[1], pixels_res);
@@ -154,19 +154,7 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
             // add output from causal pass
             __m256 pixels_res_causal = _mm256_load_ps(tmpptr);
 
-            tmpptr -= 8;
-            _mm_prefetch((char *)(tmpptr - 8), _MM_HINT_T0);
-
             pixels_res_causal = _mm256_add_ps(pixels_res_causal, pixels_res);
-
-            // store outputs in correct row
-            alignas(16) float out[8];
-            _mm256_store_ps(out, pixels_res_causal);
-            for (unsigned int j = 0; j < 8; ++j)
-                *(output + (dim + j) * n_pixels + i) = out[7 - j];
-
-            if (i == 0)
-                break;
 
             // move to next pixel
             prev_out3 = prev_out2;
@@ -181,6 +169,14 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
                                      *(input + (dim + 2) * n_pixels + i), *(input + (dim + 3) * n_pixels + i),
                                      *(input + (dim + 4) * n_pixels + i), *(input + (dim + 5) * n_pixels + i),
                                      *(input + (dim + 6) * n_pixels + i), *(input + (dim + 7) * n_pixels + i));
+
+            // store outputs in correct row
+            alignas(16) float out[8];
+            _mm256_store_ps(out, pixels_res_causal);
+            for (unsigned int j = 0; j < 8; ++j)
+                *(output + (dim + j) * n_pixels + i) = out[7 - j];
+
+            tmpptr -= 8;
         }
     }
 
@@ -316,12 +312,6 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
             __m256 pixels_res_causal = _mm256_load_ps(tmp + dim);
             pixels_res_causal = _mm256_add_ps(pixels_res_causal, pixels_res);
 
-            // store outputs in correct row
-            _mm256_storeu_ps(output + dim + i * n_times, pixels_res_causal);
-
-            if (i == 0)
-                break;
-
             // move to next pixel
             prev_out3 = prev_out2;
             prev_out2 = prev_out1;
@@ -332,11 +322,14 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
             prev_in2 = prev_in1;
             prev_in1 = prev_in0;
             prev_in0 = _mm256_loadu_ps(input + dim + i * n_times);
+
+            // store outputs in correct row
+            _mm256_storeu_ps(output + dim + i * n_times, pixels_res_causal);
         }
     }
 
-    optimized_convolve_iir_outer_single(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
-                                        output + n_times_avx * n_pixels, coefs, n_times);
+    optimized_convolve_iir_outer_single(input + n_times_avx, n_pixels, n_times_normal, output + n_times_avx, coefs,
+                                        n_times);
 
     free(tmp);
 }

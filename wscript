@@ -91,6 +91,14 @@ def build(bld):
 	sources_avx = ["src/convolve_iir_avx.cxx", "src/convolve_fir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
+	TaskGen.declare_chain(
+						name      = 'copy_bin',
+						rule      = "cp ${SRC} ${TGT}",
+						ext_in    = '.bin',
+						ext_out   = '.b',
+						before    = 'utest',
+						reentrant = False)
+
 	bld.objects(
 		source  = sources_noavx,
 		target  = 'objs_noavx',
@@ -107,17 +115,18 @@ def build(bld):
 		bld.shlib(features='pyext', source=sources_python, target='pyfastfilters', use="fastfilters")
 
 	if not bld.env.tests_disable:
+		tests_common = bld.path.ant_glob("tests/*.bin")
 
 		tests = ["iir_single.cxx"]
 		tests_avx = ["iir_single_avx.cxx"]
 
 		for test in tests:
-			bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+			bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters")
 
 
 		if 'CXXFLAGS_AVX2_FMA_CPU' in bld.env.keys():
 			for test in tests_avx:
-				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+				bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)
