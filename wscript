@@ -88,7 +88,7 @@ def configure(cfg):
 
 def build(bld):
 	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
-	sources_avx = ["src/convolve_iir_avx.cxx"]
+	sources_avx = ["src/convolve_iir_avx.cxx", "src/convolve_fir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
 	bld.objects(
