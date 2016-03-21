@@ -1,6 +1,8 @@
 #include "fastfilters.hxx"
 #include <complex>
 #include <cassert>
+#include <exception>
+#include <array>
 
 #ifndef M_SQRT2PI
 #define M_SQRT2PI       2.50662827463100050241576528481104525
@@ -77,11 +79,14 @@ namespace deriche
     // based on code Copyright (c) 2012-2013, Pascal Getreuer
     // <getreuer@cmla.ens-cachan.fr>
     // licensed under the terms of the simplified BSD license.
-    void compute_coefs(const double sigma, const unsigned order, float *n_causal, float *n_anticausal, float *d)
+    void compute_coefs(const double sigma, const unsigned order, std::array<float, 4> &n_causal, std::array<float, 4> &n_anticausal, std::array<float, 4> &d)
     {
         std::complex<double> alpha[4];
         std::complex<double> lambda[4];
         std::complex<double> beta[4];
+
+        if (order > 2)
+            throw std::invalid_argument("Order must be 0, 1 or 2.");
 
         for (unsigned int i = 0; i < 4; ++i) {
             alpha[i] = deriche_precomputed_coefs[order].get_alpha(i);

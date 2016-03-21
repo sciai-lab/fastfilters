@@ -19,7 +19,7 @@ void convolve_iir_inner_single_avx(
 	const float *input,
 	const unsigned int n_pixels, const unsigned n_times,
 	float *output,
-	const float *n_causal, const float *n_anticausal, const float *d,
+	const std::array<float, 4> &n_causal, const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
 	const unsigned n_border)
 {
 	__m256 mm_n_causal[4];
@@ -230,7 +230,7 @@ void convolve_iir_outer_single_avx(
 	const float *input,
 	const unsigned int n_pixels, const unsigned n_times,
 	float *output,
-	const float *n_causal, const float *n_anticausal, const float *d,
+	const std::array<float, 4> &n_causal, const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
 	const unsigned n_border)
 {
 	__m256 mm_n_causal[4];

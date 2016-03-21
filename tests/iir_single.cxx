@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string.h>
 #include <cassert>
+#include <cmath>
 
 static const float result[] = {
 7.92574e-42, -1.36955e-40, -3.5246e-40, -6.17509e-40, -8.69073e-40, -9.85263e-40, -7.75034e-40, 1.45861e-41, 1.65874e-39, 4.36498e-39, 8.11801e-39, 1.2453e-38, 1.61729e-38, 1.70618e-38,
@@ -45,7 +46,7 @@ static const float result[] = {
 
 int main()
 {
-	float n_causal[4], n_anticausal[4], d[4];
+	std::array<float, 4> n_causal, n_anticausal, d;
 	static float input[2*512];
 	static float output[2*512];
 

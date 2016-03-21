@@ -1,5 +1,7 @@
 #include "fastfilters.hxx"
 
+#include <vector>
+
 // the AVX versions need these scalar functions for up to the last 7 values.
 // this hack allows these functions to be compiled with much
 // more agressive optimizations (such as enabling the
@@ -18,9 +20,10 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(
 	const float *input,
 	const unsigned int n_pixels, const unsigned n_times,
 	float *output,
-	const float *n_causal, const float *n_anticausal, const float *d,
+	const std::array<float, 4> &n_causal, const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
 	const unsigned n_border)
 {
+	std::vector<float> tmpbfr(n_pixels);
 
 	for (unsigned int dim = 0; dim < n_times; dim++) {
 		const float *cur_line = input + dim*n_pixels;
@@ -62,7 +65,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(
 				ytmp[j] = ytmp[j - 1];
 			}
 
-			cur_output[i] = sum;
+			tmpbfr[i] = sum;
 			ytmp[0] = sum;
 		}
 
@@ -102,7 +105,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_inner_single)(
 
 			xtmp[0] = cur_line[i];
 			ytmp[0] = sum;
-			cur_output[i] += sum;
+			cur_output[i] = tmpbfr[i] + sum;
 		}
 	}
 }
@@ -111,10 +114,12 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(
 	const float *input,
 	const unsigned int n_pixels, const unsigned n_times,
 	float *output,
-	const float *n_causal, const float *n_anticausal, const float *d,
+	const std::array<float, 4> &n_causal, const std::array<float, 4> &n_anticausal, const std::array<float, 4> &d,
 	const unsigned n_border,
 	unsigned int stride)
 {
+	std::vector<float> tmpbfr(n_pixels);
+
 	for (unsigned int dim = 0; dim < n_times; dim++) {
 		const float *cur_line = input + dim;
 		float *cur_output = output + dim;
@@ -155,7 +160,7 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(
 				ytmp[j] = ytmp[j - 1];
 			}
 
-			cur_output[i*stride] = sum;
+			tmpbfr[i] = sum;
 			ytmp[0] = sum;
 		}
 
@@ -193,9 +198,9 @@ CONVOLVE_IIR_FUNCTION(convolve_iir_outer_single)(
 				ytmp[j] = ytmp[j - 1];
 			}
 
-			xtmp[0] = cur_line[i];
+			xtmp[0] = cur_line[i*stride];
 			ytmp[0] = sum;
-			cur_output[i*stride] += sum;
+			cur_output[i*stride] = tmpbfr[i] + sum;
 		}
 	}
 }
