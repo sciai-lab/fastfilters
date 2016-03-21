@@ -83,7 +83,6 @@ static const float result[] = {
 
 int main()
 {
-    std::array<float, 4> n_causal, n_anticausal, d;
     static float input[2 * 512];
     static float output[2 * 512];
 

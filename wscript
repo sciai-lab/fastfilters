@@ -101,10 +101,10 @@ def build(bld):
 		cxxflags = bld.env.CXXFLAGS_AVX2_FMA,
 		uselib  = 'cxxshlib')
 
-	if not bld.env.python_disable:
-		bld.shlib(features='pyext', source=sources_python, target='pyfastfilters', use="objs_avx objs_noavx")
-
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx")
+
+	if not bld.env.python_disable:
+		bld.shlib(features='pyext', source=sources_python, target='pyfastfilters', use="fastfilters")
 
 	if not bld.env.tests_disable:
 
