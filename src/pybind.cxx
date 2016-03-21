@@ -48,7 +48,7 @@ static py::array_t<float> iir_filter(IIRCoefficients &coefs, py::array_t<float> 
 
     // if (fastfilters::detail::cpu_has_avx2())
     //	fastfilters::iir::convolve_iir_inner_single_avx(inptr, info_in.shape[0], n_times, outptr, coefs.n_causal,
-    //coefs.n_anticausal, coefs.d, n_border);
+    // coefs.n_anticausal, coefs.d, n_border);
     // else
     fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[0], n_times, outptr, coefs.n_causal,
                                                 coefs.n_anticausal, coefs.d, n_border);
@@ -62,7 +62,7 @@ static py::array_t<float> iir_filter(IIRCoefficients &coefs, py::array_t<float> 
         std::cout << i << " " << n_times << " " << info_in.shape[i] << std::endl;
         // if (fastfilters::detail::cpu_has_avx2())
         //	fastfilters::iir::convolve_iir_outer_single_avx(inptr, info_in.shape[i], n_times, outptr, coefs.n_causal,
-        //coefs.n_anticausal, coefs.d, n_border);
+        // coefs.n_anticausal, coefs.d, n_border);
         // else
         fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs.n_causal,
                                                     coefs.n_anticausal, coefs.d, n_border, n_times);
