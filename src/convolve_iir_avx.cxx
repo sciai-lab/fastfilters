@@ -240,6 +240,12 @@ void convolve_iir_outer_single_avx(
 	const unsigned n_times_avx = n_times & ~7;
 	const unsigned n_times_normal = n_times - n_times_avx;
 
+	float *tmp = NULL;
+	int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels * 8);
+
+	if (res < 0 || tmp == NULL)
+		throw std::runtime_error("posix_memalign failed.");
+
 	for (unsigned int i = 0; i < 4; ++i) {
 		mm_n_causal[i] = _mm256_set1_ps(n_causal[i]);
 		mm_n_anticausal[i] = _mm256_set1_ps(n_anticausal[i]);
@@ -293,7 +299,7 @@ void convolve_iir_outer_single_avx(
 			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
 			// store causal output in temporary buffer
-			_mm256_storeu_ps(output + dim + i*n_times, pixels_res);
+			_mm256_store_ps(tmp + dim, pixels_res);
 
 			// move to next pixel
 			prev_out3 = prev_out2;
@@ -347,7 +353,7 @@ void convolve_iir_outer_single_avx(
 			pixels_res = _mm256_fmadd_ps(prev_out3, mm_d[3], pixels_res);
 
 			// add output from causal pass
-			__m256 pixels_res_causal = _mm256_load_ps(output + dim + i*n_times);
+			__m256 pixels_res_causal = _mm256_load_ps(tmp + dim);
 			pixels_res_causal = _mm256_add_ps(pixels_res_causal, pixels_res);
 
 			// store outputs in correct row
@@ -378,6 +384,8 @@ void convolve_iir_outer_single_avx(
 		n_causal, n_anticausal, d,
 		n_border, n_times
 		);
+
+	free(tmp);
 }
 
 
