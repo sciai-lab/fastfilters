@@ -21,27 +21,24 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
     float *outptr = (float *)info_out.ptr;
 
     unsigned int n_times = 1;
-    for (unsigned int i = 1; i < ndim; ++i)
+    for (unsigned int i = 0; i < ndim - 1; ++i)
         n_times *= info_in.shape[i];
 
-    // if (fastfilters::detail::cpu_has_avx2())
-    //	fastfilters::iir::convolve_iir_inner_single_avx(inptr, info_in.shape[0], n_times, outptr, coefs.n_causal,
-    // coefs.n_anticausal, coefs.d, n_border);
-    // else
-    fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[0], n_times, outptr, coefs);
+    if (fastfilters::detail::cpu_has_avx2())
+        fastfilters::iir::convolve_iir_inner_single_avx(inptr, info_in.shape[ndim - 1], n_times, outptr, coefs);
+    else
+        fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[ndim - 1], n_times, outptr, coefs);
 
-    for (unsigned int i = 1; i < ndim; ++i) {
+    for (unsigned int i = 0; i < ndim - 1; ++i) {
         n_times = 1;
         for (unsigned int j = 0; j < ndim; ++j)
             if (j != i)
                 n_times *= info_in.shape[j];
 
-        std::cout << i << " " << n_times << " " << info_in.shape[i] << std::endl;
-        // if (fastfilters::detail::cpu_has_avx2())
-        //	fastfilters::iir::convolve_iir_outer_single_avx(inptr, info_in.shape[i], n_times, outptr, coefs.n_causal,
-        // coefs.n_anticausal, coefs.d, n_border);
-        // else
-        fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs, n_times);
+        if (fastfilters::detail::cpu_has_avx2())
+            fastfilters::iir::convolve_iir_outer_single_avx(outptr, info_in.shape[i], n_times, outptr, coefs);
+        else
+            fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs, n_times);
     }
 
     return result;
