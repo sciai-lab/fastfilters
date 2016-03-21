@@ -5,28 +5,6 @@
 
 namespace py = pybind11;
 
-#if 0
-struct IIRCoefficients
-{
-    double sigma;
-    unsigned int order;
-    std::array<float, 4> d, n_causal, n_anticausal;
-
-    IIRCoefficients(const double sigma, const unsigned int order) : sigma(sigma), order(order)
-    {
-        fastfilters::deriche::compute_coefs(sigma, order, n_causal, n_anticausal, d);
-    }
-
-    std::string repr()
-    {
-        std::ostringstream oss;
-        oss << "<pyfastfilters.IIRCoefficients with sigma = " << sigma << " and order = " << order << ">";
-
-        return oss.str();
-    }
-};
-#endif
-
 static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::array_t<float> input)
 {
     py::buffer_info info_in = input.request();
@@ -78,6 +56,12 @@ PYBIND11_PLUGIN(pyfastfilters)
 
     py::class_<fastfilters::iir::Coefficients>(m, "IIRCoefficients")
         .def(py::init<const double, const unsigned int>())
+        .def("__repr__", [](const fastfilters::iir::Coefficients &a) {
+            std::ostringstream oss;
+            oss << "<pyfastfilters.IIRCoefficients with sigma = " << a.sigma << " and order = " << a.order << ">";
+
+            return oss.str();
+        })
         .def_readonly("sigma", &fastfilters::iir::Coefficients::sigma)
         .def_readonly("order", &fastfilters::iir::Coefficients::order);
 
