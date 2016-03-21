@@ -24,7 +24,7 @@ AVXTEST = '''#include <immintrin.h>
 '''
 
 @conf
-def test_avx2(self):
+def check_avx2(self):
 	flags = ["/arch:AVX2", "-mavx -mavx2 -mfma"]
 	msg='Testing AVX2/FMA support'
 
@@ -42,7 +42,7 @@ def test_avx2(self):
 	self.fatal('Compiler does not support AVX2/FMA instruction set.')
 
 @conf
-def test_cpu_avx2(self):
+def check_cpu_avx2(self):
 	self.start_msg('Checking AVX2/FMA CPU support')
 	try:
 		self.check(header_name='immintrin.h', msg='',
@@ -53,6 +53,10 @@ def test_cpu_avx2(self):
 		self.end_msg("no. AVX tests will be skipped.", color='RED')
 	else:
 		self.end_msg("yes.")
+
+@conf
+def check_cxx11(self):
+	self.check(msg='Checking for C++11 support', errmsg='Compiler does not support C++11.', features='cxx', cxxflags='-std=c++11')
 
 
 def options(opt):
@@ -66,10 +70,12 @@ def options(opt):
 def configure(cfg):
 	cfg.load('compiler_cxx')
 	cfg.load('waf_unit_test')
-	cfg.test_avx2()
-	cfg.test_cpu_avx2()
 
-	if not Options.options.python_disable:
+	cfg.check_cxx11()
+	cfg.check_avx2()
+	cfg.check_cpu_avx2()
+
+	if not cfg.options.python_disable:
 		cfg.load('python')
 		cfg.check_python_version((2,3))
 		cfg.check_python_headers()
@@ -77,10 +83,10 @@ def configure(cfg):
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
 	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-W', '-Wall', '-O3'])
 
-def build(bld):
-	src_dir = bld.path.find_dir('src/')
-	tests_dir = bld.path.find_dir('tests/')
+	cfg.env.python_disable = cfg.options.python_disable
+	cfg.env.tests_disable = cfg.options.tests_disable
 
+def build(bld):
 	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
 	sources_avx = ["src/convolve_iir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]
@@ -95,10 +101,12 @@ def build(bld):
 		cxxflags = bld.env.CXXFLAGS_AVX2_FMA,
 		uselib  = 'cxxshlib')
 
-	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_avx objs_noavx")
+	if not bld.env.python_disable:
+		bld.shlib(features='pyext', source=sources_python, target='pyfastfilters', use="objs_avx objs_noavx")
+
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx")
 
-	if not Options.options.tests_disable:
+	if not bld.env.tests_disable:
 
 		tests = ["iir_single.cxx"]
 		tests_avx = ["iir_single_avx.cxx"]
@@ -113,3 +121,4 @@ def build(bld):
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)
+		bld.add_post_fun(waf_unit_test.set_exit_code)
