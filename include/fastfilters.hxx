@@ -50,22 +50,25 @@ struct Kernel
 };
 
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, Kernel &kernel);
+                                   const unsigned int dim_stride, float *output, Kernel &kernel);
 
-void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, Kernel &kernel);
+void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
+                                   const unsigned n_times, float *output, Kernel &kernel);
 
 void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                     float *output, Kernel &kernel);
+                                     const unsigned int dim_stride, float *output, Kernel &kernel);
 
-void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                     float *output, Kernel &kernel);
+void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
+                                     const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel);
 
-void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               Kernel &kernel);
+void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                               const unsigned int dim_stride, float *output, Kernel &kernel);
 
-void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               Kernel &kernel);
+void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
+                               const unsigned n_times, const unsigned int dim_stride, float *output, Kernel &kernel);
+
+void convolve_fir(const float *input, const unsigned int pixel_stride, const unsigned int pixel_n,
+                  const unsigned int dim_stride, const unsigned int dim, float *output, Kernel &kernel);
 }
 
 namespace iir

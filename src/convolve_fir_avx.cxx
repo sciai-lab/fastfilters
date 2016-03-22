@@ -13,18 +13,19 @@ namespace fir
 
 template <bool is_symmetric>
 static void internal_convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels,
-                                                   const unsigned n_times, float *output, Kernel &kernel)
+                                                   const unsigned n_times, const unsigned dim_stride, float *output,
+                                                   Kernel &kernel)
 {
     const unsigned int kernel_len = kernel.len();
-    const unsigned int half_kernel_len = (kernel_len - 1) / 2;
+    const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
 
     for (unsigned int dim = 0; dim < n_times; ++dim) {
 
         // take next line of pixels
-        const float *cur_input = input + dim * n_pixels;
-        float *cur_output = output + dim * n_pixels;
+        const float *cur_input = input + dim * dim_stride;
+        float *cur_output = output + dim * dim_stride;
 
         // this function is only used for small kernels (<25 pixel)
         // such that non-vectorized code can be used for the border
@@ -139,17 +140,18 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
 }
 
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, Kernel &kernel)
+                                   const unsigned dim_stride, float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        internal_convolve_fir_inner_single_avx<true>(input, n_pixels, n_times, output, kernel);
+        internal_convolve_fir_inner_single_avx<true>(input, n_pixels, n_times, dim_stride, output, kernel);
     else
-        internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, output, kernel);
+        internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
 
 template <bool is_symmetric>
 static void internal_convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels,
-                                                   const unsigned n_times, float *output, Kernel &kernel)
+                                                   const unsigned int pixel_stride, const unsigned n_times,
+                                                   float *output, Kernel &kernel)
 {
     const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = (kernel_len - 1) / 2;
@@ -171,22 +173,22 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 __m256 input_val;
 
                 if ((int)i + kreal < 0)
-                    input_val = _mm256_loadu_ps(input + dim + (i - kreal) * n_pixels);
+                    input_val = _mm256_loadu_ps(input + dim + (i - kreal) * pixel_stride);
                 else
-                    input_val = _mm256_loadu_ps(input + dim + (i + kreal) * n_pixels);
+                    input_val = _mm256_loadu_ps(input + dim + (i + kreal) * pixel_stride);
 
                 sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
             }
 
-            _mm256_storeu_ps(output + dim + i * n_pixels, sum);
+            _mm256_storeu_ps(output + dim + i * pixel_stride, sum);
         }
 
         // work on four pixels in eight dimensions at once to fill the ymm register bank
         for (; i < pixels_avx_end; i += 4) {
-            __m256 result0 = _mm256_loadu_ps(input + dim + i * n_pixels);
-            __m256 result1 = _mm256_loadu_ps(input + dim + (i + 1) * n_pixels);
-            __m256 result2 = _mm256_loadu_ps(input + dim + (i + 2) * n_pixels);
-            __m256 result3 = _mm256_loadu_ps(input + dim + (i + 3) * n_pixels);
+            __m256 result0 = _mm256_loadu_ps(input + dim + i * pixel_stride);
+            __m256 result1 = _mm256_loadu_ps(input + dim + (i + 1) * pixel_stride);
+            __m256 result2 = _mm256_loadu_ps(input + dim + (i + 2) * pixel_stride);
+            __m256 result3 = _mm256_loadu_ps(input + dim + (i + 3) * pixel_stride);
 
             // multiply current pixels with center value of kernel
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
@@ -205,23 +207,23 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 __m256 pixels0, pixels1, pixels2, pixels3;
 
                 if (is_symmetric) {
-                    pixels0 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 0) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 0) * n_pixels));
-                    pixels1 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 1) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 1) * n_pixels));
-                    pixels2 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 2) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 2) * n_pixels));
-                    pixels3 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 3) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 3) * n_pixels));
+                    pixels0 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 0) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 0) * pixel_stride));
+                    pixels1 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 1) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 1) * pixel_stride));
+                    pixels2 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 2) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 2) * pixel_stride));
+                    pixels3 = _mm256_add_ps(_mm256_loadu_ps(input + dim + (i + j + 3) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 3) * pixel_stride));
                 } else {
-                    pixels0 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 0) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i + j + 0) * n_pixels));
-                    pixels1 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 1) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 1) * n_pixels));
-                    pixels2 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 2) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 2) * n_pixels));
-                    pixels3 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 3) * n_pixels),
-                                            _mm256_loadu_ps(input + dim + (i - j + 3) * n_pixels));
+                    pixels0 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 0) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i + j + 0) * pixel_stride));
+                    pixels1 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 1) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 1) * pixel_stride));
+                    pixels2 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 2) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 2) * pixel_stride));
+                    pixels3 = _mm256_sub_ps(_mm256_loadu_ps(input + dim + (i + j + 3) * pixel_stride),
+                                            _mm256_loadu_ps(input + dim + (i - j + 3) * pixel_stride));
                 }
 
                 // multiply with kernel value and add to result
@@ -232,10 +234,10 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             }
 
             // write result to output array
-            _mm256_storeu_ps(output + dim + i * n_pixels, result0);
-            _mm256_storeu_ps(output + dim + (i + 1) * n_pixels, result1);
-            _mm256_storeu_ps(output + dim + (i + 2) * n_pixels, result2);
-            _mm256_storeu_ps(output + dim + (i + 3) * n_pixels, result3);
+            _mm256_storeu_ps(output + dim + i * pixel_stride, result0);
+            _mm256_storeu_ps(output + dim + (i + 1) * pixel_stride, result1);
+            _mm256_storeu_ps(output + dim + (i + 2) * pixel_stride, result2);
+            _mm256_storeu_ps(output + dim + (i + 3) * pixel_stride, result3);
         }
 
         // right border - eight dimensions at once
@@ -248,14 +250,14 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 __m256 kernel_val = _mm256_set1_ps(kernel[k]);
 
                 if (kreal + i >= n_pixels)
-                    input_val = _mm256_loadu_ps(input + dim + (i - kreal) * n_pixels);
+                    input_val = _mm256_loadu_ps(input + dim + (i - kreal) * pixel_stride);
                 else
-                    input_val = _mm256_loadu_ps(input + dim + (i + kreal) * n_pixels);
+                    input_val = _mm256_loadu_ps(input + dim + (i + kreal) * pixel_stride);
 
                 sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
             }
 
-            _mm256_storeu_ps(output + dim + i * n_pixels, sum);
+            _mm256_storeu_ps(output + dim + i * pixel_stride, sum);
         }
     }
 
@@ -279,22 +281,22 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             __m256 input_val;
 
             if ((int)i + kreal < 0)
-                input_val = _mm256_maskload_ps(input + dim + (i - kreal) * n_pixels, mask);
+                input_val = _mm256_maskload_ps(input + dim + (i - kreal) * pixel_stride, mask);
             else
-                input_val = _mm256_maskload_ps(input + dim + (i + kreal) * n_pixels, mask);
+                input_val = _mm256_maskload_ps(input + dim + (i + kreal) * pixel_stride, mask);
 
             sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
         }
 
-        _mm256_maskstore_ps(output + dim + i * n_pixels, mask, sum);
+        _mm256_maskstore_ps(output + dim + i * pixel_stride, mask, sum);
     }
 
     // work on four pixels in up to eight dimensions at once to fill the ymm register bank
     for (; i < pixels_avx_end; i += 4) {
-        __m256 result0 = _mm256_maskload_ps(input + dim + i * n_pixels, mask);
-        __m256 result1 = _mm256_maskload_ps(input + dim + (i + 1) * n_pixels, mask);
-        __m256 result2 = _mm256_maskload_ps(input + dim + (i + 2) * n_pixels, mask);
-        __m256 result3 = _mm256_maskload_ps(input + dim + (i + 3) * n_pixels, mask);
+        __m256 result0 = _mm256_maskload_ps(input + dim + i * pixel_stride, mask);
+        __m256 result1 = _mm256_maskload_ps(input + dim + (i + 1) * pixel_stride, mask);
+        __m256 result2 = _mm256_maskload_ps(input + dim + (i + 2) * pixel_stride, mask);
+        __m256 result3 = _mm256_maskload_ps(input + dim + (i + 3) * pixel_stride, mask);
 
         // multiply current pixels with center value of kernel
         __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
@@ -313,23 +315,23 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             __m256 pixels0, pixels1, pixels2, pixels3;
 
             if (is_symmetric) {
-                pixels0 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 0) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 0) * n_pixels, mask));
-                pixels1 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 1) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 1) * n_pixels, mask));
-                pixels2 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 2) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 2) * n_pixels, mask));
-                pixels3 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 3) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 3) * n_pixels, mask));
+                pixels0 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 0) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 0) * pixel_stride, mask));
+                pixels1 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 1) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 1) * pixel_stride, mask));
+                pixels2 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 2) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 2) * pixel_stride, mask));
+                pixels3 = _mm256_add_ps(_mm256_maskload_ps(input + dim + (i + j + 3) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 3) * pixel_stride, mask));
             } else {
-                pixels0 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 0) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i + j + 0) * n_pixels, mask));
-                pixels1 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 1) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 1) * n_pixels, mask));
-                pixels2 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 2) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 2) * n_pixels, mask));
-                pixels3 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 3) * n_pixels, mask),
-                                        _mm256_maskload_ps(input + dim + (i - j + 3) * n_pixels, mask));
+                pixels0 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 0) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i + j + 0) * pixel_stride, mask));
+                pixels1 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 1) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 1) * pixel_stride, mask));
+                pixels2 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 2) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 2) * pixel_stride, mask));
+                pixels3 = _mm256_sub_ps(_mm256_maskload_ps(input + dim + (i + j + 3) * pixel_stride, mask),
+                                        _mm256_maskload_ps(input + dim + (i - j + 3) * pixel_stride, mask));
             }
 
             // multiply with kernel value and add to result
@@ -340,10 +342,10 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
         }
 
         // write result to output array
-        _mm256_maskstore_ps(output + dim + i * n_pixels, mask, result0);
-        _mm256_maskstore_ps(output + dim + (i + 1) * n_pixels, mask, result1);
-        _mm256_maskstore_ps(output + dim + (i + 2) * n_pixels, mask, result2);
-        _mm256_maskstore_ps(output + dim + (i + 3) * n_pixels, mask, result3);
+        _mm256_maskstore_ps(output + dim + i * pixel_stride, mask, result0);
+        _mm256_maskstore_ps(output + dim + (i + 1) * pixel_stride, mask, result1);
+        _mm256_maskstore_ps(output + dim + (i + 2) * pixel_stride, mask, result2);
+        _mm256_maskstore_ps(output + dim + (i + 3) * pixel_stride, mask, result3);
     }
 
     // right border
@@ -356,24 +358,24 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             __m256 kernel_val = _mm256_set1_ps(kernel[k]);
 
             if (kreal + i >= n_pixels)
-                input_val = _mm256_maskload_ps(input + dim + (i - kreal) * n_pixels, mask);
+                input_val = _mm256_maskload_ps(input + dim + (i - kreal) * pixel_stride, mask);
             else
-                input_val = _mm256_maskload_ps(input + dim + (i + kreal) * n_pixels, mask);
+                input_val = _mm256_maskload_ps(input + dim + (i + kreal) * pixel_stride, mask);
 
             sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
         }
 
-        _mm256_maskstore_ps(output + dim + i * n_pixels, mask, sum);
+        _mm256_maskstore_ps(output + dim + i * pixel_stride, mask, sum);
     }
 }
 
-void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, Kernel &kernel)
+void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
+                                   const unsigned n_times, float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        internal_convolve_fir_outer_single_avx<true>(input, n_pixels, n_times, output, kernel);
+        internal_convolve_fir_outer_single_avx<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
     else
-        internal_convolve_fir_outer_single_avx<false>(input, n_pixels, n_times, output, kernel);
+        internal_convolve_fir_outer_single_avx<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
 }
 
 } // namespace detail

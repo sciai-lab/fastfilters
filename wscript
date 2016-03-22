@@ -41,6 +41,10 @@ def check_avx2(self):
 			return flag
 	self.fatal('Compiler does not support AVX2/FMA instruction set.')
 
+@feature('avx2')
+def feature_avx2(self):
+	self.env.append_value('CXXFLAGS', self.env.CXXFLAGS_AVX2_FMA)
+
 @conf
 def check_cpu_avx2(self):
 	self.start_msg('Checking AVX2/FMA CPU support')
@@ -84,9 +88,17 @@ def check_vigra(self, includes=[]):
 		define_name='VIGRA_VERSION',
 		includes=includes,
 		use='vigra',
-		mandatory=False
+		var='have_vigra'
 		)
 
+@feature('vigra')
+def feature_vigra(self):
+	self.env.append_value('INCLUDES', self.env.INCLUDES_VIGRA)
+
+@feature('opencv')
+def feature_opencv(self):
+	self.env.append_value('INCLUDES', self.env.INCLUDES_OPENCV)
+	self.env.append_value('LIB', self.env.LIB_OPENCV)
 
 def options(opt):
 	opt.load('compiler_cxx')
@@ -113,7 +125,7 @@ def configure(cfg):
 		cfg.check_vigra([cfg.options.vigra_incdir])
 
 	if not cfg.options.opencv_disable:
-		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='OPENCV', use='opencv', mandatory=False)
+		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='OPENCV', use='opencv')
 
 	if not cfg.options.python_disable:
 		cfg.load('python')
@@ -125,9 +137,11 @@ def configure(cfg):
 
 	cfg.env.python_disable = cfg.options.python_disable
 	cfg.env.tests_disable = cfg.options.tests_disable
+	cfg.env.vigra_disable = cfg.options.vigra_disable
+	cfg.env.opencv_disable = cfg.options.opencv_disable
 
 def build(bld):
-	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
+	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_fir_nosimd.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
 	sources_avx = ["src/convolve_iir_avx.cxx", "src/convolve_fir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
@@ -146,7 +160,7 @@ def build(bld):
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_avx',
-		cxxflags = bld.env.CXXFLAGS_AVX2_FMA,
+		features='avx2',
 		uselib  = 'cxxshlib')
 
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx")
@@ -159,6 +173,8 @@ def build(bld):
 
 		tests = ["iir.cxx"]
 		tests_avx = []
+		tests_vigra = ["vigra.cxx"]
+		tests_opencv = ["opencv.cxx"]
 
 		for test in tests:
 			bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters")
@@ -166,7 +182,15 @@ def build(bld):
 
 		if 'CXXFLAGS_AVX2_FMA_CPU' in bld.env.keys():
 			for test in tests_avx:
-				bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters")
+				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+
+			if not bld.env.vigra_disable:
+				for test in tests_vigra:
+					bld.program(features='cxx test vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+
+			if not bld.env.opencv_disable:
+				for test in tests_opencv:
+					bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)

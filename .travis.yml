@@ -18,7 +18,7 @@ addons:
    - g++-4.9
 
 script:
-  - CXX=g++-4.9 ./waf configure
+  - CXX=g++-4.9 ./waf configure --without-vigra --without-opencv
   - ./waf
 
 after_failure:

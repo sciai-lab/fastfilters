@@ -85,29 +85,6 @@ bool cpu_has_avx2()
 
 } // namespace detail
 
-namespace fir
-{
-
-void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               Kernel &kernel)
-{
-    if (detail::cpu_has_avx2())
-        convolve_fir_inner_single_avx(input, n_pixels, n_times, output, kernel);
-    else
-        convolve_fir_inner_single_noavx(input, n_pixels, n_times, output, kernel);
-}
-
-void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               Kernel &kernel)
-{
-    if (detail::cpu_has_avx2())
-        convolve_fir_outer_single_avx(input, n_pixels, n_times, output, kernel);
-    else
-        convolve_fir_outer_single_noavx(input, n_pixels, n_times, output, kernel);
-}
-
-} // namespace fir
-
 namespace iir
 {
 void convolve_iir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
