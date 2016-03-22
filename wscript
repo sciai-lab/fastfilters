@@ -99,6 +99,8 @@ def options(opt):
 	opt.add_option('--vigra-includes', help=("VIGRA include directory for performance tests."), action='store', default='', dest='vigra_incdir')
 	opt.add_option('--without-vigra', help=("Disable VIGRA tests."), action='store_true', default=False, dest='vigra_disable')
 
+	opt.add_option('--without-opencv', help=("Disable OpenCV tests."), action='store_true', default=False, dest='opencv_disable')
+
 def configure(cfg):
 	cfg.load('compiler_cxx')
 	cfg.load('waf_unit_test')
@@ -109,6 +111,9 @@ def configure(cfg):
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
+
+	if not cfg.options.opencv_disable:
+		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='OPENCV', use='opencv', mandatory=False)
 
 	if not cfg.options.python_disable:
 		cfg.load('python')
