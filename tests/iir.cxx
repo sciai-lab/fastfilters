@@ -21,7 +21,7 @@ void test_inner(void)
     ifp1.read(reinterpret_cast<char *>(result.data()), result.size() * sizeof(result[0]));
     ifp1.close();
 
-    fastfilters::iir::convolve_iir_inner_single(input.data(), 512, 10, output.data(), coefs);
+    fastfilters::iir::convolve_iir_inner_single_noavx(input.data(), 512, 10, output.data(), coefs);
 
     if (fastfilters::detail::cpu_has_avx2())
         fastfilters::iir::convolve_iir_inner_single_avx(input.data(), 512, 10, output_avx.data(), coefs);
@@ -59,7 +59,7 @@ void test_outer(void)
     for (unsigned int i = 0; i < 50; ++i)
         input[256 * 50 + i] = 1.0;
 
-    fastfilters::iir::convolve_iir_outer_single(input.data(), 512, 50, output.data(), coefs, 50);
+    fastfilters::iir::convolve_iir_outer_single_noavx(input.data(), 512, 50, output.data(), coefs, 50);
 
     if (fastfilters::detail::cpu_has_avx2())
         fastfilters::iir::convolve_iir_outer_single_avx(input.data(), 512, 50, output_avx.data(), coefs);

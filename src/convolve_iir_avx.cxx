@@ -180,8 +180,8 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
         }
     }
 
-    optimized_convolve_iir_inner_single(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
-                                        output + n_times_avx * n_pixels, coefs);
+    optimized_convolve_iir_inner_single_noavx(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
+                                              output + n_times_avx * n_pixels, coefs);
 
     free(tmp);
 }
@@ -328,8 +328,8 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
         }
     }
 
-    optimized_convolve_iir_outer_single(input + n_times_avx, n_pixels, n_times_normal, output + n_times_avx, coefs,
-                                        n_times);
+    optimized_convolve_iir_outer_single_noavx(input + n_times_avx, n_pixels, n_times_normal, output + n_times_avx,
+                                              coefs, n_times);
 
     free(tmp);
 }

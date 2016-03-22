@@ -7,6 +7,11 @@
 namespace fastfilters
 {
 
+namespace detail
+{
+bool cpu_has_avx2();
+}
+
 namespace fir
 {
 
@@ -48,7 +53,13 @@ void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixe
                                    float *output, Kernel &kernel);
 
 void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   float *output, Kernel &kernel, const unsigned int kernel_len);
+                                   float *output, Kernel &kernel);
+
+void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     float *output, Kernel &kernel);
+
+void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     float *output, Kernel &kernel);
 
 void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
                                Kernel &kernel);
@@ -72,23 +83,25 @@ struct Coefficients
     Coefficients(const double sigma, const unsigned order);
 };
 
-void convolve_iir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const Coefficients &coefs);
+void convolve_iir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     float *output, const Coefficients &coefs);
 
-void convolve_iir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               const Coefficients &coefs, const unsigned stride);
+void convolve_iir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     float *output, const Coefficients &coefs, const unsigned stride);
 
 void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
                                    float *output, const Coefficients &coefs);
 
 void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
                                    float *output, const Coefficients &coefs);
-}
 
-namespace detail
-{
-bool cpu_has_avx2();
-}
+void convolve_iir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
+                               const Coefficients &coefs);
+
+void convolve_iir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
+                               const Coefficients &coefs);
+
+} // namespace iir
 
 } // namespace fastfilters
 

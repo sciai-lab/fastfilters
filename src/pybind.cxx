@@ -24,10 +24,7 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
     for (unsigned int i = 0; i < ndim - 1; ++i)
         n_times *= info_in.shape[i];
 
-    if (fastfilters::detail::cpu_has_avx2())
-        fastfilters::iir::convolve_iir_inner_single_avx(inptr, info_in.shape[ndim - 1], n_times, outptr, coefs);
-    else
-        fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[ndim - 1], n_times, outptr, coefs);
+    fastfilters::iir::convolve_iir_inner_single(inptr, info_in.shape[ndim - 1], n_times, outptr, coefs);
 
     for (unsigned int i = 0; i < ndim - 1; ++i) {
         n_times = 1;
@@ -35,10 +32,7 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
             if (j != i)
                 n_times *= info_in.shape[j];
 
-        if (fastfilters::detail::cpu_has_avx2())
-            fastfilters::iir::convolve_iir_outer_single_avx(outptr, info_in.shape[i], n_times, outptr, coefs);
-        else
-            fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs, n_times);
+        fastfilters::iir::convolve_iir_outer_single(outptr, info_in.shape[i], n_times, outptr, coefs);
     }
 
     return result;

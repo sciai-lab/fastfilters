@@ -6,8 +6,8 @@ namespace fastfilters
 namespace fir
 {
 
-void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               Kernel &kernel)
+void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     float *output, Kernel &kernel)
 {
     const unsigned int kernel_len = kernel.len();
 
@@ -62,8 +62,8 @@ void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, 
     }
 }
 
-void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned n_times, float *output,
-                               Kernel &kernel)
+void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     float *output, Kernel &kernel)
 {
     const unsigned int kernel_len = kernel.len();
 
