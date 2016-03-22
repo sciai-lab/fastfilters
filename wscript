@@ -58,6 +58,35 @@ def check_cpu_avx2(self):
 def check_cxx11(self):
 	self.check(msg='Checking for C++11 support', errmsg='Compiler does not support C++11.', features='cxx', cxxflags='-std=c++11')
 
+@conf
+def check_vigra(self, includes=[]):
+	self.check(header_name='vigra/config_version.hxx', features='cxx', msg='Checking for vigra headers', mandatory=False, uselib_store='HAVE_VIGRA')
+
+	self.check_cxx(
+		header_name='vigra/config_version.hxx',
+		fragment='''
+			#include <vigra/config_version.hxx>
+			#include <iostream>
+			#include <exception>
+			#include <stdexcept>
+			int main()
+			{
+				#if VIGRA_VERSION_MAJOR == 1 && VIGRA_VERSION_MINOR >= 11
+				std::cout << VIGRA_VERSION;
+				#else
+				throw std::runtime_error("Unsupported vigra version.");
+				#endif
+			}
+		''',
+		execute=True,
+		uselib_store='VIGRA',
+		msg='Checking for VIGRA',
+		define_name='VIGRA_VERSION',
+		includes=includes,
+		use='vigra',
+		mandatory=False
+		)
+
 
 def options(opt):
 	opt.load('compiler_cxx')
@@ -67,6 +96,9 @@ def options(opt):
 	opt.add_option('--disable-python', help=("Don't build python bindings."), action='store_true', default=False, dest='python_disable')
 	opt.add_option('--disable-tests', help=("Don't run tests."), action='store_true', default=False, dest='tests_disable')
 
+	opt.add_option('--vigra-includes', help=("VIGRA include directory for performance tests."), action='store', default='', dest='vigra_incdir')
+	opt.add_option('--without-vigra', help=("Disable VIGRA tests."), action='store_true', default=False, dest='vigra_disable')
+
 def configure(cfg):
 	cfg.load('compiler_cxx')
 	cfg.load('waf_unit_test')
@@ -74,6 +106,9 @@ def configure(cfg):
 	cfg.check_cxx11()
 	cfg.check_avx2()
 	cfg.check_cpu_avx2()
+
+	if not cfg.options.vigra_disable:
+		cfg.check_vigra([cfg.options.vigra_incdir])
 
 	if not cfg.options.python_disable:
 		cfg.load('python')
