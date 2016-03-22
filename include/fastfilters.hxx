@@ -19,31 +19,38 @@ struct Kernel
 {
     const bool is_symmetric;
     const std::vector<float> coefs;
+    std::vector<float> coefs2;
 
     Kernel(bool is_symmetric, const std::vector<float> &coefs) : is_symmetric(is_symmetric), coefs(coefs)
     {
+        coefs2 = std::vector<float>(len());
+
+        for (unsigned int idx = 0; idx < len(); ++idx) {
+            float v;
+
+            if (idx == half_len())
+                v = coefs[0];
+            else if (idx < half_len()) {
+                if (is_symmetric)
+                    v = coefs[half_len() - idx];
+                else
+                    v = -coefs[half_len() - idx];
+            } else
+                v = coefs[idx - half_len()];
+            coefs2[idx] = v;
+        }
     }
 
-    float operator[](std::size_t idx) const
+    inline float operator[](std::size_t idx) const
     {
-        if (idx == half_len())
-            return coefs[0];
-
-        if (idx < half_len()) {
-            if (is_symmetric)
-                return coefs[half_len() - idx];
-            else
-                return -coefs[half_len() - idx];
-        }
-
-        return coefs[idx - half_len()];
+        return coefs2[idx];
     };
 
-    std::size_t len() const
+    inline std::size_t len() const
     {
         return 2 * coefs.size() - 1;
     }
-    std::size_t half_len() const
+    inline std::size_t half_len() const
     {
         return coefs.size() - 1;
     }

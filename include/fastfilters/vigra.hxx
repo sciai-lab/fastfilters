@@ -8,10 +8,10 @@ namespace fastfilters
 {
 
 template <unsigned ndim>
-void separableConvolveMultiArray(vigra::MultiArrayView<ndim, float> input, vigra::MultiArrayView<ndim, float> &output,
-                                 fir::Kernel &kernel)
+inline void separableConvolveMultiArray(const vigra::MultiArrayView<ndim, float> input,
+                                        vigra::MultiArrayView<ndim, float> &output, fir::Kernel &kernel)
 {
-    float *inptr = input.data();
+    const float *inptr = input.data();
     float *outptr = output.data();
 
     if (ndim == 1) {
@@ -26,13 +26,16 @@ void separableConvolveMultiArray(vigra::MultiArrayView<ndim, float> input, vigra
                                                 outptr, kernel);
 
     for (int i = ndim - 2; i >= 0; --i) {
+        unsigned int pixel_stride = 1;
         n_times = 1;
-        for (int j = 0; j < ndim; ++j)
-            if (i != j)
+        for (int j = 0; j < ndim; ++j) {
+            if (j != i)
                 n_times *= input.shape()[j];
+            if (j > i)
+                pixel_stride *= input.shape()[j];
+        }
 
-        fastfilters::fir::convolve_fir_outer_single(outptr, input.shape()[i], n_times, n_times, input.shape()[i],
-                                                    outptr, kernel);
+        fastfilters::fir::convolve_fir(outptr, input.shape()[i], pixel_stride, n_times, 1, outptr, kernel);
     }
 }
 

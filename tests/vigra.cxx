@@ -36,14 +36,15 @@ template <unsigned ndim> void run_test()
     std::clock_t vigra_end = std::clock();
     double vigra_time = vigra_end - vigra_start;
 
-    std::cout << "Vigra: " << vigra_time << "\n";
+    std::cout << "  Vigra: " << vigra_time << "\n";
 
     std::clock_t ff_start = std::clock();
     fastfilters::separableConvolveMultiArray(vigra_array, vigra_array, ff_kernel);
     std::clock_t ff_end = std::clock();
     double ff_time = ff_end - ff_start;
 
-    std::cout << "fastfilters: " << ff_time << "\n";
+    std::cout << "  fastfilters: " << ff_time << "\n";
+    std::cout << " faster by: " << vigra_time / ff_time << "\n";
 }
 
 int main()
