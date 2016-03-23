@@ -113,6 +113,8 @@ def options(opt):
 
 	opt.add_option('--without-opencv', help=("Disable OpenCV tests."), action='store_true', default=False, dest='opencv_disable')
 
+	opt.add_option('--debug', help=("Compile with debug symbols."), action='store_true', default=False, dest='enable_debug')
+
 def configure(cfg):
 	cfg.load('compiler_cxx')
 	cfg.load('waf_unit_test')
@@ -134,6 +136,9 @@ def configure(cfg):
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
 	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-W', '-Wall', '-O3'])
+
+	if cfg.options.enable_debug:
+		cfg.env.append_value("CXXFLAGS", ['-g'])
 
 	cfg.env.python_disable = cfg.options.python_disable
 	cfg.env.tests_disable = cfg.options.tests_disable
