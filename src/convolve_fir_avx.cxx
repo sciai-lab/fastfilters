@@ -23,14 +23,22 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
     ConstantVector<float> cur_input(n_pixels);
 
+    float *tmp = NULL;
+    int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels);
+
+    if (res < 0 || tmp == NULL)
+        throw std::runtime_error("posix_memalign failed.");
+
     for (unsigned int dim = 0; dim < n_times; ++dim) {
 
         // take next line of pixels
         // const float *cur_input = input + ;
         float *cur_output = output + dim * dim_stride;
 
-        for (unsigned int j = 0; j < n_pixels; ++j)
-            cur_input[j] = input[dim * dim_stride + j];
+        for (unsigned int j = 0; j < (n_pixels & ~7); j += 8)
+            _mm256_store_ps(tmp + j, _mm256_loadu_ps(input + dim * dim_stride + j));
+        for (unsigned int j = (n_pixels & ~7); j < n_pixels; ++j)
+            tmp[j] = input[dim * dim_stride + j];
 
         // this function is only used for small kernels (<25 pixel)
         // such that non-vectorized code can be used for the border
@@ -46,7 +54,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                     offset = -i - kreal;
                 else
                     offset = i + kreal;
-                sum += kernel[k] * cur_input[offset];
+                sum += kernel[k] * tmp[offset];
             }
 
             cur_output[i] = sum;
@@ -55,10 +63,10 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         // working on 32 pixels at the same time leads to a fully used ymm register bank
         for (; i < avx_end; i += 32) {
             // load next 32 pixels
-            __m256 result0 = _mm256_loadu_ps(cur_input + i);
-            __m256 result1 = _mm256_loadu_ps(cur_input + i + 8);
-            __m256 result2 = _mm256_loadu_ps(cur_input + i + 16);
-            __m256 result3 = _mm256_loadu_ps(cur_input + i + 24);
+            __m256 result0 = _mm256_load_ps(tmp + i);
+            __m256 result1 = _mm256_load_ps(tmp + i + 8);
+            __m256 result2 = _mm256_load_ps(tmp + i + 16);
+            __m256 result3 = _mm256_load_ps(tmp + i + 24);
 
             // multiply current pixels with center value of kernel
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
@@ -77,21 +85,15 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 __m256 pixels0, pixels1, pixels2, pixels3;
 
                 if (is_symmetric) {
-                    pixels0 = _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
-                    pixels1 =
-                        _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j + 8), _mm256_loadu_ps(cur_input + i - j + 8));
-                    pixels2 =
-                        _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j + 16), _mm256_loadu_ps(cur_input + i - j + 16));
-                    pixels3 =
-                        _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j + 24), _mm256_loadu_ps(cur_input + i - j + 24));
+                    pixels0 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
+                    pixels1 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j + 8), _mm256_loadu_ps(tmp + i - j + 8));
+                    pixels2 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j + 16), _mm256_loadu_ps(tmp + i - j + 16));
+                    pixels3 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j + 24), _mm256_loadu_ps(tmp + i - j + 24));
                 } else {
-                    pixels0 = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
-                    pixels1 =
-                        _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j + 8), _mm256_loadu_ps(cur_input + i - j + 8));
-                    pixels2 =
-                        _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j + 16), _mm256_loadu_ps(cur_input + i - j + 16));
-                    pixels3 =
-                        _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j + 24), _mm256_loadu_ps(cur_input + i - j + 24));
+                    pixels0 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
+                    pixels1 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j + 8), _mm256_loadu_ps(tmp + i - j + 8));
+                    pixels2 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j + 16), _mm256_loadu_ps(tmp + i - j + 16));
+                    pixels3 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j + 24), _mm256_loadu_ps(tmp + i - j + 24));
                 }
 
                 // multiply with kernel value and add to result
@@ -111,7 +113,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         // fast path for up to 24 pixels - only results in measureable speedup for small lines
         // where this is actually the bottleneck
         for (; i < avx_end_single; i += 8) {
-            __m256 result = _mm256_loadu_ps(cur_input + i);
+            __m256 result = _mm256_load_ps(tmp + i);
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
             result = _mm256_mul_ps(result, kernel_val);
 
@@ -120,9 +122,9 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 __m256 pixels;
 
                 if (is_symmetric)
-                    pixels = _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
+                    pixels = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
                 else
-                    pixels = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
+                    pixels = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
 
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
@@ -141,12 +143,14 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                     offset = n_pixels - ((kreal + i) % n_pixels) - 2;
                 else
                     offset = i + kreal;
-                sum += kernel[k] * cur_input[offset];
+                sum += kernel[k] * tmp[offset];
             }
 
             cur_output[i] = sum;
         }
     }
+
+    free(tmp);
 }
 
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
@@ -181,7 +185,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
 
         unsigned int i = 0;
         for (i = 0; i < n_pixels; ++i)
-            _mm256_store_ps(tmp + 8*i, _mm256_loadu_ps(input + dim + i * pixel_stride));
+            _mm256_store_ps(tmp + 8 * i, _mm256_loadu_ps(input + dim + i * pixel_stride));
 
         i = 0;
         // left border - work on eight dimensions at once
@@ -199,7 +203,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     offset = i + kreal;
 
-                input_val = _mm256_load_ps(tmp + offset*8);
+                input_val = _mm256_load_ps(tmp + offset * 8);
                 sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
             }
 
@@ -230,23 +234,23 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 __m256 pixels0, pixels1, pixels2, pixels3;
 
                 if (is_symmetric) {
-                    pixels0 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 0) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 0) * 8));
-                    pixels1 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 1) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 1) * 8));
-                    pixels2 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 2) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 2) * 8));
-                    pixels3 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 3) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 3) * 8));
+                    pixels0 =
+                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i - j + 0) * 8));
+                    pixels1 =
+                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
+                    pixels2 =
+                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 2) * 8), _mm256_load_ps(tmp + (i - j + 2) * 8));
+                    pixels3 =
+                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
                 } else {
-                    pixels0 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8),
-                                            _mm256_load_ps(tmp + (i + j + 0) * 8));
-                    pixels1 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 1) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 1) * 8));
-                    pixels2 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 2) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 2) * 8));
-                    pixels3 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 3) * 8),
-                                            _mm256_load_ps(tmp + (i - j + 3) * 8));
+                    pixels0 =
+                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i + j + 0) * 8));
+                    pixels1 =
+                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
+                    pixels2 =
+                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 2) * 8), _mm256_load_ps(tmp + (i - j + 2) * 8));
+                    pixels3 =
+                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
                 }
 
                 // multiply with kernel value and add to result
@@ -300,7 +304,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                                           dim_left >= 3 ? 0xffffffff : 0, dim_left >= 2 ? 0xffffffff : 0, 0xffffffff);
 
     for (unsigned int i = 0; i < n_pixels; ++i)
-        _mm256_store_ps(tmp + 8*i, _mm256_maskload_ps(input + dim + i * pixel_stride, mask));
+        _mm256_store_ps(tmp + 8 * i, _mm256_maskload_ps(input + dim + i * pixel_stride, mask));
 
     // left border
     for (i = 0; i < half_kernel_len; ++i) {
@@ -346,23 +350,15 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             __m256 pixels0, pixels1, pixels2, pixels3;
 
             if (is_symmetric) {
-                pixels0 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 0) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 0) * 8));
-                pixels1 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 1) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 1) * 8));
-                pixels2 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 2) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 2) * 8));
-                pixels3 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 3) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 3) * 8));
+                pixels0 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i - j + 0) * 8));
+                pixels1 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
+                pixels2 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 2) * 8), _mm256_load_ps(tmp + (i - j + 2) * 8));
+                pixels3 = _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
             } else {
-                pixels0 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8),
-                                        _mm256_load_ps(tmp + (i + j + 0) * 8));
-                pixels1 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 1) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 1) * 8));
-                pixels2 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 2) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 2) * 8));
-                pixels3 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 3) * 8),
-                                        _mm256_load_ps(tmp + (i - j + 3) * 8));
+                pixels0 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i + j + 0) * 8));
+                pixels1 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
+                pixels2 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 2) * 8), _mm256_load_ps(tmp + (i - j + 2) * 8));
+                pixels3 = _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
             }
 
             // multiply with kernel value and add to result
