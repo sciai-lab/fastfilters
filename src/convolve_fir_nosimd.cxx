@@ -1,38 +1,12 @@
 #include "fastfilters.hxx"
+#include "vector.hxx"
 #include <iostream>
+
 namespace fastfilters
 {
 
 namespace fir
 {
-
-// faster than std::vector because of missing out-of-bounds safety checks
-template <typename T> class ConstantVector
-{
-  public:
-    inline ConstantVector(const unsigned int size)
-    {
-        ptr = new T[size];
-    }
-
-    ~ConstantVector()
-    {
-        delete ptr;
-    }
-
-    const T &operator[](unsigned int i) const
-    {
-        return ptr[i];
-    }
-
-    T &operator[](unsigned int i)
-    {
-        return ptr[i];
-    }
-
-  private:
-    T *ptr;
-};
 
 void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
                                      const unsigned int dim_stride, float *output, Kernel &kernel)

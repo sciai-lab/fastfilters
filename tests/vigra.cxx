@@ -53,7 +53,7 @@ template <unsigned ndim> void run_test()
     std::cout << "  fastfilters: " << ff_time << "\n";
     std::cout << " faster by: " << vigra_time / ff_time << "\n";
 
-    shouldEqualSequence(vigra_output.begin(), vigra_output.end(), ff_output.begin());
+    shouldEqualSequenceTolerance(vigra_output.begin(), vigra_output.end(), ff_output.begin(), 1e-6);
 }
 
 int main()
