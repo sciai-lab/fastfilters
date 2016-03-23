@@ -56,10 +56,12 @@ void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pi
 
             for (unsigned int k = 0; k < kernel_len; ++k) {
                 const int kreal = k - kernel_len / 2;
+                unsigned int offset;
                 if (kreal + (int)j < 0)
-                    sum += kernel[k] * tmpline[j - kreal];
+                    offset = -j - kreal;
                 else
-                    sum += kernel[k] * tmpline[j + kreal];
+                    offset = j + kreal;
+                sum += kernel[k] * tmpline[offset];
             }
 
             cur_output[j] = sum;
@@ -80,56 +82,20 @@ void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pi
         // right border
         for (; j < n_pixels; ++j) {
             float sum = 0.0;
-
             for (unsigned int k = 0; k < kernel_len; ++k) {
                 const int kreal = k - kernel_len / 2;
+                unsigned int offset;
                 if (kreal + j >= n_pixels)
-                    sum += kernel[k] * tmpline[j - kreal];
+                    offset = n_pixels - ((kreal + j) % n_pixels) - 2;
                 else
-                    sum += kernel[k] * tmpline[j + kreal];
+                    offset = j + kreal;
+                sum += kernel[k] * tmpline[offset];
             }
 
             cur_output[j] = sum;
         }
     }
 }
-
-template <typename T> class FinalVector
-{
-  public:
-    FinalVector(unsigned int size)
-    {
-        v.reserve(size);
-    }
-    const T &at(unsigned int i) const
-    {
-        return v.at(i);
-    }
-    T &at(unsigned int i)
-    {
-        return v.at(i);
-    }
-    T &operator[](unsigned int i)
-    {
-        return at(i);
-    }
-    const T &operator[](unsigned int i) const
-    {
-        return at(i);
-    }
-    void push_back(const T &x);
-    size_t size() const
-    {
-        return v.size();
-    }
-    size_t capacity() const
-    {
-        return v.size();
-    }
-
-  private:
-    std::vector<T> v;
-};
 
 void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
                                      const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel)
@@ -153,10 +119,12 @@ void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pi
 
             for (unsigned int k = 0; k < kernel_len; ++k) {
                 const int kreal = k - kernel_len / 2;
+                unsigned int offset;
                 if (kreal + (int)j < 0)
-                    sum += kernel[k] * tmpline[(j - kreal)];
+                    offset = -j - kreal;
                 else
-                    sum += kernel[k] * tmpline[(j + kreal)];
+                    offset = j + kreal;
+                sum += kernel[k] * tmpline[offset];
             }
 
             cur_output[j * pixel_stride] = sum;
@@ -180,10 +148,12 @@ void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pi
 
             for (unsigned int k = 0; k < kernel_len; ++k) {
                 const int kreal = k - kernel_len / 2;
+                unsigned int offset;
                 if (kreal + j >= n_pixels)
-                    sum += kernel[k] * tmpline[(j - kreal)];
+                    offset = n_pixels - ((kreal + j) % n_pixels) - 2;
                 else
-                    sum += kernel[k] * tmpline[(j + kreal)];
+                    offset = j + kreal;
+                sum += kernel[k] * tmpline[offset];
             }
 
             cur_output[j * pixel_stride] = sum;
