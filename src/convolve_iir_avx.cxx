@@ -1,4 +1,5 @@
 #include "fastfilters.hxx"
+#include "vector.hxx"
 
 #include <immintrin.h>
 #include <stdlib.h>
