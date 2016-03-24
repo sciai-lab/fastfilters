@@ -3,7 +3,7 @@
 
 #include <immintrin.h>
 #include <stdlib.h>
-
+#include <type_traits>
 #include <stdexcept>
 
 namespace fastfilters
@@ -12,31 +12,65 @@ namespace fastfilters
 namespace fir
 {
 
-template <bool is_symmetric>
+struct AVXAligned
+{
+    static inline __m256 load(float *ptr)
+    {
+        return _mm256_load_ps(ptr);
+    }
+
+    static inline void store(float *ptr, __m256 v)
+    {
+        _mm256_store_ps(ptr, v);
+    }
+};
+
+struct AVXUnAligned
+{
+    static inline __m256 load(float *ptr)
+    {
+        return _mm256_loadu_ps(ptr);
+    }
+
+    static inline void store(float *ptr, __m256 v)
+    {
+        _mm256_storeu_ps(ptr, v);
+    }
+};
+
+template <bool is_symmetric, bool is_inplace>
 static void internal_convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels,
                                                    const unsigned n_times, const unsigned dim_stride, float *output,
                                                    Kernel &kernel)
 {
+    typedef typename std::conditional<is_inplace, AVXAligned, AVXUnAligned>::type AVXWrapper;
+
     const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
 
     float *tmp = NULL;
-    int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels);
+    if (is_inplace) {
+        int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels);
 
-    if (res < 0 || tmp == NULL)
-        throw std::runtime_error("posix_memalign failed.");
+        if (res < 0 || tmp == NULL)
+            throw std::runtime_error("posix_memalign failed.");
+    }
 
     for (unsigned int dim = 0; dim < n_times; ++dim) {
         // take next line of pixels
         float *cur_output = output + dim * dim_stride;
 
         unsigned int j;
-        for (j = 0; j < (n_pixels & ~7); j += 8)
-            _mm256_store_ps(tmp + j, _mm256_loadu_ps(input + dim * dim_stride + j));
-        for (; j < n_pixels; ++j)
-            tmp[j] = input[dim * dim_stride + j];
+        if (is_inplace) {
+            for (j = 0; j < (n_pixels & ~7); j += 8)
+                AVXWrapper::store(tmp + j, _mm256_loadu_ps(input + dim * dim_stride + j));
+            for (; j < n_pixels; ++j)
+                tmp[j] = input[dim * dim_stride + j];
+        } else {
+            tmp = (float *)input + dim * dim_stride;
+        }
 
         // this function is only used for small kernels (<25 pixel)
         // such that non-vectorized code can be used for the border
@@ -61,10 +95,10 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         // working on 32 pixels at the same time leads to a fully used ymm register bank
         for (; i < avx_end; i += 32) {
             // load next 32 pixels
-            __m256 result0 = _mm256_load_ps(tmp + i);
-            __m256 result1 = _mm256_load_ps(tmp + i + 8);
-            __m256 result2 = _mm256_load_ps(tmp + i + 16);
-            __m256 result3 = _mm256_load_ps(tmp + i + 24);
+            __m256 result0 = AVXWrapper::load(tmp + i);
+            __m256 result1 = AVXWrapper::load(tmp + i + 8);
+            __m256 result2 = AVXWrapper::load(tmp + i + 16);
+            __m256 result3 = AVXWrapper::load(tmp + i + 24);
 
             // multiply current pixels with center value of kernel
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
@@ -74,8 +108,8 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
             result3 = _mm256_mul_ps(result3, kernel_val);
 
             // work on both sides of symmetric kernel simultaneously
-            for (unsigned int j = 0; j < half_kernel_len; ++j) {
-                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j + 1]);
+            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
+                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j]);
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
                 // image[i+j]) * kernel[j])
@@ -111,12 +145,12 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         // fast path for up to 24 pixels - only results in measureable speedup for small lines
         // where this is actually the bottleneck
         for (; i < avx_end_single; i += 8) {
-            __m256 result = _mm256_load_ps(tmp + i);
+            __m256 result = AVXWrapper::load(tmp + i);
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
             result = _mm256_mul_ps(result, kernel_val);
 
-            for (unsigned int j = 0; j < half_kernel_len; ++j) {
-                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j + 1]);
+            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
+                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j]);
                 __m256 pixels;
 
                 if (is_symmetric)
@@ -148,42 +182,50 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         }
     }
 
-    free(tmp);
+    if (is_inplace)
+        free(tmp);
 }
 
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
                                    const unsigned dim_stride, float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        internal_convolve_fir_inner_single_avx<true>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_avx<true, true>(input, n_pixels, n_times, dim_stride, output, kernel);
     else
-        internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_avx<false, true>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
 
-template <bool is_symmetric>
+template <bool is_symmetric, bool is_inplace>
 static void internal_convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels,
                                                    const unsigned int pixel_stride, const unsigned n_times,
                                                    float *output, Kernel &kernel)
 {
+    typedef typename std::conditional<is_inplace, AVXAligned, AVXUnAligned>::type AVXWrapper;
+
     const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int dim_avx_end = n_times & ~7;
     const unsigned int dim_left = n_times - dim_avx_end;
     const unsigned int pixels_avx_end = (n_pixels - kernel_len) & ~3;
 
-    const unsigned int n_pixels_aligned = n_pixels;
     float *tmp = NULL;
-    int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels_aligned * 8 * 4);
 
-    if (res < 0 || tmp == NULL)
-        throw std::runtime_error("posix_memalign failed.");
+    if (is_inplace) {
+        int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels * 8);
+
+        if (res < 0 || tmp == NULL)
+            throw std::runtime_error("posix_memalign failed.");
+    }
 
     unsigned int dim;
     for (dim = 0; dim < dim_avx_end; dim += 8) {
 
         unsigned int i = 0;
-        for (i = 0; i < n_pixels; ++i)
-            _mm256_store_ps(tmp + 8 * i, _mm256_loadu_ps(input + dim + i * pixel_stride));
+
+        if (is_inplace) {
+            for (i = 0; i < n_pixels; ++i)
+                _mm256_store_ps(tmp + 8 * i, _mm256_loadu_ps(input + dim + i * pixel_stride));
+        }
 
         i = 0;
         // left border - work on eight dimensions at once
@@ -201,7 +243,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     offset = i + kreal;
 
-                input_val = _mm256_load_ps(tmp + offset * 8);
+                input_val = AVXWrapper::load(tmp + offset * 8);
                 sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
             }
 
@@ -210,10 +252,10 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
 
         // work on four pixels in eight dimensions at once to fill the ymm register bank
         for (; i < pixels_avx_end; i += 4) {
-            __m256 result0 = _mm256_load_ps(tmp + i * 8);
-            __m256 result1 = _mm256_load_ps(tmp + (i + 1) * 8);
-            __m256 result2 = _mm256_load_ps(tmp + (i + 2) * 8);
-            __m256 result3 = _mm256_load_ps(tmp + (i + 3) * 8);
+            __m256 result0 = AVXWrapper::load(tmp + i * 8);
+            __m256 result1 = AVXWrapper::load(tmp + (i + 1) * 8);
+            __m256 result2 = AVXWrapper::load(tmp + (i + 2) * 8);
+            __m256 result3 = AVXWrapper::load(tmp + (i + 3) * 8);
 
             // multiply current pixels with center value of kernel
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
@@ -223,8 +265,8 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             result3 = _mm256_mul_ps(result3, kernel_val);
 
             // work on both sides of symmetric kernel simultaneously
-            for (unsigned int j = 0; j < half_kernel_len; ++j) {
-                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j + 1]);
+            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
+                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j]);
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
                 // image[i+j]) * kernel[j])
@@ -233,22 +275,22 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
 
                 if (is_symmetric) {
                     pixels0 =
-                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i - j + 0) * 8));
+                        _mm256_add_ps(AVXWrapper::load(tmp + (i + j + 0) * 8), AVXWrapper::load(tmp + (i - j + 0) * 8));
                     pixels1 =
-                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
+                        _mm256_add_ps(AVXWrapper::load(tmp + (i + j + 1) * 8), AVXWrapper::load(tmp + (i - j + 1) * 8));
                     pixels2 =
-                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 2) * 8), _mm256_load_ps(tmp + (i - j + 2) * 8));
+                        _mm256_add_ps(AVXWrapper::load(tmp + (i + j + 2) * 8), AVXWrapper::load(tmp + (i - j + 2) * 8));
                     pixels3 =
-                        _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
+                        _mm256_add_ps(AVXWrapper::load(tmp + (i + j + 3) * 8), AVXWrapper::load(tmp + (i - j + 3) * 8));
                 } else {
                     pixels0 =
-                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i - j + 0) * 8));
+                        _mm256_sub_ps(AVXWrapper::load(tmp + (i + j + 0) * 8), AVXWrapper::load(tmp + (i - j + 0) * 8));
                     pixels1 =
-                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
+                        _mm256_sub_ps(AVXWrapper::load(tmp + (i + j + 1) * 8), AVXWrapper::load(tmp + (i - j + 1) * 8));
                     pixels2 =
-                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 2) * 8), _mm256_load_ps(tmp + (i - j + 2) * 8));
+                        _mm256_sub_ps(AVXWrapper::load(tmp + (i + j + 2) * 8), AVXWrapper::load(tmp + (i - j + 2) * 8));
                     pixels3 =
-                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
+                        _mm256_sub_ps(AVXWrapper::load(tmp + (i + j + 3) * 8), AVXWrapper::load(tmp + (i - j + 3) * 8));
                 }
 
                 // multiply with kernel value and add to result
@@ -280,7 +322,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     offset = i + kreal;
 
-                input_val = _mm256_load_ps(tmp + offset * 8);
+                input_val = AVXWrapper::load(tmp + offset * 8);
 
                 sum = _mm256_fmadd_ps(input_val, kernel_val, sum);
             }
@@ -402,9 +444,9 @@ void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixe
                                    const unsigned n_times, float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        internal_convolve_fir_outer_single_avx<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single_avx<true, true>(input, n_pixels, pixel_stride, n_times, output, kernel);
     else
-        internal_convolve_fir_outer_single_avx<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single_avx<false, true>(input, n_pixels, pixel_stride, n_times, output, kernel);
 }
 
 } // namespace detail

@@ -15,16 +15,16 @@ inline void separableConvolveMultiArray(const vigra::MultiArrayView<ndim, float>
     float *outptr = output.data();
 
     if (ndim == 1) {
-        fastfilters::fir::convolve_fir_inner_single(inptr, input.size(), 1, input.size(), outptr, kernel);
+        fastfilters::fir::convolve_fir(inptr, input.size(), 1, 1, 1, outptr, kernel);
         return;
     }
 
-    // innermost dimension
+    // outermost dimension
     unsigned int n_times = 1;
-    for (unsigned int i = 0; i < ndim - 1; ++i)
-        n_times *= input.shape()[i];
-    fastfilters::fir::convolve_fir_inner_single(inptr, input.shape()[ndim - 1], n_times, input.shape()[ndim - 1],
-                                                outptr, kernel);
+    for (unsigned int j = 1; j < ndim; ++j) {
+        n_times *= input.shape()[j];
+    }
+    fastfilters::fir::convolve_fir(inptr, input.shape()[0], n_times, n_times, 1, outptr, kernel);
 
     if (ndim > 2) {
         for (unsigned int i = ndim - 2; i > 0; --i) {
@@ -43,13 +43,12 @@ inline void separableConvolveMultiArray(const vigra::MultiArrayView<ndim, float>
         }
     }
 
-    // outermost dimension
+    // innermost dimension
     n_times = 1;
-    for (unsigned int j = 1; j < ndim; ++j) {
-        n_times *= input.shape()[j];
-    }
-
-    fastfilters::fir::convolve_fir(outptr, input.shape()[0], n_times, n_times, 1, outptr, kernel);
+    for (unsigned int i = 0; i < ndim - 1; ++i)
+        n_times *= input.shape()[i];
+    fastfilters::fir::convolve_fir(outptr, input.shape()[ndim - 1], 1, n_times, input.shape()[ndim - 1], outptr,
+                                   kernel);
 }
 
 } // namespace fastfilters

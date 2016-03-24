@@ -20,7 +20,7 @@ template <unsigned ndim> void run_test()
     fastfilters::fir::Kernel ff_kernel(true, kernel_values);
 
     for (unsigned int i = 0; i < ndim; ++i)
-        shape[i] = ceil(pow(10000000, 1 / ((float)ndim)));
+        shape[i] = ceil(pow(1000000, 1 / ((float)ndim)));
 
     std::cout << "Running speed test in " << ndim << " dimensions with len " << shape[0] << "\n";
 
@@ -63,5 +63,5 @@ int main()
     run_test<3>();
     run_test<4>();
     run_test<5>();
-    return -1;
+    return 0;
 }
