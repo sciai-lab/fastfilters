@@ -168,10 +168,11 @@ def build(bld):
 		features='avx2',
 		uselib  = 'cxxshlib')
 
-	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx")
+	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx", name="fastfilters_shared")
+	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx", name="fastfilters_static")
 
 	if not bld.env.python_disable:
-		bld.shlib(features='pyext', source=sources_python, target='pyfastfilters', use="fastfilters")
+		bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
 
 	if not bld.env.tests_disable:
 		tests_common = bld.path.ant_glob("tests/*.bin")
@@ -182,20 +183,20 @@ def build(bld):
 		tests_opencv = ["opencv.cxx"]
 
 		for test in tests:
-			bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters")
+			bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters_shared")
 
 
 		if 'CXXFLAGS_AVX2_FMA_CPU' in bld.env.keys():
 			for test in tests_avx:
-				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 			if not bld.env.vigra_disable:
 				for test in tests_vigra:
-					bld.program(features='cxx test vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+					bld.program(features='cxx test vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 			if not bld.env.opencv_disable:
 				for test in tests_opencv:
-					bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters")
+					bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)

@@ -38,15 +38,15 @@ static py::array_t<float> iir_filter(fastfilters::iir::Coefficients &coefs, py::
     return result;
 }
 
-PYBIND11_PLUGIN(pyfastfilters)
+PYBIND11_PLUGIN(fastfilters)
 {
-    py::module m("pyfastfilters", "fast gaussian kernel and derivative filters");
+    py::module m("fastfilters", "fast gaussian kernel and derivative filters");
 
     py::class_<fastfilters::iir::Coefficients>(m, "IIRCoefficients")
         .def(py::init<const double, const unsigned int>())
         .def("__repr__", [](const fastfilters::iir::Coefficients &a) {
             std::ostringstream oss;
-            oss << "<pyfastfilters.IIRCoefficients with sigma = " << a.sigma << " and order = " << a.order << ">";
+            oss << "<fastfilters.IIRCoefficients with sigma = " << a.sigma << " and order = " << a.order << ">";
 
             return oss.str();
         })
@@ -57,7 +57,7 @@ PYBIND11_PLUGIN(pyfastfilters)
         .def(py::init<const bool, const std::vector<float>>())
         .def("__repr__", [](const fastfilters::fir::Kernel &a) {
             std::ostringstream oss;
-            oss << "<pyfastfilters.FIRKernel with symmetric = " << a.is_symmetric << " and length = " << a.len() << ">";
+            oss << "<fastfilters.FIRKernel with symmetric = " << a.is_symmetric << " and length = " << a.len() << ">";
 
             return oss.str();
         })
