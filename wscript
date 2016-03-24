@@ -64,7 +64,7 @@ def check_cxx11(self):
 
 @conf
 def check_vigra(self, includes=[]):
-	self.check(header_name='vigra/config_version.hxx', features='cxx', msg='Checking for vigra headers', mandatory=False, uselib_store='HAVE_VIGRA')
+	self.check(header_name='vigra/config_version.hxx', features='cxx', msg='Checking for vigra headers', includes=includes, uselib_store='HAVE_VIGRA')
 
 	self.check_cxx(
 		header_name='vigra/config_version.hxx',
@@ -85,7 +85,7 @@ def check_vigra(self, includes=[]):
 		execute=True,
 		uselib_store='VIGRA',
 		msg='Checking for VIGRA',
-		define_name='VIGRA_VERSION',
+		define_name='VIGRA_VERSION2',
 		includes=includes,
 		use='vigra',
 		var='have_vigra'
@@ -93,11 +93,11 @@ def check_vigra(self, includes=[]):
 
 @feature('vigra')
 def feature_vigra(self):
-	self.env.append_value('INCLUDES', self.env.INCLUDES_VIGRA)
+	self.env.append_value('INCPATHS', self.env.INCLUDES_VIGRA)
 
 @feature('opencv')
 def feature_opencv(self):
-	self.env.append_value('INCLUDES', self.env.INCLUDES_OPENCV)
+	self.env.append_value('INCPATHS', self.env.INCLUDES_OPENCV)
 	self.env.append_value('LIB', self.env.LIB_OPENCV)
 
 def options(opt):
@@ -190,13 +190,13 @@ def build(bld):
 			for test in tests_avx:
 				bld.program(features='cxx test', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
-			if not bld.env.vigra_disable:
-				for test in tests_vigra:
-					bld.program(features='cxx test vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
+		if not bld.env.vigra_disable:
+			for test in tests_vigra:
+				bld.program(features='cxx test vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
-			if not bld.env.opencv_disable:
-				for test in tests_opencv:
-					bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
+		if not bld.env.opencv_disable:
+			for test in tests_opencv:
+				bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test.summary)
