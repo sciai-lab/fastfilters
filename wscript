@@ -100,6 +100,44 @@ def feature_opencv(self):
 	self.env.append_value('INCPATHS', self.env.INCLUDES_OPENCV)
 	self.env.append_value('LIB', self.env.LIB_OPENCV)
 
+def waf_unit_test_summary(bld):
+	"""
+	Display an execution summary::
+		def build(bld):
+			bld(features='cxx cxxprogram test', source='main.c', target='app')
+			from waflib.Tools import waf_unit_test
+			bld.add_post_fun(waf_unit_test.summary)
+	"""
+	lst = getattr(bld, 'utest_results', [])
+	if lst:
+		Logs.pprint('CYAN', 'execution summary')
+
+		total = len(lst)
+		tfail = len([x for x in lst if x[1]])
+
+		Logs.pprint('CYAN', '  tests that pass %d/%d' % (total-tfail, total))
+		for (f, code, out, err) in lst:
+			if not code:
+				Logs.pprint('CYAN', '    %s' % f)
+				if out:
+					Logs.pprint('CYAN', '      stdout:')
+					Logs.pprint('NORMAL', '\n'.join(['        %s'%v for v in out.decode('utf-8').splitlines()]))
+				if err:
+					Logs.pprint('CYAN', '      stderr:')
+					Logs.pprint('NORMAL', '\n'.join(['        %s'%v for v in err.decode('utf-8').splitlines()]))
+
+		Logs.pprint('CYAN', '  tests that fail %d/%d' % (tfail, total))
+		for (f, code, out, err) in lst:
+			if code:
+				Logs.pprint('CYAN', '    %s' % f)
+				if out:
+					Logs.pprint('RED', '      stdout:')
+					Logs.pprint('RED', '\n'.join(['        %s'%v for v in out.decode('utf-8').splitlines()]))
+				if err:
+					Logs.pprint('RED', '      stderr:')
+					Logs.pprint('RED', '\n'.join(['        %s'%v for v in err.decode('utf-8').splitlines()]))
+
+
 def options(opt):
 	opt.load('compiler_cxx')
 	opt.load('python')
@@ -199,5 +237,5 @@ def build(bld):
 				bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		bld.options.all_tests = True
-		bld.add_post_fun(waf_unit_test.summary)
+		bld.add_post_fun(waf_unit_test_summary)
 		bld.add_post_fun(waf_unit_test.set_exit_code)
