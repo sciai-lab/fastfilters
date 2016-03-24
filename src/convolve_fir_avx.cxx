@@ -21,7 +21,6 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
     const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
-    ConstantVector<float> cur_input(n_pixels);
 
     float *tmp = NULL;
     int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels);
@@ -30,14 +29,13 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         throw std::runtime_error("posix_memalign failed.");
 
     for (unsigned int dim = 0; dim < n_times; ++dim) {
-
         // take next line of pixels
-        // const float *cur_input = input + ;
         float *cur_output = output + dim * dim_stride;
 
-        for (unsigned int j = 0; j < (n_pixels & ~7); j += 8)
+        unsigned int j;
+        for (j = 0; j < (n_pixels & ~7); j += 8)
             _mm256_store_ps(tmp + j, _mm256_loadu_ps(input + dim * dim_stride + j));
-        for (unsigned int j = (n_pixels & ~7); j < n_pixels; ++j)
+        for (; j < n_pixels; ++j)
             tmp[j] = input[dim * dim_stride + j];
 
         // this function is only used for small kernels (<25 pixel)
@@ -76,8 +74,8 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
             result3 = _mm256_mul_ps(result3, kernel_val);
 
             // work on both sides of symmetric kernel simultaneously
-            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
-                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j]);
+            for (unsigned int j = 0; j < half_kernel_len; ++j) {
+                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j + 1]);
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
                 // image[i+j]) * kernel[j])
@@ -117,8 +115,8 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
             __m256 kernel_val = _mm256_set1_ps(kernel[half_kernel_len]);
             result = _mm256_mul_ps(result, kernel_val);
 
-            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
-                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j]);
+            for (unsigned int j = 0; j < half_kernel_len; ++j) {
+                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j + 1]);
                 __m256 pixels;
 
                 if (is_symmetric)
@@ -225,8 +223,8 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
             result3 = _mm256_mul_ps(result3, kernel_val);
 
             // work on both sides of symmetric kernel simultaneously
-            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
-                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j]);
+            for (unsigned int j = 0; j < half_kernel_len; ++j) {
+                kernel_val = _mm256_set1_ps(kernel[half_kernel_len + j + 1]);
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
                 // image[i+j]) * kernel[j])
@@ -244,7 +242,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                         _mm256_add_ps(_mm256_load_ps(tmp + (i + j + 3) * 8), _mm256_load_ps(tmp + (i - j + 3) * 8));
                 } else {
                     pixels0 =
-                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i + j + 0) * 8));
+                        _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 0) * 8), _mm256_load_ps(tmp + (i - j + 0) * 8));
                     pixels1 =
                         _mm256_sub_ps(_mm256_load_ps(tmp + (i + j + 1) * 8), _mm256_load_ps(tmp + (i - j + 1) * 8));
                     pixels2 =
