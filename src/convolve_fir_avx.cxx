@@ -77,7 +77,6 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
             // work on both sides of symmetric kernel simultaneously
             for (unsigned int j = 1; j <= half_kernel_len; ++j) {
                 kernel_val = _mm256_broadcast_ss(&kernel.coefs[j]);
-                ;
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
                 // image[i+j]) * kernel[j])
@@ -120,7 +119,6 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
 
             for (unsigned int j = 1; j <= half_kernel_len; ++j) {
                 kernel_val = _mm256_broadcast_ss(&kernel.coefs[j]);
-                ;
                 __m256 pixels;
 
                 if (is_symmetric)
