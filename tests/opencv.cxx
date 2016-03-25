@@ -6,15 +6,16 @@
 
 void test()
 {
-    const unsigned int size = 3000;
+    const unsigned int size = 10000;
 
     std::vector<float> kel = {3, 2, 1, 0, 1, 2, 3};
+    std::vector<float> kel2 = {0, 1, 2, 3};
     cv::Mat M(size, size, CV_32F, cv::Scalar::all(0.0));
     cv::Mat M2(size, size, CV_32F, cv::Scalar::all(0.0));
     cv::Mat Nopencv(size, size, CV_32F, cv::Scalar::all(0.0));
     cv::Mat Nff(size, size, CV_32F, cv::Scalar::all(0.0));
     cv::Mat kernel(7, 1, CV_32F, cv::Scalar::all(0.0));
-    fastfilters::fir::Kernel kern(7, kel);
+    fastfilters::fir::Kernel kern(true, kel2);
 
     for (unsigned int i = 0; i < 7; ++i)
         kernel.at<float>(i, 0) = kel[i];
