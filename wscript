@@ -69,7 +69,7 @@ def check_cxx_flag(self, flag):
 		self.env.append_value('CXXFLAGS', [flag])
 
 @conf
-def check_vigra(self, includes=[]):
+def check_vigra(self, includes=None):
 	self.check(header_name='vigra/config_version.hxx', features='cxx', msg='Checking for vigra headers', includes=includes, uselib_store='HAVE_VIGRA')
 
 	self.check_cxx(
@@ -99,12 +99,16 @@ def check_vigra(self, includes=[]):
 
 @feature('vigra')
 def feature_vigra(self):
-	self.env.append_value('INCPATHS', self.env.INCLUDES_VIGRA)
+	if self.env.INCLUDES_VIGRA and len(self.env.INCLUDES_VIGRA) > 0:
+		self.env.append_value('INCPATHS', [i for i in self.env.INCLUDES_VIGRA if len(i) > 0])
 
 @feature('opencv')
 def feature_opencv(self):
-	self.env.append_value('INCPATHS', self.env.INCLUDES_OPENCV)
-	self.env.append_value('LIB', self.env.LIB_OPENCV)
+	if self.env.INCLUDES_OPENCV and len(self.env.INCLUDES_OPENCV) > 0:
+		self.env.append_value('INCPATHS', [i for i in self.env.INCLUDES_OPENCV if len(i) > 0])
+
+	if self.env.LIB_OPENCV:
+		self.env.append_value('LIB', self.env.LIB_OPENCV)
 
 def waf_unit_test_summary(bld):
 	"""
@@ -202,6 +206,8 @@ def configure(cfg):
 	cfg.env.tests_disable = cfg.options.tests_disable
 	cfg.env.vigra_disable = cfg.options.vigra_disable
 	cfg.env.opencv_disable = cfg.options.opencv_disable
+
+	cfg.write_config_header('include/config.h')
 
 def build(bld):
 	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_fir_nosimd.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
