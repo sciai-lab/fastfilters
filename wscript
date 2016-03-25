@@ -139,9 +139,12 @@ def waf_unit_test_summary(bld):
 
 
 def options(opt):
-	opt.load('compiler_cxx')
 	opt.load('python')
 	opt.load('waf_unit_test')
+	opt.load('compiler_cxx')
+
+	opt.add_option('--gxx', help=("Prefer g++ as compiler"), action='store_true', default=False, dest='gxx')
+	opt.add_option('--clang', help=("Prefer clang++ as compiler"), action='store_true', default=False, dest='clang')
 
 	opt.add_option('--disable-python', help=("Don't build python bindings."), action='store_true', default=False, dest='python_disable')
 	opt.add_option('--disable-tests', help=("Don't run tests."), action='store_true', default=False, dest='tests_disable')
@@ -154,7 +157,13 @@ def options(opt):
 	opt.add_option('--debug', help=("Compile with debug symbols."), action='store_true', default=False, dest='enable_debug')
 
 def configure(cfg):
-	cfg.load('compiler_cxx')
+	if cfg.options.clang:
+		cfg.load('clangxx')
+	elif cfg.options.gxx:
+		cfg.load('gxx')
+	else:
+		cfg.load('compiler_cxx')
+
 	cfg.load('waf_unit_test')
 
 	cfg.check_cxx11()
