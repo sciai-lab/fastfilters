@@ -17,6 +17,7 @@ addons:
    packages:
    - gcc-4.9
    - g++-4.9
+   - clang
 
 script:
   - git clone https://github.com/ukoethe/vigra.git
