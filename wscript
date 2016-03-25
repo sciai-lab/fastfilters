@@ -63,6 +63,12 @@ def check_cxx11(self):
 	self.check(msg='Checking for C++11 support', errmsg='Compiler does not support C++11.', features='cxx', cxxflags='-std=c++11')
 
 @conf
+def check_cxx_flag(self, flag):
+	res = self.check(msg='Checking if the compiler accepts the \'%s\' flag' % flag, mandatory=False, features='cxx', cxxflags=flag)
+	if res:
+		self.env.append_value('CXXFLAGS', [flag])
+
+@conf
 def check_vigra(self, includes=[]):
 	self.check(header_name='vigra/config_version.hxx', features='cxx', msg='Checking for vigra headers', includes=includes, uselib_store='HAVE_VIGRA')
 
@@ -173,6 +179,11 @@ def configure(cfg):
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
 
+	cfg.check_cxx_flag("-W")
+	cfg.check_cxx_flag("-Wall")
+	cfg.check_cxx_flag("-O3")
+	cfg.check_cxx_flag("/O2")
+
 	if not cfg.options.opencv_disable:
 		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='OPENCV', use='opencv')
 
@@ -182,7 +193,7 @@ def configure(cfg):
 		cfg.check_python_headers()
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
-	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-W', '-Wall', '-O3'])
+	cfg.env.append_value('CXXFLAGS', ['-std=c++11'])
 
 	if cfg.options.enable_debug:
 		cfg.env.append_value("CXXFLAGS", ['-g'])
