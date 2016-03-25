@@ -9,13 +9,6 @@ matrix:
       language: python
       python: "3.2"
 
-compiler:
-- clang
-- gcc
-
-install:
-- if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
-
 addons:
  apt:
    sources:
@@ -23,12 +16,11 @@ addons:
    packages:
    - gcc-4.9
    - g++-4.9
-   - clang
 
 script:
   - git clone https://github.com/ukoethe/vigra.git
   - cd vigra && git checkout a9961899dcbe7cd817d6211bda577af0fa6781e8 && cd ..
-  - ./waf configure --vigra-includes=`pwd`/vigra/include --without-opencv
+  - CXX=g++-4.9 ./waf configure --vigra-includes=`pwd`/vigra/include --without-opencv
   - ./waf
 
 after_failure:
