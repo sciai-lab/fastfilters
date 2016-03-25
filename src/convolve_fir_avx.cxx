@@ -1,5 +1,4 @@
 #include "fastfilters.hxx"
-#include "vector.hxx"
 
 #include <immintrin.h>
 #include <stdlib.h>
@@ -189,7 +188,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
     // left border
     for (unsigned pixel = 0; pixel < half_kernel_len; ++pixel) {
         const float *inptr = input + pixel * pixel_stride;
-        float *testptr = test + pixel * n_dims_aligned;
+        float *tmpptr = test + pixel * n_dims_aligned;
 
         unsigned dim;
         for (dim = 0; dim < dim_avx_end; dim += 8) {
@@ -213,7 +212,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_store_ps(testptr + dim, result);
+            _mm256_store_ps(tmpptr + dim, result);
         }
 
         if (dim_left > 0) {
@@ -239,14 +238,14 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_store_ps(testptr + dim, result);
+            _mm256_store_ps(tmpptr + dim, result);
         }
     }
 
     for (unsigned pixel = half_kernel_len; pixel < n_pixels - half_kernel_len; ++pixel) {
         const float *inptr = input + pixel * pixel_stride;
         const unsigned tmpidx = pixel % (half_kernel_len + 1);
-        float *testptr = test + tmpidx * n_dims_aligned;
+        float *tmpptr = test + tmpidx * n_dims_aligned;
 
         unsigned dim;
         for (dim = 0; dim < dim_avx_end; dim += 8) {
@@ -266,7 +265,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_store_ps(testptr + dim, result);
+            _mm256_store_ps(tmpptr + dim, result);
         }
 
         if (dim_left > 0) {
@@ -286,7 +285,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_store_ps(testptr + dim, result);
+            _mm256_store_ps(tmpptr + dim, result);
         }
 
         const unsigned writeidx = (pixel + 1) % (half_kernel_len + 1);
@@ -298,7 +297,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
     for (unsigned pixel = n_pixels - half_kernel_len; pixel < n_pixels; ++pixel) {
         const float *inptr = input + pixel * pixel_stride;
         const unsigned tmpidx = pixel % (half_kernel_len + 1);
-        float *testptr = test + tmpidx * n_dims_aligned;
+        float *tmpptr = test + tmpidx * n_dims_aligned;
 
         unsigned dim;
         for (dim = 0; dim < dim_avx_end; dim += 8) {
@@ -323,7 +322,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_store_ps(testptr + dim, result);
+            _mm256_store_ps(tmpptr + dim, result);
         }
 
         if (dim_left > 0) {
@@ -350,7 +349,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_store_ps(testptr + dim, result);
+            _mm256_store_ps(tmpptr + dim, result);
         }
 
         const unsigned writeidx = (pixel + 1) % (half_kernel_len + 1);

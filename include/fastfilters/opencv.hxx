@@ -8,7 +8,7 @@
 namespace fastfilters
 {
 
-__attribute__((noinline)) void sepFilter2D(cv::Mat &in, cv::Mat &out, fir::Kernel &kx, fir::Kernel &ky)
+void sepFilter2D(cv::Mat &in, cv::Mat &out, fir::Kernel &kx, fir::Kernel &ky)
 {
 #if 0
     if (in.dims != 2)
