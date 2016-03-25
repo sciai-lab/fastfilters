@@ -1,9 +1,14 @@
 os: linux
 sudo: false
 language: python
+
+compiler:
+  - clang
+  - gcc
 python:
   - "2.7"
   - "3.4"
+
 
 addons:
  apt:
@@ -16,7 +21,8 @@ addons:
 script:
   - git clone https://github.com/ukoethe/vigra.git
   - cd vigra && git checkout a9961899dcbe7cd817d6211bda577af0fa6781e8 && cd ..
-  - CXX=g++-4.9 ./waf configure --vigra-includes=`pwd`/vigra/include --without-opencv
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+  - ./waf configure --vigra-includes=`pwd`/vigra/include --without-opencv
   - ./waf
 
 after_failure:
