@@ -1,5 +1,11 @@
 #include "fastfilters.hxx"
 
+#include "config.h"
+
+#if defined(HAVE_XGETBV) || defined(HAVE_CPUIDEX)
+#include <intrin.h>
+#endif
+
 namespace fastfilters
 {
 
@@ -10,68 +16,78 @@ enum avx_status_t { AVX_STATUS_UNKNOWN = 0, AVX_STATUS_UNSUPPORTED, AVX_STATUS_S
 
 static avx_status_t avx_status = AVX_STATUS_UNKNOWN;
 
-static bool internal_cpu_has_avx2()
-{
-// safeguard because we're not allowed to clobber EBX under 32-bit PIC
-// but this code should never be compiled in 32bit mode anyways
-#if defined(__i386__)
-#error "avx code compiled in 32bit mode"
-    return false;
-#else
+#if defined(HAVE_GNU_CPU_SUPPORTS)
 
-#if defined(__GNUC__) && defined(__GNUC_MINOR__) && __GNUC_MINOR__ >= 8
+static inline bool internal_cpu_has_avx2()
+{
     if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
         return true;
     else
         return false;
-#else
+}
+
+#elif defined(HAVE_XGETBV) && defined(HAVE_CPUIDEX)
+
+static inline bool internal_cpu_has_avx2()
+{
     // check for CPU AVX2 support: CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
     unsigned int avxflag;
-
     // check for CPU FMA support: CPUID.(EAX=01H, ECX=0H):ECX.FMA[bit 12]==1
     unsigned int fmaflag;
 
-#if defined(_MSC_VER)
     int cpuid[4];
     __cpuidex(cpuid, 7, 0);
     avxflag = cpuid[1];
     __cpuidex(cpuid, 1, 0);
     fmaflag = cpuid[2];
-#else
-    unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
-    eax = 7;
-    ecx = 0;
-    __asm__("cpuid" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx));
-    avxflag = ebx;
-
-    eax = 1;
-    ecx = 0;
-    __asm__("cpuid" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx));
-    fmaflag = ecx;
-#endif // !defined(_MSC_VER)
 
     if ((avxflag & (1 << 5)) != (1 << 5))
         return false;
     if ((fmaflag & (1 << 12)) != (1 << 12))
         return false;
 
+    unsigned int xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+
     // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
-    unsigned int xcr0;
-
-#if defined(_MSC_VER)
-    xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-#else
-    __asm__("xgetbv" : "=a"(xcr0) : "c"(0) : "%edx");
-#endif
-
     if (((xcr0 & 6) != 6))
         return false;
     return true;
-#endif // !(defined(__GNUC__) && defined(__GNUC_MINOR__) && __GNUC_MINOR__ >=
-// 8)
-
-#endif // defined(__i386__)
 }
+
+#elif defined(HAVE_INLINE_ASM)
+
+static inline bool internal_cpu_has_avx2()
+{
+    unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
+
+    // check for CPU AVX2 support: CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
+    unsigned int avxflag;
+    eax = 7;
+    ecx = 0;
+    __asm__("cpuid" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx));
+    avxflag = ebx;
+    if ((avxflag & (1 << 5)) != (1 << 5))
+        return false;
+
+    // check for CPU FMA support: CPUID.(EAX=01H, ECX=0H):ECX.FMA[bit 12]==1
+    unsigned int fmaflag;
+    eax = 1;
+    ecx = 0;
+    __asm__("cpuid" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx));
+    fmaflag = ecx;
+    if ((fmaflag & (1 << 12)) != (1 << 12))
+        return false;
+
+    // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
+    unsigned int xcr0;
+    __asm__("xgetbv" : "=a"(xcr0) : "c"(0) : "%edx");
+    if (((xcr0 & 6) != 6))
+        return false;
+    return true;
+}
+#else
+#error "No known way to test for runtime AVX2 support!"
+#endif
 
 bool cpu_has_avx2()
 {

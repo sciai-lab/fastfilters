@@ -62,6 +62,87 @@ def check_cpu_avx2(self):
 def check_cxx11(self):
 	self.check(msg='Checking for C++11 support', errmsg='Compiler does not support C++11.', features='cxx', cxxflags='-std=c++11')
 
+TEST_BUILTIN_CPU_SUPPORTS = '''
+    #include <stdio.h>
+    int main()
+    {
+        return __builtin_cpu_supports("avx2");
+    }'''
+
+@conf
+def check_builtin_cpu_supports(self):
+	self.check_cxx(msg='Checking if the compiler supports \'__builtin_cpu_supports\'', mandatory=False, features='cxx', define_name='HAVE_GNU_CPU_SUPPORTS', fragment=TEST_BUILTIN_CPU_SUPPORTS)
+
+TEST_INLINE_ASM = '''
+    #include <stdio.h>
+    int main()
+    {
+        unsigned int xcr0;
+        __asm__("xgetbv" : "=a"(xcr0) : "c"(0) : "%edx");
+        return xcr0;
+    }
+'''
+@conf
+def check_inline_asm(self):
+	self.check_cxx(msg='Checking if the compiler support inline assembly', mandatory=False, features='cxx', define_name='HAVE_INLINE_ASM', fragment=TEST_INLINE_ASM)
+
+
+
+TEST_CPUIDEX = '''
+    #include <stdio.h>
+    #include <intrin.h>
+    int main()
+    {
+        int cpuid[4];
+        __cpuidex(cpuid, 7, 0);
+        return cpuid[0];
+    }
+'''
+
+@conf
+def check_cpuidex(self):
+	self.check_cxx(header_name='intrin.h', msg='Checking if the compiler support \'_xgetbv\'', mandatory=False, features='cxx', define_name='HAVE_CPUIDEX', fragment=TEST_CPUIDEX)
+
+TEST_XGETBV = '''
+    #include <stdio.h>
+    #include <intrin.h>
+    int main()
+    {
+        unsigned int xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+        return xcr0;
+    }
+'''
+@conf
+def check_xgetbv(self):
+	self.check_cxx(header_name='intrin.h', msg='Checking if the compiler support \'__cpuidex\'', mandatory=False, features='cxx', define_name='HAVE_XGETBV', fragment=TEST_XGETBV)
+
+TEST_POSIX_MEMALIGN = '''
+    #include <stdlib.h>
+    int main()
+    {
+        void *ptr;
+        posix_memalign(&ptr, 32, 1024);
+        return 0;
+    }
+'''
+@conf
+def check_posix_memalign(self):
+	self.check_cxx(header_name='stdlib.h', msg='Checking if the \'posix_memalign\' function exists.', mandatory=False, features='cxx', define_name='HAVE_POSIX_MEMALIGN', fragment=TEST_POSIX_MEMALIGN)
+
+TEST_ALIGNED_MALLOC = '''
+    #include <malloc.h>
+    int main()
+    {
+        void *ptr = _aligned_malloc(1024, 32);
+        _aligned_free(ptr);
+        return 0;
+    }
+'''
+@conf
+def check_aligned_malloc(self):
+	self.check_cxx(header_name='malloc.h', msg='Checking if the \'_aligned_malloc/free\' functions exist', mandatory=False, features='cxx', define_name='HAVE_ALIGNED_MALLOC', fragment=TEST_ALIGNED_MALLOC)
+
+
 @conf
 def check_cxx_flag(self, flag):
 	res = self.check(msg='Checking if the compiler accepts the \'%s\' flag' % flag, mandatory=False, features='cxx', cxxflags=flag)
@@ -70,8 +151,6 @@ def check_cxx_flag(self, flag):
 
 @conf
 def check_vigra(self, includes=None):
-	self.check(header_name='vigra/config_version.hxx', features='cxx', msg='Checking for vigra headers', includes=includes, uselib_store='HAVE_VIGRA')
-
 	self.check_cxx(
 		header_name='vigra/config_version.hxx',
 		fragment='''
@@ -91,7 +170,7 @@ def check_vigra(self, includes=None):
 		execute=True,
 		uselib_store='VIGRA',
 		msg='Checking for VIGRA',
-		define_name='VIGRA_VERSION2',
+		define_name='HAVE_VIGRA',
 		includes=includes,
 		use='vigra',
 		var='have_vigra'
@@ -180,13 +259,20 @@ def configure(cfg):
 	cfg.check_avx2()
 	cfg.check_cpu_avx2()
 
-	if not cfg.options.vigra_disable:
-		cfg.check_vigra([cfg.options.vigra_incdir])
+	cfg.check_builtin_cpu_supports()
+	cfg.check_inline_asm()
+	cfg.check_xgetbv()
+	cfg.check_cpuidex()
+	cfg.check_posix_memalign()
+	cfg.check_aligned_malloc()
 
 	cfg.check_cxx_flag("-W")
 	cfg.check_cxx_flag("-Wall")
 	cfg.check_cxx_flag("-O3")
 	cfg.check_cxx_flag("/O2")
+
+	if not cfg.options.vigra_disable:
+		cfg.check_vigra([cfg.options.vigra_incdir])
 
 	if not cfg.options.opencv_disable:
 		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='OPENCV', use='opencv')
