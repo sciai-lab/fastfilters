@@ -1,0 +1,8 @@
+version: 1.0.{build}
+platform: x64
+image: Visual Studio 2015
+build_script:
+- cmd: >-
+    python waf-1.8.20 configure --without-vigra --without-opencv --disable-python
+
+    python waf-1.8.20

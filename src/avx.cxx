@@ -32,7 +32,7 @@ static bool internal_cpu_has_avx2()
     unsigned int fmaflag;
 
 #if defined(_MSC_VER)
-    unsigned int cpuid[4];
+    int cpuid[4];
     __cpuidex(cpuid, 7, 0);
     avxflag = cpuid[1];
     __cpuidex(cpuid, 1, 0);
@@ -57,7 +57,12 @@ static bool internal_cpu_has_avx2()
 
     // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
     unsigned int xcr0;
+
+#if defined(_MSC_VER)
+    xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+#else
     __asm__("xgetbv" : "=a"(xcr0) : "c"(0) : "%edx");
+#endif
 
     if (((xcr0 & 6) != 6))
         return false;
