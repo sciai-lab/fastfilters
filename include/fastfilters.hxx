@@ -1,6 +1,10 @@
 #ifndef FASTFILTERS_HXX
 #define FASTFILTERS_HXX
 
+#if defined(_MSC_VER)
+#pragma warning (disable : 4251)
+#endif
+
 #include <array>
 #include <vector>
 
@@ -20,7 +24,10 @@
 #define FASTFILTERS_EXPIMP_TEMPLATE
 #endif
 
+
+#if defined(_MSC_VER)
 FASTFILTERS_EXPIMP_TEMPLATE template class FASTFILTERS_API_EXPORT std::vector<float>;
+#endif
 
 namespace fastfilters
 {
