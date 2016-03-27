@@ -24,7 +24,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
 
-    float *tmp = (float *)detail::avx_memalign(n_pixels*sizeof(float));
+    float *tmp = (float *)detail::avx_memalign(n_pixels * sizeof(float));
 
     for (unsigned int dim = 0; dim < n_times; ++dim) {
         // take next line of pixels

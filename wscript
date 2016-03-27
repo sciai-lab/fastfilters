@@ -226,7 +226,6 @@ def waf_unit_test_summary(bld):
 					Logs.pprint('RED', '      stderr:')
 					Logs.pprint('RED', '\n'.join(['        %s'%v for v in err.decode('utf-8').splitlines()]))
 
-
 def options(opt):
 	opt.load('python')
 	opt.load('waf_unit_test')
@@ -256,6 +255,8 @@ def configure(cfg):
 	cfg.load('waf_unit_test')
 
 	cfg.check_cxx11()
+	cfg.check_library(mode='cxx')
+
 	cfg.check_avx2()
 	cfg.check_cpu_avx2()
 
@@ -266,10 +267,15 @@ def configure(cfg):
 	cfg.check_posix_memalign()
 	cfg.check_aligned_malloc()
 
-	cfg.check_cxx_flag("-W")
-	cfg.check_cxx_flag("-Wall")
-	cfg.check_cxx_flag("-O3")
-	cfg.check_cxx_flag("/O2")
+
+
+	if 'msvc' in (cfg.env.CC_NAME, cfg.env.CXX_NAME):
+		cfg.check_cxx_flag("/O2")
+		cfg.check_cxx_flag("/W4")
+	else:
+		cfg.check_cxx_flag("-W")
+		cfg.check_cxx_flag("-Wall")
+		cfg.check_cxx_flag("-O3")
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
@@ -284,6 +290,8 @@ def configure(cfg):
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
 	cfg.env.append_value('CXXFLAGS', ['-std=c++11'])
+	cfg.env.append_value('CXXFLAGS_cxxshlib', ['-DFASTFILTERS_SHARED_LIBRARY=1'])
+	cfg.env.append_value('CXXFLAGS_cxxstlib', ['-DFASTFILTERS_STATIC_LIBRARY=1'])
 
 	if cfg.options.enable_debug:
 		cfg.env.append_value("CXXFLAGS", ['-g'])
@@ -317,9 +325,24 @@ def build(bld):
 		target  = 'objs_avx',
 		features='avx2',
 		uselib  = 'cxxshlib')
+	bld.objects(
+		source  = sources_noavx,
+		target  = 'objs_st_noavx',
+		uselib  = 'cxxstlib')
+	bld.objects(
+		source  = sources_avx,
+		target  = 'objs_st_avx',
+		features='avx2',
+		uselib  = 'cxxstlib')
 
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx", name="fastfilters_shared")
-	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx", name="fastfilters_static")
+
+	if 'msvc' in (bld.env.CC_NAME, bld.env.CXX_NAME):
+		static_name = 'fastfilters_static'
+	else:
+		static_name = 'fastfilters'
+
+	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target=static_name, use="objs_st_avx objs_st_noavx", name="fastfilters_static")
 
 	if not bld.env.python_disable:
 		bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")

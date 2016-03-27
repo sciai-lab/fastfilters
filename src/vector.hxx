@@ -34,5 +34,4 @@ template <typename T> class ConstantVector
     T *ptr;
 };
 
-
 #endif

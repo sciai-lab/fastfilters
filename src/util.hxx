@@ -33,8 +33,7 @@ static inline void *avx_memalign(std::size_t len)
 #endif
 }
 
-template<typename T>
-static inline void avx_free(T *ptr)
+template <typename T> static inline void avx_free(T *ptr)
 {
 #ifdef HAVE_POSIX_MEMALIGN
     free(ptr);
@@ -44,7 +43,6 @@ static inline void avx_free(T *ptr)
 #error "No known way to free aligned memory."
 #endif
 }
-
 }
 }
 

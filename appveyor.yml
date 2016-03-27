@@ -5,7 +5,4 @@ build_script:
 - cmd: >-
     python waf-1.8.20 configure --without-vigra --without-opencv --disable-python
 
-    python waf-1.8.20 -v
-
-on_failure:
- - type build\config.log
+    python waf-1.8.20
