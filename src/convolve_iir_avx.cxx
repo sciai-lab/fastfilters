@@ -1,5 +1,6 @@
 #include "fastfilters.hxx"
 #include "vector.hxx"
+#include "util.hxx"
 
 #include <immintrin.h>
 #include <stdlib.h>
@@ -31,11 +32,7 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
         mm_d[i] = _mm256_set1_ps(-coefs.d[i]);
     }
 
-    float *tmp = NULL;
-    int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels * 8);
-
-    if (res < 0 || tmp == NULL)
-        throw std::runtime_error("posix_memalign failed.");
+    float *tmp = (float *)detail::avx_memalign(sizeof(float) * n_pixels * 8);
 
     for (unsigned int dim = 0; dim < n_times_avx; dim += 8) {
         __m256 prev_in0, prev_in1, prev_in2, prev_in3;
@@ -184,7 +181,7 @@ void convolve_iir_inner_single_avx(const float *input, const unsigned int n_pixe
     optimized_convolve_iir_inner_single_noavx(input + n_times_avx * n_pixels, n_pixels, n_times_normal,
                                               output + n_times_avx * n_pixels, coefs);
 
-    free(tmp);
+    detail::avx_free(tmp);
 }
 
 void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
@@ -197,11 +194,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
     const unsigned n_times_avx = n_times & ~7;
     const unsigned n_times_normal = n_times - n_times_avx;
 
-    float *tmp = NULL;
-    int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels * 8);
-
-    if (res < 0 || tmp == NULL)
-        throw std::runtime_error("posix_memalign failed.");
+    float *tmp = (float *)detail::avx_memalign(sizeof(float) * n_pixels * 8);
 
     for (unsigned int i = 0; i < 4; ++i) {
         mm_n_causal[i] = _mm256_set1_ps(coefs.n_causal[i]);
@@ -332,7 +325,7 @@ void convolve_iir_outer_single_avx(const float *input, const unsigned int n_pixe
     optimized_convolve_iir_outer_single_noavx(input + n_times_avx, n_pixels, n_times_normal, output + n_times_avx,
                                               coefs, n_times);
 
-    free(tmp);
+    detail::avx_free(tmp);
 }
 
 } // namespace detail

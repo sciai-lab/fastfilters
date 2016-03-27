@@ -1,4 +1,5 @@
 #include "fastfilters.hxx"
+#include "util.hxx"
 
 #include <immintrin.h>
 #include <stdlib.h>
@@ -23,11 +24,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
 
-    float *tmp = NULL;
-    int res = posix_memalign((void **)&tmp, 32, sizeof(float) * n_pixels);
-
-    if (res < 0 || tmp == NULL)
-        throw std::runtime_error("posix_memalign failed.");
+    float *tmp = (float *)detail::avx_memalign(n_pixels*sizeof(float));
 
     for (unsigned int dim = 0; dim < n_times; ++dim) {
         // take next line of pixels
@@ -150,7 +147,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
         }
     }
 
-    free(tmp);
+    detail::avx_free(tmp);
 }
 
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
@@ -176,11 +173,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                                           dim_left >= 5 ? 0xffffffff : 0, dim_left >= 4 ? 0xffffffff : 0,
                                           dim_left >= 3 ? 0xffffffff : 0, dim_left >= 2 ? 0xffffffff : 0, 0xffffffff);
 
-    float *test = NULL;
-    int res = posix_memalign((void **)&test, 32, n_dims_aligned * sizeof(float) * (half_kernel_len + 1));
-
-    if (res < 0 || test == NULL)
-        throw std::runtime_error("posix_memalign failed.");
+    float *test = (float *)detail::avx_memalign(n_dims_aligned * sizeof(float) * (half_kernel_len + 1));
 
     // left border
     for (unsigned pixel = 0; pixel < half_kernel_len; ++pixel) {
@@ -361,7 +354,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
         memcpy(output + (pixel - half_kernel_len) * pixel_stride, writeptr, n_times * sizeof(float));
     }
 
-    free(test);
+    detail::avx_free(test);
 }
 
 void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
