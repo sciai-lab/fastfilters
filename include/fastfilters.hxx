@@ -7,14 +7,20 @@
 #if defined(_MSC_VER)
 #if defined(FASTFILTERS_SHARED_LIBRARY)
 #define FASTFILTERS_API_EXPORT __declspec(dllexport)
+#define FASTFILTERS_EXPIMP_TEMPLATE
 #elif defined(FASTFILTERS_STATIC_LIBRARY)
 #define FASTFILTERS_API_EXPORT
+#define FASTFILTERS_EXPIMP_TEMPLATE
 #else
 #define FASTFILTERS_API_EXPORT __declspec(dllimport)
+#define FASTFILTERS_EXPIMP_TEMPLATE extern
 #endif
 #else
 #define FASTFILTERS_API_EXPORT
+#define FASTFILTERS_EXPIMP_TEMPLATE
 #endif
+
+FASTFILTERS_EXPIMP_TEMPLATE template class FASTFILTERS_API_EXPORT std::vector<float>;
 
 namespace fastfilters
 {
