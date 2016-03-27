@@ -2,7 +2,10 @@ version: 1.0.{build}
 platform: x64
 image: Visual Studio 2015
 build_script:
-- cmd: >-
-    python waf-1.8.20 configure --without-vigra --without-opencv --disable-python
-
-    python waf-1.8.20
+- git clone https://github.com/ukoethe/vigra.git
+- cd vigra
+- git checkout a9961899dcbe7cd817d6211bda577af0fa6781e8
+- SET vigradir=%cd%\\include
+- cd ..
+- python waf-1.8.20 configure --vigra-includes=%vigradir% --without-opencv --disable-python
+- python waf-1.8.20
