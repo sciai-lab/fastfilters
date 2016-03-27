@@ -272,6 +272,7 @@ def configure(cfg):
 	if 'msvc' in (cfg.env.CC_NAME, cfg.env.CXX_NAME):
 		cfg.check_cxx_flag("/O2")
 		cfg.check_cxx_flag("/W4")
+		cfg.check_cxx_flag('/EHsc')
 	else:
 		cfg.check_cxx_flag("-W")
 		cfg.check_cxx_flag("-Wall")
