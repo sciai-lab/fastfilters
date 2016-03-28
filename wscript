@@ -66,12 +66,13 @@ TEST_BUILTIN_CPU_SUPPORTS = '''
     #include <stdio.h>
     int main()
     {
-        return __builtin_cpu_supports("avx2");
+        return %s;
     }'''
 
 @conf
-def check_builtin_cpu_supports(self):
-	self.check_cxx(msg='Checking if the compiler supports \'__builtin_cpu_supports\'', mandatory=False, features='cxx', define_name='HAVE_GNU_CPU_SUPPORTS', fragment=TEST_BUILTIN_CPU_SUPPORTS)
+def check_builtin_cpu_supports(self, flags=['avx2', 'fma']):
+	chk = " && " . join(['__builtin_cpu_supports("%s")' % f for f in flags])
+	self.check_cxx(msg='Checking if the compiler supports \'__builtin_cpu_supports\'', mandatory=False, features='cxx', define_name='HAVE_GNU_CPU_SUPPORTS', fragment=TEST_BUILTIN_CPU_SUPPORTS % chk)
 
 TEST_INLINE_ASM = '''
     #include <stdio.h>
