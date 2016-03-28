@@ -16,6 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #include "fastfilters.hxx"
+#include "convolve_fir.hxx"
 
 namespace fastfilters
 {
@@ -25,7 +26,9 @@ namespace fir
 void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times,
                                const unsigned int dim_stride, float *output, Kernel &kernel)
 {
-    if (detail::cpu_has_avx2())
+    if (detail::cpu_has_avx_fma())
+        convolve_fir_inner_single_avx_fma(input, n_pixels, n_times, dim_stride, output, kernel);
+    else if(detail::cpu_has_avx())
         convolve_fir_inner_single_avx(input, n_pixels, n_times, dim_stride, output, kernel);
     else
         convolve_fir_inner_single_noavx(input, n_pixels, n_times, dim_stride, output, kernel);
@@ -34,7 +37,9 @@ void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, 
 void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
                                const unsigned n_times, const unsigned int dim_stride, float *output, Kernel &kernel)
 {
-    if (detail::cpu_has_avx2() && dim_stride == 1)
+    if (detail::cpu_has_avx_fma() && dim_stride == 1)
+        convolve_fir_outer_single_avx_fma(input, n_pixels, pixel_stride, n_times, output, kernel);
+    else if (detail::cpu_has_avx() && dim_stride == 1)
         convolve_fir_outer_single_avx(input, n_pixels, pixel_stride, n_times, output, kernel);
     else
         convolve_fir_outer_single_noavx(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);

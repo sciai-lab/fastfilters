@@ -18,11 +18,6 @@
 #include "fastfilters.hxx"
 
 #include "config.h"
-
-#if defined(HAVE_XGETBV) || defined(HAVE_CPUIDEX)
-#include <intrin.h>
-#endif
-
 #include "cpuid.hxx"
 #include "xgetbv.hxx"
 
@@ -163,10 +158,21 @@ bool cpu_has_avx2()
 {
     query_cpu_features();
 
-    if (cpu_status == CPU_STATUS_AVX2)
-        return true;
-    else
-        return false;
+    return supports_avx2;
+}
+
+bool cpu_has_avx()
+{
+    query_cpu_features();
+
+    return supports_avx;
+}
+
+bool cpu_has_avx_fma()
+{
+    query_cpu_features();
+
+    return supports_fma;
 }
 
 } // namespace detail

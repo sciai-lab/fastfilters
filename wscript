@@ -203,7 +203,8 @@ def configure(cfg):
 
 def build(bld):
 	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_fir_nosimd.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
-	sources_avx = ["src/convolve_iir_avx.cxx", "src/convolve_fir_avx.cxx"]
+	sources_avx = ["src/convolve_fir_avx.cxx"]
+	sources_avx_fma = ["src/convolve_iir_avx.cxx", "src/convolve_fir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]
 
 	TaskGen.declare_chain(
@@ -221,7 +222,12 @@ def build(bld):
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_avx',
-		uselib  = 'cxxshlib cpu_avx2 cpu_fma')
+		uselib  = 'cxxshlib cpu_avx')
+	bld.objects(
+		source  = sources_avx_fma,
+		target  = 'objs_avx_fma',
+		uselib  = 'cxxshlib cpu_avx cpu_fma')
+
 	bld.objects(
 		source  = sources_noavx,
 		target  = 'objs_st_noavx',
@@ -229,16 +235,20 @@ def build(bld):
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_st_avx',
-		uselib  = 'cxxstlib cpu_avx2 cpu_fma')
+		uselib  = 'cxxstlib cpu_avx')
+	bld.objects(
+		source  = sources_avx,
+		target  = 'objs_st_avx_fma',
+		uselib  = 'cxxstlib cpu_avx cpu_fma')
 
-	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_noavx", name="fastfilters_shared")
+	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_avx_fma objs_noavx", name="fastfilters_shared")
 
 	if 'msvc' in (bld.env.CC_NAME, bld.env.CXX_NAME):
 		static_name = 'fastfilters_static'
 	else:
 		static_name = 'fastfilters'
 
-	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target=static_name, use="objs_st_avx objs_st_noavx", name="fastfilters_static")
+	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target=static_name, use="objs_st_avx objs_st_avx_fma objs_st_noavx", name="fastfilters_static")
 
 	if not bld.env.python_disable:
 		bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
@@ -246,7 +256,7 @@ def build(bld):
 	if not bld.env.tests_disable:
 		tests_common = bld.path.ant_glob("tests/*.bin")
 
-		tests = ["iir.cxx"]
+		tests = []#["iir.cxx"]
 		tests_vigra = ["vigra.cxx"]
 		tests_opencv = ["opencv.cxx"]
 

@@ -25,6 +25,23 @@
 #include <iostream>
 #include <string.h>
 
+#if defined(__FMA__)
+
+static inline __m256 _wrap_mm256_fmadd_ps(__m256 a, __m256 b, __m256 c)
+{
+    return _mm256_fmadd_ps(a, b, c);
+}
+
+#else
+
+static inline __m256 _wrap_mm256_fmadd_ps(__m256 a, __m256 b, __m256 c)
+{
+    __m256 product = _mm256_mul_ps(a, b);
+    return _mm256_add_ps(product, c);
+}
+
+#endif
+
 namespace fastfilters
 {
 
@@ -32,9 +49,13 @@ namespace fir
 {
 
 template <bool is_symmetric>
-static void internal_convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels,
-                                                   const unsigned n_times, const unsigned dim_stride, float *output,
-                                                   Kernel &kernel)
+#ifdef __FMA__
+static void internal_convolve_fir_inner_single_avx_fma
+#else
+static void internal_convolve_fir_inner_single_avx
+#endif
+    (const float *input, const unsigned int n_pixels, const unsigned n_times, const unsigned dim_stride, float *output,
+     Kernel &kernel)
 {
     const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = kernel.half_len();
@@ -88,7 +109,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 else
                     pixels = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
 
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmp + i, result);
@@ -158,10 +179,10 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 }
 
                 // multiply with kernel value and add to result
-                result0 = _mm256_fmadd_ps(pixels0, kernel_val, result0);
-                result1 = _mm256_fmadd_ps(pixels1, kernel_val, result1);
-                result2 = _mm256_fmadd_ps(pixels2, kernel_val, result2);
-                result3 = _mm256_fmadd_ps(pixels3, kernel_val, result3);
+                result0 = _wrap_mm256_fmadd_ps(pixels0, kernel_val, result0);
+                result1 = _wrap_mm256_fmadd_ps(pixels1, kernel_val, result1);
+                result2 = _wrap_mm256_fmadd_ps(pixels2, kernel_val, result2);
+                result3 = _wrap_mm256_fmadd_ps(pixels3, kernel_val, result3);
             }
 
             _mm256_storeu_ps(cur_output + i - 32, _mm256_load_ps(tmp));
@@ -190,7 +211,7 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 else
                     pixels = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
 
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             k &= 31;
@@ -223,6 +244,16 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
     detail::avx_free(tmp);
 }
 
+#ifdef __FMA__
+void convolve_fir_inner_single_avx_fma(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                       const unsigned dim_stride, float *output, Kernel &kernel)
+{
+    if (kernel.is_symmetric)
+        internal_convolve_fir_inner_single_avx_fma<true>(input, n_pixels, n_times, dim_stride, output, kernel);
+    else
+        internal_convolve_fir_inner_single_avx_fma<false>(input, n_pixels, n_times, dim_stride, output, kernel);
+}
+#else
 void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
                                    const unsigned dim_stride, float *output, Kernel &kernel)
 {
@@ -231,11 +262,16 @@ void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixe
     else
         internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
+#endif
 
 template <bool is_symmetric>
-static void internal_convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels,
-                                                   const unsigned int pixel_stride, const unsigned n_times,
-                                                   float *output, Kernel &kernel)
+#ifdef __FMA__
+static void internal_convolve_fir_outer_single_avx_fma
+#else
+static void internal_convolve_fir_outer_single_avx
+#endif
+    (const float *input, const unsigned int n_pixels, const unsigned int pixel_stride, const unsigned n_times,
+     float *output, Kernel &kernel)
 {
     const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int dim_avx_end = n_times & ~7;
@@ -272,7 +308,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                     pixels = _mm256_add_ps(_mm256_loadu_ps(input + (pixel + i) * pixel_stride + dim), pixel_mirrored);
                 else
                     pixels = _mm256_sub_ps(_mm256_loadu_ps(input + (pixel + i) * pixel_stride + dim), pixel_mirrored);
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmpptr + dim, result);
@@ -298,7 +334,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     pixels = _mm256_sub_ps(_mm256_maskload_ps(input + (pixel + i) * pixel_stride + dim, mask),
                                            pixel_mirrored);
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmpptr + dim, result);
@@ -325,7 +361,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     pixels = _mm256_sub_ps(_mm256_loadu_ps(input + (pixel + i) * pixel_stride + dim),
                                            _mm256_loadu_ps(input + (pixel - i) * pixel_stride + dim));
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmpptr + dim, result);
@@ -345,7 +381,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     pixels = _mm256_sub_ps(_mm256_maskload_ps(input + (pixel + i) * pixel_stride + dim, mask),
                                            _mm256_maskload_ps(input + (pixel - i) * pixel_stride + dim, mask));
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmpptr + dim, result);
@@ -382,7 +418,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                     pixels = _mm256_add_ps(pixel_mirrored, _mm256_loadu_ps(input + (pixel - i) * pixel_stride + dim));
                 else
                     pixels = _mm256_sub_ps(pixel_mirrored, _mm256_loadu_ps(input + (pixel - i) * pixel_stride + dim));
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmpptr + dim, result);
@@ -409,7 +445,7 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
                 else
                     pixels = _mm256_sub_ps(pixel_mirrored,
                                            _mm256_maskload_ps(input + (pixel - i) * pixel_stride + dim, mask));
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                result = _wrap_mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
             _mm256_store_ps(tmpptr + dim, result);
@@ -430,6 +466,16 @@ static void internal_convolve_fir_outer_single_avx(const float *input, const uns
     detail::avx_free(test);
 }
 
+#ifdef __FMA__
+void convolve_fir_outer_single_avx_fma(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
+                                       const unsigned n_times, float *output, Kernel &kernel)
+{
+    if (kernel.is_symmetric)
+        internal_convolve_fir_outer_single_avx_fma<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
+    else
+        internal_convolve_fir_outer_single_avx_fma<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
+}
+#else
 void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
                                    const unsigned n_times, float *output, Kernel &kernel)
 {
@@ -438,6 +484,7 @@ void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixe
     else
         internal_convolve_fir_outer_single_avx<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
 }
+#endif
 
 } // namespace detail
 
