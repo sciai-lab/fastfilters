@@ -25,7 +25,7 @@
 #include <iostream>
 #include <string.h>
 
-#if defined(__FMA__)
+#if defined(__FMA__) || (defined(_MSC_VER) && defined(__AVX2__))
 
 static inline __m256 _wrap_mm256_fmadd_ps(__m256 a, __m256 b, __m256 c)
 {
