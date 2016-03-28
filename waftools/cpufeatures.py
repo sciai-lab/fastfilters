@@ -14,7 +14,8 @@ flags_gcc = {
 
 flags_msvc = {
 	"avx": "/arch:AVX",
-	"avx2": "/arch:AVX2"
+	"avx2": "/arch:AVX2",
+	"fma": "/arch:AVX2"			# FIXME: is this correct?
 }
 
 compiler_mapping = {
