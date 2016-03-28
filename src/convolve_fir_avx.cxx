@@ -24,23 +24,21 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
 
-    float *tmp = (float *)detail::avx_memalign(n_pixels * sizeof(float));
+    float *tmp = (float *)detail::avx_memalign(32 * sizeof(float));
+
+    if (half_kernel_len > 32)
+        throw std::logic_error("Kernel too large!");
 
     for (unsigned int dim = 0; dim < n_times; ++dim) {
         // take next line of pixels
         float *cur_output = output + dim * dim_stride;
-
-        unsigned int j;
-        for (j = 0; j < (n_pixels & ~7); j += 8)
-            _mm256_store_ps(tmp + j, _mm256_loadu_ps(input + dim * dim_stride + j));
-        for (; j < n_pixels; ++j)
-            tmp[j] = input[dim * dim_stride + j];
+        const float *cur_input = input + dim * dim_stride;
 
         // this function is only used for small kernels (<25 pixel)
         // such that non-vectorized code can be used for the border
         // treament without speed penalties
         unsigned int i = 0;
-        for (i = 0; i < half_kernel_len; ++i) {
+        for (i = 0; i < ((half_kernel_len + 7) & ~7); ++i) {
             float sum = 0.0;
 
             for (unsigned int k = 0; k < kernel_len; ++k) {
@@ -50,19 +48,63 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                     offset = -i - kreal;
                 else
                     offset = i + kreal;
-                sum += kernel[k] * tmp[offset];
+                sum += kernel[k] * cur_input[offset];
             }
 
-            cur_output[i] = sum;
+            tmp[i] = sum;
         }
 
-        // working on 32 pixels at the same time leads to a fully used ymm register bank
+        // align to 32 pixel boundary
+        const unsigned int stop = std::min((unsigned int)32, avx_end_single);
+        for (; i < stop; i += 8) {
+            __m256 result = _mm256_loadu_ps(cur_input + i);
+            __m256 kernel_val = _mm256_broadcast_ss(&kernel.coefs[0]);
+
+            result = _mm256_mul_ps(result, kernel_val);
+
+            for (unsigned j = 1; j <= half_kernel_len; ++j) {
+                __m256 pixels;
+                kernel_val = _mm256_broadcast_ss(&kernel.coefs[j]);
+
+                if (is_symmetric)
+                    pixels = _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
+                else
+                    pixels = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
+
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmp + i, result);
+        }
+
+        if (stop < 32) {
+            for (; i < n_pixels; ++i) {
+                float sum = 0.0;
+
+                for (unsigned int k = 0; k < kernel_len; ++k) {
+                    const int kreal = k - kernel_len / 2;
+                    unsigned int offset;
+                    if (kreal + i >= n_pixels)
+                        offset = n_pixels - ((kreal + i) % n_pixels) - 2;
+                    else
+                        offset = i + kreal;
+                    sum += kernel[k] * cur_input[offset];
+                }
+
+                tmp[i] = sum;
+            }
+
+            memcpy(cur_output, tmp, n_pixels * sizeof(float));
+            continue;
+        }
+
+        // main loop - work on 32 pixels at the same time
         for (; i < avx_end; i += 32) {
             // load next 32 pixels
-            __m256 result0 = _mm256_load_ps(tmp + i);
-            __m256 result1 = _mm256_load_ps(tmp + i + 8);
-            __m256 result2 = _mm256_load_ps(tmp + i + 16);
-            __m256 result3 = _mm256_load_ps(tmp + i + 24);
+            __m256 result0 = _mm256_loadu_ps(cur_input + i);
+            __m256 result1 = _mm256_loadu_ps(cur_input + i + 8);
+            __m256 result2 = _mm256_loadu_ps(cur_input + i + 16);
+            __m256 result3 = _mm256_loadu_ps(cur_input + i + 24);
 
             // multiply current pixels with center value of kernel
             __m256 kernel_val = _mm256_broadcast_ss(&kernel.coefs[0]);
@@ -81,15 +123,21 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 __m256 pixels0, pixels1, pixels2, pixels3;
 
                 if (is_symmetric) {
-                    pixels0 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
-                    pixels1 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j + 8), _mm256_loadu_ps(tmp + i - j + 8));
-                    pixels2 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j + 16), _mm256_loadu_ps(tmp + i - j + 16));
-                    pixels3 = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j + 24), _mm256_loadu_ps(tmp + i - j + 24));
+                    pixels0 = _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
+                    pixels1 =
+                        _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j + 8), _mm256_loadu_ps(cur_input + i - j + 8));
+                    pixels2 =
+                        _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j + 16), _mm256_loadu_ps(cur_input + i - j + 16));
+                    pixels3 =
+                        _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j + 24), _mm256_loadu_ps(cur_input + i - j + 24));
                 } else {
-                    pixels0 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
-                    pixels1 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j + 8), _mm256_loadu_ps(tmp + i - j + 8));
-                    pixels2 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j + 16), _mm256_loadu_ps(tmp + i - j + 16));
-                    pixels3 = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j + 24), _mm256_loadu_ps(tmp + i - j + 24));
+                    pixels0 = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
+                    pixels1 =
+                        _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j + 8), _mm256_loadu_ps(cur_input + i - j + 8));
+                    pixels2 =
+                        _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j + 16), _mm256_loadu_ps(cur_input + i - j + 16));
+                    pixels3 =
+                        _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j + 24), _mm256_loadu_ps(cur_input + i - j + 24));
                 }
 
                 // multiply with kernel value and add to result
@@ -99,38 +147,41 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                 result3 = _mm256_fmadd_ps(pixels3, kernel_val, result3);
             }
 
-            // write result to output array
-            _mm256_storeu_ps(cur_output + i, result0);
-            _mm256_storeu_ps(cur_output + i + 8, result1);
-            _mm256_storeu_ps(cur_output + i + 16, result2);
-            _mm256_storeu_ps(cur_output + i + 24, result3);
+            _mm256_storeu_ps(cur_output + i - 32, _mm256_load_ps(tmp));
+            _mm256_storeu_ps(cur_output + i - 24, _mm256_load_ps(tmp + 8));
+            _mm256_storeu_ps(cur_output + i - 16, _mm256_load_ps(tmp + 16));
+            _mm256_storeu_ps(cur_output + i - 8, _mm256_load_ps(tmp + 24));
+            _mm256_store_ps(tmp, result0);
+            _mm256_store_ps(tmp + 8, result1);
+            _mm256_store_ps(tmp + 16, result2);
+            _mm256_store_ps(tmp + 24, result3);
         }
 
-        // fast path for up to 24 pixels - only results in measureable speedup for small lines
-        // where this is actually the bottleneck
-        for (; i < avx_end_single; i += 8) {
-            __m256 result = _mm256_load_ps(tmp + i);
+        unsigned int k;
+        for (k = 0; i < avx_end_single; i += 8, k += 8) {
+            __m256 result = _mm256_loadu_ps(cur_input + i);
             __m256 kernel_val = _mm256_broadcast_ss(&kernel.coefs[0]);
-            ;
+
             result = _mm256_mul_ps(result, kernel_val);
 
-            for (unsigned int j = 1; j <= half_kernel_len; ++j) {
-                kernel_val = _mm256_broadcast_ss(&kernel.coefs[j]);
+            for (unsigned j = 1; j <= half_kernel_len; ++j) {
                 __m256 pixels;
+                kernel_val = _mm256_broadcast_ss(&kernel.coefs[j]);
 
                 if (is_symmetric)
-                    pixels = _mm256_add_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
+                    pixels = _mm256_add_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
                 else
-                    pixels = _mm256_sub_ps(_mm256_loadu_ps(tmp + i + j), _mm256_loadu_ps(tmp + i - j));
+                    pixels = _mm256_sub_ps(_mm256_loadu_ps(cur_input + i + j), _mm256_loadu_ps(cur_input + i - j));
 
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
-            _mm256_storeu_ps(cur_output + i, result);
+            k &= 31;
+            _mm256_storeu_ps(cur_output + i - 32, _mm256_load_ps(tmp + k));
+            _mm256_store_ps(tmp + k, result);
         }
 
-        // right border
-        for (; i < n_pixels; ++i) {
+        for (; i < n_pixels; ++i, ++k) {
             float sum = 0.0;
 
             for (unsigned int k = 0; k < kernel_len; ++k) {
@@ -140,11 +191,16 @@ static void internal_convolve_fir_inner_single_avx(const float *input, const uns
                     offset = n_pixels - ((kreal + i) % n_pixels) - 2;
                 else
                     offset = i + kreal;
-                sum += kernel[k] * tmp[offset];
+                sum += kernel[k] * cur_input[offset];
             }
 
-            cur_output[i] = sum;
+            k &= 31;
+            cur_output[i - 32] = tmp[k];
+            tmp[k] = sum;
         }
+
+        for (unsigned int j = n_pixels - 32; j < n_pixels; ++j, ++k)
+            cur_output[j] = tmp[k & 31];
     }
 
     detail::avx_free(tmp);
