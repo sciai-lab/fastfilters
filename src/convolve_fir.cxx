@@ -28,7 +28,7 @@ void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, 
 {
     if (detail::cpu_has_avx_fma())
         convolve_fir_inner_single_avx_fma(input, n_pixels, n_times, dim_stride, output, kernel);
-    else if(detail::cpu_has_avx())
+    else if (detail::cpu_has_avx())
         convolve_fir_inner_single_avx(input, n_pixels, n_times, dim_stride, output, kernel);
     else
         convolve_fir_inner_single_noavx(input, n_pixels, n_times, dim_stride, output, kernel);

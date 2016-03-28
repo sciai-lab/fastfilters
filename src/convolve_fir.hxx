@@ -26,29 +26,37 @@ namespace fastfilters
 namespace fir
 {
 
-void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   const unsigned int dim_stride, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels,
+                                                          const unsigned n_times, const unsigned int dim_stride,
+                                                          float *output, Kernel &kernel);
 
-void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                                   const unsigned n_times, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels,
+                                                          const unsigned int pixel_stride, const unsigned n_times,
+                                                          float *output, Kernel &kernel);
 
-void convolve_fir_inner_single_avx_fma(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                      const unsigned int dim_stride, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_inner_single_avx_fma(const float *input, const unsigned int n_pixels,
+                                                              const unsigned n_times, const unsigned int dim_stride,
+                                                              float *output, Kernel &kernel);
 
-void convolve_fir_outer_single_avx_fma(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                                      const unsigned n_times, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_outer_single_avx_fma(const float *input, const unsigned int n_pixels,
+                                                              const unsigned int pixel_stride, const unsigned n_times,
+                                                              float *output, Kernel &kernel);
 
-void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                     const unsigned int dim_stride, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels,
+                                                            const unsigned n_times, const unsigned int dim_stride,
+                                                            float *output, Kernel &kernel);
 
-void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                                     const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels,
+                                                            const unsigned int pixel_stride, const unsigned n_times,
+                                                            const unsigned dim_stride, float *output, Kernel &kernel);
 
-void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                               const unsigned int dim_stride, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_inner_single(const float *input, const unsigned int n_pixels,
+                                                      const unsigned n_times, const unsigned int dim_stride,
+                                                      float *output, Kernel &kernel);
 
-void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                               const unsigned n_times, const unsigned int dim_stride, float *output, Kernel &kernel);
+FASTFILTERS_API_EXPORT void convolve_fir_outer_single(const float *input, const unsigned int n_pixels,
+                                                      const unsigned int pixel_stride, const unsigned n_times,
+                                                      const unsigned int dim_stride, float *output, Kernel &kernel);
 }
 }
 #endif
