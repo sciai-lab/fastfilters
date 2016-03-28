@@ -23,99 +23,147 @@
 #include <intrin.h>
 #endif
 
+#include "cpuid.hxx"
+#include "xgetbv.hxx"
+
 namespace fastfilters
 {
 
 namespace detail
 {
 
-enum avx_status_t { AVX_STATUS_UNKNOWN = 0, AVX_STATUS_UNSUPPORTED, AVX_STATUS_SUPPORTED };
+static bool supports_avx = false;
+static bool supports_fma = false;
+static bool supports_avx2 = false;
 
-static avx_status_t avx_status = AVX_STATUS_UNKNOWN;
+enum cpu_status_t { CPU_STATUS_UNKNOWN = 0, CPU_STATUS_NONE, CPU_STATUS_AVX, CPU_STATUS_AVX_FMA, CPU_STATUS_AVX2 };
 
-#if defined(HAVE_GNU_CPU_SUPPORTS)
+static cpu_status_t cpu_status = CPU_STATUS_UNKNOWN;
 
-static inline bool internal_cpu_has_avx2()
+#if defined(HAVE_GNU_CPU_SUPPORTS_AVX2)
+
+static bool _supports_avx2()
 {
-    if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
+    if (__builtin_cpu_supports("avx2"))
         return true;
     else
         return false;
 }
 
-#elif defined(HAVE_XGETBV) && defined(HAVE_CPUIDEX)
-
-static inline bool internal_cpu_has_avx2()
-{
-    // check for CPU AVX2 support: CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
-    unsigned int avxflag;
-    // check for CPU FMA support: CPUID.(EAX=01H, ECX=0H):ECX.FMA[bit 12]==1
-    unsigned int fmaflag;
-
-    int cpuid[4];
-    __cpuidex(cpuid, 7, 0);
-    avxflag = cpuid[1];
-    __cpuidex(cpuid, 1, 0);
-    fmaflag = cpuid[2];
-
-    if ((avxflag & (1 << 5)) != (1 << 5))
-        return false;
-    if ((fmaflag & (1 << 12)) != (1 << 12))
-        return false;
-
-    unsigned int xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-
-    // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
-    if (((xcr0 & 6) != 6))
-        return false;
-    return true;
-}
-
-#elif defined(HAVE_INLINE_ASM)
-
-static inline bool internal_cpu_has_avx2()
-{
-    unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
-
-    // check for CPU AVX2 support: CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
-    unsigned int avxflag;
-    eax = 7;
-    ecx = 0;
-    __asm__("cpuid" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx));
-    avxflag = ebx;
-    if ((avxflag & (1 << 5)) != (1 << 5))
-        return false;
-
-    // check for CPU FMA support: CPUID.(EAX=01H, ECX=0H):ECX.FMA[bit 12]==1
-    unsigned int fmaflag;
-    eax = 1;
-    ecx = 0;
-    __asm__("cpuid" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx));
-    fmaflag = ecx;
-    if ((fmaflag & (1 << 12)) != (1 << 12))
-        return false;
-
-    // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
-    unsigned int xcr0;
-    __asm__("xgetbv" : "=a"(xcr0) : "c"(0) : "%edx");
-    if (((xcr0 & 6) != 6))
-        return false;
-    return true;
-}
 #else
-#error "No known way to test for runtime AVX2 support!"
+
+static bool _supports_avx2()
+{
+    cpuid_t cpuid;
+
+    // CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
+    int res = get_cpuid(7, cpuid);
+
+    if (!res)
+        return false;
+
+    if ((cpuid[1] & (1 << 5)) != (1 << 5))
+        return false;
+
+    xgetbv_t xcr0;
+    xcr0 = xgetbv();
+
+    // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
+    if (((xcr0 & 6) != 6))
+        return false;
+    return true;
+}
+
 #endif
+
+#if defined(HAVE_GNU_CPU_SUPPORTS_AVX)
+
+static bool _supports_avx()
+{
+    if (__builtin_cpu_supports("avx"))
+        return true;
+    else
+        return false;
+}
+
+#else
+
+static bool _supports_avx()
+{
+    cpuid_t cpuid;
+
+    // CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
+    int res = get_cpuid(7, cpuid);
+
+    if (!res)
+        return false;
+
+    if ((cpuid[1] & (1 << 5)) != (1 << 5))
+        return false;
+
+    xgetbv_t xcr0;
+    xcr0 = xgetbv();
+
+    // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
+    if (((xcr0 & 6) != 6))
+        return false;
+    return true;
+}
+
+#endif
+
+#if defined(HAVE_GNU_CPU_SUPPORTS_FMA)
+
+static bool _supports_fma()
+{
+    if (__builtin_cpu_supports("fma"))
+        return true;
+    else
+        return false;
+}
+
+#else
+
+static bool _supports_fma()
+{
+    cpuid_t cpuid;
+
+    // check for CPU FMA support: CPUID.(EAX=01H, ECX=0H):ECX.FMA[bit 12]==1
+    int res = get_cpuid(1, cpuid);
+
+    if (!res)
+        return false;
+
+    if ((cpuid[2] & (1 << 12)) != (1 << 12))
+        return false;
+}
+
+#endif
+
+static inline void query_cpu_features()
+{
+    if (cpu_status != CPU_STATUS_UNKNOWN)
+        return;
+
+    supports_avx = _supports_avx();
+    supports_fma = _supports_fma();
+    supports_avx2 = _supports_avx2();
+
+    if (supports_avx2)
+        cpu_status = CPU_STATUS_AVX2;
+    else if (supports_avx && supports_fma)
+        cpu_status = CPU_STATUS_AVX_FMA;
+    else if (supports_avx)
+        cpu_status = CPU_STATUS_AVX;
+    else
+        cpu_status = CPU_STATUS_NONE;
+}
 
 bool cpu_has_avx2()
 {
-    if (avx_status == AVX_STATUS_UNKNOWN) {
-        if (internal_cpu_has_avx2())
-            avx_status = AVX_STATUS_SUPPORTED;
-        else
-            avx_status = AVX_STATUS_UNSUPPORTED;
-    }
+    query_cpu_features();
 
-    if (avx_status == AVX_STATUS_SUPPORTED)
+    if (cpu_status == CPU_STATUS_AVX2)
         return true;
     else
         return false;
