@@ -13,9 +13,9 @@ flags_gcc = {
 }
 
 flags_msvc = {
-	"avx": "/arch:AVX",
-	"avx2": "/arch:AVX2",
-	"fma": "/arch:AVX2"			# FIXME: is this correct?
+	"avx": "/arch:AVX -D__AVX__=1",
+	"avx2": "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1",
+	"fma": "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1"
 }
 
 compiler_mapping = {

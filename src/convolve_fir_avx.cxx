@@ -25,16 +25,16 @@
 #include <iostream>
 #include <string.h>
 
-#if defined(__FMA__) || (defined(_MSC_VER) && defined(__AVX2__))
+#if defined(__FMA__)
 
-static inline __m256 _wrap_mm256_fmadd_ps(__m256 a, __m256 b, __m256 c)
+static inline __m256 _wrap_mm256_fmadd_ps(const __m256 a, const __m256 b, const __m256 c)
 {
     return _mm256_fmadd_ps(a, b, c);
 }
 
 #else
 
-static inline __m256 _wrap_mm256_fmadd_ps(__m256 a, __m256 b, __m256 c)
+static inline __m256 _wrap_mm256_fmadd_ps(const __m256 a, const __m256 b, const __m256 c)
 {
     __m256 product = _mm256_mul_ps(a, b);
     return _mm256_add_ps(product, c);
