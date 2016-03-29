@@ -26,7 +26,7 @@
 #include <iostream>
 #include <string.h>
 
-#if defined(__FMA__)
+#if defined(__FMA__) && defined(__AVX__)
 
 #define _wrap_mm256_fmadd_ps(a, b, c) (_mm256_fmadd_ps((a), (b), (c)))
 
