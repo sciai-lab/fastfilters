@@ -17,6 +17,7 @@
 //
 #include "fastfilters.hxx"
 #include "util.hxx"
+#include "config.h"
 
 #include <immintrin.h>
 #include <stdlib.h>
@@ -27,18 +28,33 @@
 
 #if defined(__FMA__)
 
-static inline __m256 _wrap_mm256_fmadd_ps(const __m256 a, const __m256 b, const __m256 c)
-{
-    return _mm256_fmadd_ps(a, b, c);
-}
+#define _wrap_mm256_fmadd_ps(a, b, c) (_mm256_fmadd_ps((a), (b), (c)))
 
-#else
+#define FNAME_INTERNAL_INNER_SINGLE static void internal_convolve_fir_inner_single_avx_fma
+#define FNAME_INTERNAL_OUTER_SINGLE static void internal_convolve_fir_outer_single_avx_fma
+#define CALL_INTERNAL_INNER_SINGLE internal_convolve_fir_inner_single_avx_fma
+#define CALL_INTERNAL_OUTER_SINGLE internal_convolve_fir_outer_single_avx_fma
+#define FNAME_INNER_SINGLE void convolve_fir_inner_single_avx_fma
+#define FNAME_OUTER_SINGLE void convolve_fir_outer_single_avx_fma
+
+#elif defined(__AVX__)
 
 static inline __m256 _wrap_mm256_fmadd_ps(const __m256 a, const __m256 b, const __m256 c)
 {
     __m256 product = _mm256_mul_ps(a, b);
     return _mm256_add_ps(product, c);
 }
+
+#define FNAME_INTERNAL_INNER_SINGLE static void internal_convolve_fir_inner_single_avx
+#define FNAME_INTERNAL_OUTER_SINGLE static void internal_convolve_fir_outer_single_avx
+#define CALL_INTERNAL_INNER_SINGLE internal_convolve_fir_inner_single_avx
+#define CALL_INTERNAL_OUTER_SINGLE internal_convolve_fir_outer_single_avx
+#define FNAME_INNER_SINGLE void convolve_fir_inner_single_avx
+#define FNAME_OUTER_SINGLE void convolve_fir_outer_single_avx
+
+#else
+
+#error "convovle_fir_avx.cxx needs to be compiled with AVX support"
 
 #endif
 
@@ -49,13 +65,8 @@ namespace fir
 {
 
 template <bool is_symmetric>
-#ifdef __FMA__
-static void internal_convolve_fir_inner_single_avx_fma
-#else
-static void internal_convolve_fir_inner_single_avx
-#endif
-    (const float *input, const unsigned int n_pixels, const unsigned n_times, const unsigned dim_stride, float *output,
-     Kernel &kernel)
+FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                            const unsigned dim_stride, float *output, Kernel &kernel)
 {
     const unsigned int kernel_len = kernel.len();
     const unsigned int half_kernel_len = kernel.half_len();
@@ -244,34 +255,9 @@ static void internal_convolve_fir_inner_single_avx
     detail::avx_free(tmp);
 }
 
-#ifdef __FMA__
-void convolve_fir_inner_single_avx_fma(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                       const unsigned dim_stride, float *output, Kernel &kernel)
-{
-    if (kernel.is_symmetric)
-        internal_convolve_fir_inner_single_avx_fma<true>(input, n_pixels, n_times, dim_stride, output, kernel);
-    else
-        internal_convolve_fir_inner_single_avx_fma<false>(input, n_pixels, n_times, dim_stride, output, kernel);
-}
-#else
-void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                   const unsigned dim_stride, float *output, Kernel &kernel)
-{
-    if (kernel.is_symmetric)
-        internal_convolve_fir_inner_single_avx<true>(input, n_pixels, n_times, dim_stride, output, kernel);
-    else
-        internal_convolve_fir_inner_single_avx<false>(input, n_pixels, n_times, dim_stride, output, kernel);
-}
-#endif
-
 template <bool is_symmetric>
-#ifdef __FMA__
-static void internal_convolve_fir_outer_single_avx_fma
-#else
-static void internal_convolve_fir_outer_single_avx
-#endif
-    (const float *input, const unsigned int n_pixels, const unsigned int pixel_stride, const unsigned n_times,
-     float *output, Kernel &kernel)
+FNAME_INTERNAL_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
+                            const unsigned n_times, float *output, Kernel &kernel)
 {
     const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int dim_avx_end = n_times & ~7;
@@ -466,25 +452,23 @@ static void internal_convolve_fir_outer_single_avx
     detail::avx_free(test);
 }
 
-#ifdef __FMA__
-void convolve_fir_outer_single_avx_fma(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
-                                       const unsigned n_times, float *output, Kernel &kernel)
+FNAME_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times, const unsigned dim_stride,
+                   float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        internal_convolve_fir_outer_single_avx_fma<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        CALL_INTERNAL_INNER_SINGLE<true>(input, n_pixels, n_times, dim_stride, output, kernel);
     else
-        internal_convolve_fir_outer_single_avx_fma<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        CALL_INTERNAL_INNER_SINGLE<false>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
-#else
-void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
-                                   const unsigned n_times, float *output, Kernel &kernel)
+
+FNAME_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned pixel_stride, const unsigned n_times,
+                   float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        internal_convolve_fir_outer_single_avx<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        CALL_INTERNAL_OUTER_SINGLE<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
     else
-        internal_convolve_fir_outer_single_avx<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        CALL_INTERNAL_OUTER_SINGLE<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
 }
-#endif
 
 } // namespace detail
 

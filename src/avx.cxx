@@ -27,14 +27,6 @@ namespace fastfilters
 namespace detail
 {
 
-static bool supports_avx = false;
-static bool supports_fma = false;
-static bool supports_avx2 = false;
-
-enum cpu_status_t { CPU_STATUS_UNKNOWN = 0, CPU_STATUS_NONE, CPU_STATUS_AVX, CPU_STATUS_AVX_FMA, CPU_STATUS_AVX2 };
-
-static cpu_status_t cpu_status = CPU_STATUS_UNKNOWN;
-
 #if defined(HAVE_GNU_CPU_SUPPORTS_AVX2)
 
 static bool _supports_avx2()
@@ -66,6 +58,7 @@ static bool _supports_avx2()
     // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
     if (((xcr0 & 6) != 6))
         return false;
+
     return true;
 }
 
@@ -87,13 +80,16 @@ static bool _supports_avx()
 {
     cpuid_t cpuid;
 
-    // CPUID.(EAX=07H, ECX=0H):EBX.AVX2[bit 5]==1
-    int res = get_cpuid(7, cpuid);
+    // CPUID.(EAX=01H, ECX=0H):ECX.OSXSAVE[bit 27]==1
+    // CPUID.(EAX=01H, ECX=0H):ECX.AVX[bit 28]==1
+    int res = get_cpuid(1, cpuid);
 
     if (!res)
         return false;
 
-    if ((cpuid[1] & (1 << 5)) != (1 << 5))
+    if ((cpuid[2] & (1 << 27)) != (1 << 27))
+        return false;
+    if ((cpuid[2] & (1 << 28)) != (1 << 28))
         return false;
 
     xgetbv_t xcr0;
@@ -111,7 +107,7 @@ static bool _supports_avx()
 
 static bool _supports_fma()
 {
-    if (__builtin_cpu_supports("fma"))
+    if (__builtin_cpu_supports("fma") && __builtin_cpu_supports("avx"))
         return true;
     else
         return false;
@@ -123,6 +119,9 @@ static bool _supports_fma()
 {
     cpuid_t cpuid;
 
+    if (!_supports_avx())
+        return false;
+
     // check for CPU FMA support: CPUID.(EAX=01H, ECX=0H):ECX.FMA[bit 12]==1
     int res = get_cpuid(1, cpuid);
 
@@ -131,47 +130,28 @@ static bool _supports_fma()
 
     if ((cpuid[2] & (1 << 12)) != (1 << 12))
         return false;
+
+    return true;
 }
 
 #endif
 
-static inline void query_cpu_features()
-{
-    if (cpu_status != CPU_STATUS_UNKNOWN)
-        return;
-
-    supports_avx = _supports_avx();
-    supports_fma = _supports_fma();
-    supports_avx2 = _supports_avx2();
-
-    if (supports_avx2)
-        cpu_status = CPU_STATUS_AVX2;
-    else if (supports_avx && supports_fma)
-        cpu_status = CPU_STATUS_AVX_FMA;
-    else if (supports_avx)
-        cpu_status = CPU_STATUS_AVX;
-    else
-        cpu_status = CPU_STATUS_NONE;
-}
+static bool supports_avx = _supports_avx();
+static bool supports_fma = _supports_fma();
+static bool supports_avx2 = _supports_avx2();
 
 bool cpu_has_avx2()
 {
-    query_cpu_features();
-
     return supports_avx2;
 }
 
 bool cpu_has_avx()
 {
-    query_cpu_features();
-
     return supports_avx;
 }
 
 bool cpu_has_avx_fma()
 {
-    query_cpu_features();
-
     return supports_fma;
 }
 

@@ -15,63 +15,13 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+#include <fastfilters.hxx>
+#include <iostream>
 
-#ifndef CPUID_HXX_
-#define CPUID_HXX_ 1
-
-#include "config.h"
-#include <array>
-
-#ifdef HAVE_CPUID_H
-#include <cpuid.h>
-#endif
-
-#ifdef HAVE_CPUIDEX
-#include <intrin.h>
-#endif
-
-typedef std::array<unsigned int, 4> cpuid_t;
-
-static inline int get_cpuid(unsigned int level, cpuid_t &id)
+int main()
 {
-#if defined(HAVE_CPUID_H)
-
-    if (level == 7) {
-        if (__get_cpuid_max(0, NULL) < 7)
-            return 0;
-        __cpuid_count(7, 0, id[0], id[1], id[2], id[3]);
-        return 1;
-    }
-
-    int res = __get_cpuid(level, &id[0], &id[1], &id[2], &id[3]);
-    return res;
-
-#elif defined(HAVE_CPUIDEX)
-    int cpuid[4];
-    __cpuidex(cpuid, level, 0);
-
-    for (unsigned int i = 0; i < 4; ++i)
-        id[i] = (unsigned int)cpuid[i];
-
-    return 1;
-
-#elif defined(HAVE_ASM_CPUID)
-    unsigned int a, b, c, d;
-
-    a = level;
-    c = 0;
-    __asm__ __volatile__("cpuid" : "+a"(a), "+b"(b), "+c"(c), "=d"(d));
-
-    id[0] = a;
-    id[1] = b;
-    id[2] = c;
-    id[3] = d;
-
-    return 1;
-
-#else
-#error "No known way to query for CPUID."
-#endif
+    std::cout << "CPU supports AVX: " << fastfilters::detail::cpu_has_avx() << std::endl;
+    std::cout << "CPU supports FMA: " << fastfilters::detail::cpu_has_avx_fma() << std::endl;
+    std::cout << "CPU supports AVX2: " << fastfilters::detail::cpu_has_avx2() << std::endl;
+    return 0;
 }
-
-#endif

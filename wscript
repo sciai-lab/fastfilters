@@ -157,7 +157,7 @@ def configure(cfg):
 	cfg.check_cxx11()
 	cfg.check_library(mode='cxx')
 
-	cfg.check_cpufeatures(['avx2', 'fma'])
+	cfg.check_cpufeatures(['avx', 'fma'])
 	cfg.check_cpuid()
 	cfg.check_xgetbv()
 
@@ -256,7 +256,7 @@ def build(bld):
 	if not bld.env.tests_disable:
 		tests_common = bld.path.ant_glob("tests/*.bin")
 
-		tests = []#["iir.cxx"]
+		tests = ["cpufeatures.cxx"]#["iir.cxx"]
 		tests_vigra = ["vigra.cxx"]
 		tests_opencv = ["opencv.cxx"]
 
