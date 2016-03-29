@@ -95,6 +95,8 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
                 unsigned int offset;
                 if (kreal + (int)i < 0)
                     offset = -i - kreal;
+                else if (kreal + i >= n_pixels)
+                    offset = n_pixels - ((kreal + i) % n_pixels) - 2;
                 else
                     offset = i + kreal;
                 sum += kernel[k] * cur_input[offset];
