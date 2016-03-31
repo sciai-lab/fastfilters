@@ -22,12 +22,26 @@
 typedef unsigned long long xgetbv_t;
 
 #if defined(HAVE_ASM_XGETBV)
+
+#include "cpuid.hxx"
+
 static inline xgetbv_t xgetbv()
 {
     unsigned int index = 0;
     unsigned int eax, edx;
 
+    // CPUID.(EAX=01H, ECX=0H):ECX.OSXSAVE[bit 27]==1
+    cpuid_t cpuid;
+    int res = get_cpuid(1, cpuid);
+
+    if (!res)
+        return 0;
+
+    if ((cpuid[2] & (1 << 27)) != (1 << 27))
+        return 0;
+
     __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
+
     return ((unsigned long long)edx << 32) | eax;
 }
 

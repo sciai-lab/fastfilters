@@ -80,15 +80,12 @@ static bool _supports_avx()
 {
     cpuid_t cpuid;
 
-    // CPUID.(EAX=01H, ECX=0H):ECX.OSXSAVE[bit 27]==1
     // CPUID.(EAX=01H, ECX=0H):ECX.AVX[bit 28]==1
     int res = get_cpuid(1, cpuid);
 
     if (!res)
         return false;
 
-    if ((cpuid[2] & (1 << 27)) != (1 << 27))
-        return false;
     if ((cpuid[2] & (1 << 28)) != (1 << 28))
         return false;
 
