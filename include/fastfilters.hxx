@@ -57,7 +57,7 @@ struct FASTFILTERS_API_EXPORT Kernel
   private:
     void computeFull()
     {
-        for (unsigned int idx = 0; idx < len(); ++idx) {
+        for (std::size_t idx = 0; idx < len(); ++idx) {
             float v;
 
             if (idx == half_len())
@@ -77,7 +77,7 @@ struct FASTFILTERS_API_EXPORT Kernel
     const bool is_symmetric;
     std::array<float, 13> coefs;
     std::array<float, 27> coefs2;
-    const unsigned int size;
+    const std::size_t size;
 
     inline Kernel(bool is_symmetric, const std::vector<float> &coefs_) : is_symmetric(is_symmetric), size(coefs_.size())
     {
@@ -95,7 +95,9 @@ struct FASTFILTERS_API_EXPORT Kernel
         if (n_coefs > 12)
             throw std::logic_error("stddev is too large.");
 
-        make_gaussian(stddev, order, n_coefs, coefs);
+        if (!make_gaussian(stddev, order, n_coefs, coefs))
+            throw std::logic_error("make_gaussian failed.");
+
         computeFull();
     }
 

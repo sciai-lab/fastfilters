@@ -159,8 +159,8 @@ def configure(cfg):
 		cfg.check_cxx_flag("/W4")
 		cfg.check_cxx_flag('/EHsc')
 	else:
-		cfg.check_cxx_flag("-W")
 		cfg.check_cxx_flag("-Wall")
+		cfg.check_cxx_flag("-Wextra")
 		cfg.check_cxx_flag("-O3")
 
 	if not cfg.options.vigra_disable:
