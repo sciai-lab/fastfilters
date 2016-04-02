@@ -41,6 +41,35 @@ def check_aligned_malloc(self):
 	self.check_cxx(header_name='malloc.h', msg='Checking if the \'_aligned_malloc/free\' functions exist', mandatory=False, features='cxx', define_name='HAVE_ALIGNED_MALLOC', fragment=TEST_ALIGNED_MALLOC)
 
 
+TEST_64BIT = '''
+#include  <cassert>
+
+#if _WIN32 || _WIN64
+#if _WIN64
+#define COMPILED_64BIT
+#endif
+#endif
+
+#if __GNUC__
+#if __x86_64__
+#define COMPILED_64BIT
+#endif
+#endif
+
+int main()
+{
+#if defined(COMPILED_64BIT)
+	assert(sizeof(void*) == 8);
+#else
+    #error "not 64bit!"
+#endif
+	return 0;
+}
+'''
+@conf
+def check_64bit(self):
+	self.check_cxx(msg='Checking if we compile 64bit binaries', mandatory=True, execute=True, fragment=TEST_64BIT)
+
 @conf
 def check_cxx_flag(self, flag):
 	res = self.check(msg='Checking if the compiler accepts the \'%s\' flag' % flag, mandatory=False, features='cxx', cxxflags=flag)
@@ -143,6 +172,7 @@ def configure(cfg):
 	cfg.load('cpufeatures', tooldir='waftools')
 
 	cfg.check_cxx11()
+	cfg.check_64bit()
 	cfg.check_library(mode='cxx')
 
 	cfg.check_cpufeatures(['avx', 'fma'])
