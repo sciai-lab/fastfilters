@@ -21,6 +21,13 @@
 #include "cpuid.hxx"
 #include "xgetbv.hxx"
 
+#define cpuid_bit_AVX 0x10000000
+#define cpuid_bit_FMA 0x00001000
+#define cpuid7_bit_AVX2 0x00000020
+
+#define xcr0_bit_XMM 0x00000002
+#define xcr0_bit_YMM 0x00000004
+
 namespace fastfilters
 {
 
@@ -49,14 +56,16 @@ static bool _supports_avx2()
     if (!res)
         return false;
 
-    if ((cpuid[1] & (1 << 5)) != (1 << 5))
+    if ((cpuid[1] & cpuid7_bit_AVX2) != cpuid7_bit_AVX2)
         return false;
 
     xgetbv_t xcr0;
     xcr0 = xgetbv();
 
     // check for OS support: XCR0[2] (AVX state) and XCR0[1] (SSE state)
-    if (((xcr0 & 6) != 6))
+    if ((xcr0 & xcr0_bit_XMM) != xcr0_bit_XMM)
+        return false;
+    if ((xcr0 & xcr0_bit_YMM) != xcr0_bit_YMM)
         return false;
 
     return true;
@@ -86,7 +95,7 @@ static bool _supports_avx()
     if (!res)
         return false;
 
-    if ((cpuid[2] & (1 << 28)) != (1 << 28))
+    if ((cpuid[2] & cpuid_bit_AVX) != cpuid_bit_AVX)
         return false;
 
     xgetbv_t xcr0;
@@ -125,7 +134,7 @@ static bool _supports_fma()
     if (!res)
         return false;
 
-    if ((cpuid[2] & (1 << 12)) != (1 << 12))
+    if ((cpuid[2] & cpuid_bit_FMA) != cpuid_bit_FMA)
         return false;
 
     return true;

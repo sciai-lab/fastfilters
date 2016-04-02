@@ -19,6 +19,9 @@
 #ifndef XGETBV_HXX_
 #define XGETBV_HXX_ 1
 
+#define cpuid_bit_XSAVE 0x04000000
+#define cpuid_bit_OSXSAVE 0x08000000
+
 typedef unsigned long long xgetbv_t;
 
 #if defined(HAVE_ASM_XGETBV)
@@ -37,7 +40,9 @@ static inline xgetbv_t xgetbv()
     if (!res)
         return 0;
 
-    if ((cpuid[2] & (1 << 27)) != (1 << 27))
+    if ((cpuid[2] & cpuid_bit_XSAVE) != cpuid_bit_XSAVE)
+        return 0;
+    if ((cpuid[2] & cpuid_bit_OSXSAVE) != cpuid_bit_OSXSAVE)
         return 0;
 
     __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
