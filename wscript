@@ -66,7 +66,7 @@ def check_vigra(self, includes=None):
 			}
 		''',
 		execute=True,
-		uselib_store='VIGRA',
+		uselib_store='vigra',
 		msg='Checking for VIGRA',
 		define_name='HAVE_VIGRA',
 		includes=includes,
@@ -74,18 +74,6 @@ def check_vigra(self, includes=None):
 		var='have_vigra'
 		)
 
-@feature('vigra')
-def feature_vigra(self):
-	if self.env.INCLUDES_VIGRA and len(self.env.INCLUDES_VIGRA) > 0:
-		self.env.append_value('INCPATHS', [i for i in self.env.INCLUDES_VIGRA if len(i) > 0])
-
-@feature('opencv')
-def feature_opencv(self):
-	if self.env.INCLUDES_OPENCV and len(self.env.INCLUDES_OPENCV) > 0:
-		self.env.append_value('INCPATHS', [i for i in self.env.INCLUDES_OPENCV if len(i) > 0])
-
-	if self.env.LIB_OPENCV:
-		self.env.append_value('LIB', self.env.LIB_OPENCV)
 
 def waf_unit_test_summary(bld):
 	"""
@@ -179,7 +167,7 @@ def configure(cfg):
 		cfg.check_vigra([cfg.options.vigra_incdir])
 
 	if not cfg.options.opencv_disable:
-		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='OPENCV', use='opencv')
+		cfg.check_cfg(package='opencv', args='--cflags --libs', uselib_store='opencv', use='opencv')
 
 	if not cfg.options.python_disable:
 		cfg.load('python')
@@ -265,11 +253,11 @@ def build(bld):
 
 		if not bld.env.vigra_disable:
 			for test in tests_vigra:
-				bld.program(features='cxx test vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
+				bld.program(features='cxx test', uselib='vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		if not bld.env.opencv_disable:
 			for test in tests_opencv:
-				bld.program(features='cxx test opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
+				bld.program(features='cxx test', uselib = 'opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test_summary)
