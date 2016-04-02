@@ -152,6 +152,36 @@ bool cpu_has_avx_fma()
     return supports_fma;
 }
 
+bool cpu_enabled_avx2(bool enable)
+{
+    if (enable)
+        supports_avx2 = _supports_avx2();
+    else
+        supports_avx2 = false;
+
+    return supports_avx2;
+}
+
+bool cpu_enabled_avx(bool enable)
+{
+    if (enable)
+        supports_avx = _supports_avx();
+    else
+        supports_avx = false;
+
+    return supports_avx;
+}
+
+bool cpu_enabled_avx_fma(bool enable)
+{
+    if (enable)
+        supports_fma = _supports_fma();
+    else
+        supports_fma = false;
+
+    return supports_fma;
+}
+
 } // namespace detail
 
 namespace iir
