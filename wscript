@@ -188,11 +188,12 @@ def configure(cfg):
 		cfg.check_cxx_flag("/O2")
 		cfg.check_cxx_flag("/W4")
 		cfg.check_cxx_flag('/EHsc')
-		cfg.check_cxx_flag('/fp:fast')
+		cfg.check(msg='Checking if the compiler accepts the \'/fp:fast\' flag', mandatory=False, features='cxx', cxxflags=['/fp:fast'], uselib_store="fastopt")
 	else:
 		cfg.check_cxx_flag("-Wall")
 		cfg.check_cxx_flag("-Wextra")
-		cfg.check_cxx_flag("-Ofast")
+		cfg.check_cxx_flag("-O3")
+		cfg.check(msg='Checking if the compiler accepts the \'-Ofast\' flag', mandatory=False, features='cxx', cxxflags=['-Ofast'], uselib_store="fastopt")
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
@@ -237,28 +238,28 @@ def build(bld):
 	bld.objects(
 		source  = sources_noavx,
 		target  = 'objs_noavx',
-		uselib  = 'cxxshlib')
+		uselib  = 'cxxshlib fastopt')
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_avx',
-		uselib  = 'cxxshlib cpu_avx')
+		uselib  = 'cxxshlib cpu_avx fastopt')
 	bld.objects(
 		source  = sources_avx_fma,
 		target  = 'objs_avx_fma',
-		uselib  = 'cxxshlib cpu_avx cpu_fma')
+		uselib  = 'cxxshlib cpu_avx cpu_fma fastopt')
 
 	bld.objects(
 		source  = sources_noavx,
 		target  = 'objs_st_noavx',
-		uselib  = 'cxxstlib')
+		uselib  = 'cxxstlib fastopt')
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_st_avx',
-		uselib  = 'cxxstlib cpu_avx')
+		uselib  = 'cxxstlib cpu_avx fastopt')
 	bld.objects(
 		source  = sources_avx,
 		target  = 'objs_st_avx_fma',
-		uselib  = 'cxxstlib cpu_avx cpu_fma')
+		uselib  = 'cxxstlib cpu_avx cpu_fma fastopt')
 
 	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_avx_fma objs_noavx", name="fastfilters_shared")
 
