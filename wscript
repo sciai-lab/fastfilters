@@ -188,12 +188,12 @@ def configure(cfg):
 		cfg.check_cxx_flag("/O2")
 		cfg.check_cxx_flag("/W4")
 		cfg.check_cxx_flag('/EHsc')
-		cfg.check(msg='Checking if the compiler accepts the \'/fp:fast\' flag', mandatory=False, features='cxx', cxxflags=['/fp:fast'], uselib_store="fastopt")
+		cfg.check(msg='Checking if the compiler accepts the \'/fp:fast\' flag', mandatory=True, features='cxx', cxxflags=['-Ofast'], uselib_store="fastopt")
 	else:
 		cfg.check_cxx_flag("-Wall")
 		cfg.check_cxx_flag("-Wextra")
-		cfg.check_cxx_flag("-O3")
-		cfg.check(msg='Checking if the compiler accepts the \'-Ofast\' flag', mandatory=False, features='cxx', cxxflags=['-Ofast'], uselib_store="fastopt")
+		cfg.check(msg='Checking if the compiler accepts the \'-O3\' flag', mandatory=True, features='cxx', cxxflags=['-O3'], uselib_store="normalopt")
+		cfg.check(msg='Checking if the compiler accepts the \'-Ofast\' flag', mandatory=True, features='cxx', cxxflags=['-Ofast'], uselib_store="fastopt")
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
@@ -281,15 +281,15 @@ def build(bld):
 		tests_opencv = ["opencv.cxx"]
 
 		for test in tests:
-			bld.program(features='cxx test', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters_shared")
+			bld.program(features='cxx test', uselib='normalopt', source=["tests/" + test] + tests_common, target="test_" + test[:-4], use="fastfilters_shared")
 
 		if not bld.env.vigra_disable:
 			for test in tests_vigra:
-				bld.program(features='cxx test', uselib='vigra', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
+				bld.program(features='cxx test', uselib='vigra normalopt', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		if not bld.env.opencv_disable:
 			for test in tests_opencv:
-				bld.program(features='cxx test', uselib = 'opencv', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
+				bld.program(features='cxx test', uselib = 'opencv normalopt', source=["tests/" + test], target="test_" + test[:-4], use="fastfilters_shared")
 
 		bld.options.all_tests = True
 		bld.add_post_fun(waf_unit_test_summary)
