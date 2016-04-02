@@ -64,12 +64,12 @@ namespace fastfilters
 namespace fir
 {
 
-template <bool is_symmetric>
+template <bool is_symmetric, unsigned half_kernel_len>
 FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times,
                             const unsigned dim_stride, float *output, Kernel &kernel)
 {
-    const unsigned int kernel_len = kernel.len();
-    const unsigned int half_kernel_len = kernel.half_len();
+    const unsigned int kernel_len = 2 * half_kernel_len + 1;
+    // const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
     const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
 
@@ -257,11 +257,11 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
     detail::avx_free(tmp);
 }
 
-template <bool is_symmetric>
+template <bool is_symmetric, unsigned half_kernel_len>
 FNAME_INTERNAL_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
                             const unsigned n_times, float *output, Kernel &kernel)
 {
-    const unsigned int half_kernel_len = kernel.half_len();
+    // const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int dim_avx_end = n_times & ~7;
     const unsigned int dim_left = n_times - dim_avx_end;
     const unsigned int n_dims_aligned = (n_times + 8) & ~7;
@@ -454,22 +454,67 @@ FNAME_INTERNAL_OUTER_SINGLE(const float *input, const unsigned int n_pixels, con
     detail::avx_free(test);
 }
 
+namespace
+{
+
+template <bool symmetric, unsigned N> struct inner_single_unroll
+{
+    static inline void call(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                            const unsigned dim_stride, float *output, Kernel &kernel)
+    {
+        if (kernel.half_len() == N)
+            CALL_INTERNAL_INNER_SINGLE<symmetric, N>(input, n_pixels, n_times, dim_stride, output, kernel);
+        else
+            inner_single_unroll<symmetric, N - 1>::call(input, n_pixels, n_times, dim_stride, output, kernel);
+    }
+};
+
+template <bool symmetric> struct inner_single_unroll<symmetric, 0u>
+{
+    static inline void call(const float *, const unsigned int, const unsigned, const unsigned, float *, Kernel &)
+    {
+    }
+};
+}
+
 FNAME_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times, const unsigned dim_stride,
                    float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        CALL_INTERNAL_INNER_SINGLE<true>(input, n_pixels, n_times, dim_stride, output, kernel);
+        inner_single_unroll<true, 12>::call(input, n_pixels, n_times, dim_stride, output, kernel);
     else
-        CALL_INTERNAL_INNER_SINGLE<false>(input, n_pixels, n_times, dim_stride, output, kernel);
+        inner_single_unroll<false, 12>::call(input, n_pixels, n_times, dim_stride, output, kernel);
+}
+
+namespace
+{
+template <bool symmetric, unsigned N> struct outer_single_unroll
+{
+    static inline void call(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
+                            const unsigned n_times, float *output, Kernel &kernel)
+    {
+        if (kernel.half_len() == N)
+            CALL_INTERNAL_OUTER_SINGLE<symmetric, N>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        else
+            outer_single_unroll<symmetric, N - 1>::call(input, n_pixels, pixel_stride, n_times, output, kernel);
+    }
+};
+
+template <bool symmetric> struct outer_single_unroll<symmetric, 0u>
+{
+    static inline void call(const float *, const unsigned int, const unsigned, const unsigned, float *, Kernel &)
+    {
+    }
+};
 }
 
 FNAME_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned pixel_stride, const unsigned n_times,
                    float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        CALL_INTERNAL_OUTER_SINGLE<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        outer_single_unroll<true, 12>::call(input, n_pixels, pixel_stride, n_times, output, kernel);
     else
-        CALL_INTERNAL_OUTER_SINGLE<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        outer_single_unroll<false, 12>::call(input, n_pixels, pixel_stride, n_times, output, kernel);
 }
 
 } // namespace detail
