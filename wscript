@@ -190,7 +190,7 @@ def configure(cfg):
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
-	sources_noavx = ["src/avx.cxx", "src/convolve_fir.cxx", "src/convolve_fir_nosimd.cxx", "src/convolve_iir.cxx", "src/convolve_iir_deriche.cxx"]
+	sources_noavx = ["src/cpu.cxx", "src/convolve_fir.cxx", "src/convolve_fir_nosimd.cxx", "src/convolve_iir.cxx", "src/convolve_iir_nosimd.cxx", "src/kernel_iir_deriche.cxx"]
 	sources_avx = ["src/convolve_fir_avx.cxx"]
 	sources_avx_fma = ["src/convolve_iir_avx.cxx", "src/convolve_fir_avx.cxx"]
 	sources_python = ["src/pybind.cxx"]

@@ -25,7 +25,7 @@
 #include <stdexcept>
 
 #define CONVOLVE_IIR_FUNCTION(x) static void optimized_##x
-#include "convolve_iir.cxx"
+#include "convolve_iir_nosimd.cxx"
 
 namespace fastfilters
 {
