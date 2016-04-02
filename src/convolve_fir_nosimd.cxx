@@ -25,14 +25,15 @@ namespace fastfilters
 namespace fir
 {
 
-
-namespace {
-
-template<unsigned half_kernel_len>
-static void internal_convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                     const unsigned int dim_stride, float *output, Kernel &kernel)
+namespace
 {
-    const unsigned int kernel_len = 2*half_kernel_len + 1;
+
+template <unsigned half_kernel_len>
+static void internal_convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels,
+                                                     const unsigned n_times, const unsigned int dim_stride,
+                                                     float *output, Kernel &kernel)
+{
+    const unsigned int kernel_len = 2 * half_kernel_len + 1;
     ConstantVector<float> tmpline(n_pixels);
 
     for (unsigned int i = 0; i < n_times; ++i) {
@@ -92,12 +93,13 @@ static void internal_convolve_fir_inner_single_noavx(const float *input, const u
     }
 }
 
-template<unsigned half_kernel_len>
-static void internal_convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                                     const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel)
+template <unsigned half_kernel_len>
+static void internal_convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels,
+                                                     const unsigned int pixel_stride, const unsigned n_times,
+                                                     const unsigned dim_stride, float *output, Kernel &kernel)
 {
-    //const unsigned int kernel_len = kernel.len();
-    const unsigned int kernel_len = 2*half_kernel_len + 1;
+    // const unsigned int kernel_len = kernel.len();
+    const unsigned int kernel_len = 2 * half_kernel_len + 1;
     ConstantVector<float> tmpline(n_pixels);
 
     for (unsigned int i = 0; i < n_times; ++i) {
@@ -164,40 +166,92 @@ void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pi
                                      const unsigned int dim_stride, float *output, Kernel &kernel)
 {
     switch (kernel.half_len()) {
-        case 1: internal_convolve_fir_inner_single_noavx<1>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 2: internal_convolve_fir_inner_single_noavx<2>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 3: internal_convolve_fir_inner_single_noavx<3>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 4: internal_convolve_fir_inner_single_noavx<4>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 5: internal_convolve_fir_inner_single_noavx<5>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 6: internal_convolve_fir_inner_single_noavx<6>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 7: internal_convolve_fir_inner_single_noavx<7>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 8: internal_convolve_fir_inner_single_noavx<8>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 9: internal_convolve_fir_inner_single_noavx<9>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 10: internal_convolve_fir_inner_single_noavx<10>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 11: internal_convolve_fir_inner_single_noavx<11>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        case 12: internal_convolve_fir_inner_single_noavx<12>(input, n_pixels, n_times, dim_stride, output, kernel); break;
-        default: throw std::logic_error("Kernel too long.");
+    case 1:
+        internal_convolve_fir_inner_single_noavx<1>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 2:
+        internal_convolve_fir_inner_single_noavx<2>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 3:
+        internal_convolve_fir_inner_single_noavx<3>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 4:
+        internal_convolve_fir_inner_single_noavx<4>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 5:
+        internal_convolve_fir_inner_single_noavx<5>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 6:
+        internal_convolve_fir_inner_single_noavx<6>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 7:
+        internal_convolve_fir_inner_single_noavx<7>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 8:
+        internal_convolve_fir_inner_single_noavx<8>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 9:
+        internal_convolve_fir_inner_single_noavx<9>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 10:
+        internal_convolve_fir_inner_single_noavx<10>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 11:
+        internal_convolve_fir_inner_single_noavx<11>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 12:
+        internal_convolve_fir_inner_single_noavx<12>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    default:
+        throw std::logic_error("Kernel too long.");
     }
 }
-
 
 void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
                                      const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel)
 {
     switch (kernel.half_len()) {
-        case 1: internal_convolve_fir_outer_single_noavx<1>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 2: internal_convolve_fir_outer_single_noavx<2>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 3: internal_convolve_fir_outer_single_noavx<3>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 4: internal_convolve_fir_outer_single_noavx<4>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 5: internal_convolve_fir_outer_single_noavx<5>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 6: internal_convolve_fir_outer_single_noavx<6>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 7: internal_convolve_fir_outer_single_noavx<7>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 8: internal_convolve_fir_outer_single_noavx<8>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 9: internal_convolve_fir_outer_single_noavx<9>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 10: internal_convolve_fir_outer_single_noavx<10>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 11: internal_convolve_fir_outer_single_noavx<11>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        case 12: internal_convolve_fir_outer_single_noavx<12>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel); break;
-        default: throw std::logic_error("Kernel too long.");
+    case 1:
+        internal_convolve_fir_outer_single_noavx<1>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 2:
+        internal_convolve_fir_outer_single_noavx<2>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 3:
+        internal_convolve_fir_outer_single_noavx<3>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 4:
+        internal_convolve_fir_outer_single_noavx<4>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 5:
+        internal_convolve_fir_outer_single_noavx<5>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 6:
+        internal_convolve_fir_outer_single_noavx<6>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 7:
+        internal_convolve_fir_outer_single_noavx<7>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 8:
+        internal_convolve_fir_outer_single_noavx<8>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 9:
+        internal_convolve_fir_outer_single_noavx<9>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        break;
+    case 10:
+        internal_convolve_fir_outer_single_noavx<10>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
+                                                     kernel);
+        break;
+    case 11:
+        internal_convolve_fir_outer_single_noavx<11>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
+                                                     kernel);
+        break;
+    case 12:
+        internal_convolve_fir_outer_single_noavx<12>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
+                                                     kernel);
+        break;
+    default:
+        throw std::logic_error("Kernel too long.");
     }
 }
 
