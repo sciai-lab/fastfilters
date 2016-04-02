@@ -13,17 +13,18 @@ python:
 addons:
  apt:
    sources:
+   - llvm-toolchain-precise-3.6
    - ubuntu-toolchain-r-test
    packages:
    - gcc-4.9
    - g++-4.9
-   - clang
+   - clang-3.6
 
 script:
   - git clone https://github.com/ukoethe/vigra.git
   - cd vigra && git checkout a9961899dcbe7cd817d6211bda577af0fa6781e8 && cd ..
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
-  - if [ "$CXX" = "clang++" ]; then export CXX="clang++" CC="clang"; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
   - ./waf configure --vigra-includes=`pwd`/vigra/include --without-opencv
   - ./waf
 
