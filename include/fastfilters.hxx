@@ -50,18 +50,13 @@ FASTFILTERS_API_EXPORT bool cpu_enable_avx_fma(bool enable);
 namespace fir
 {
 
+FASTFILTERS_API_EXPORT bool make_gaussian(double stddev, unsigned order, unsigned n_coefs, std::array<float, 13> &v);
+
 struct FASTFILTERS_API_EXPORT Kernel
 {
-    const bool is_symmetric;
-    std::array<float, 13> coefs;
-    std::array<float, 27> coefs2;
-    const unsigned int size;
-
-    inline Kernel(bool is_symmetric, const std::vector<float> &coefs_) : is_symmetric(is_symmetric), size(coefs_.size())
+  private:
+    void computeFull()
     {
-        for (unsigned idx = 0; idx < size; ++idx)
-            coefs[idx] = coefs_[idx];
-
         for (unsigned int idx = 0; idx < len(); ++idx) {
             float v;
 
@@ -76,6 +71,32 @@ struct FASTFILTERS_API_EXPORT Kernel
                 v = coefs[idx - half_len()];
             coefs2[idx] = v;
         }
+    }
+
+  public:
+    const bool is_symmetric;
+    std::array<float, 13> coefs;
+    std::array<float, 27> coefs2;
+    const unsigned int size;
+
+    inline Kernel(bool is_symmetric, const std::vector<float> &coefs_) : is_symmetric(is_symmetric), size(coefs_.size())
+    {
+        for (unsigned idx = 0; idx < size; ++idx)
+            coefs[idx] = coefs_[idx];
+
+        computeFull();
+    }
+
+    inline Kernel(double stddev, unsigned order) : is_symmetric((order & 1) == 0), size((unsigned int)(stddev * 4.0))
+    {
+        std::vector<float> c;
+        unsigned n_coefs = (unsigned int)(stddev * 4.0);
+
+        if (n_coefs > 12)
+            throw std::logic_error("stddev is too large.");
+
+        make_gaussian(stddev, order, n_coefs, coefs);
+        computeFull();
     }
 
     inline float operator[](std::size_t idx) const
