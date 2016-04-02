@@ -28,7 +28,7 @@ namespace fir
 namespace
 {
 
-template <unsigned half_kernel_len>
+template <unsigned half_kernel_len, bool symmetric>
 static void internal_convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels,
                                                      const unsigned n_times, const unsigned int dim_stride,
                                                      float *output, Kernel &kernel)
@@ -65,11 +65,12 @@ static void internal_convolve_fir_inner_single_noavx(const float *input, const u
 
         // full line
         for (; j < n_pixels - kernel_len / 2; ++j) {
-            float sum = 0.0;
-
-            for (unsigned int k = 0; k < kernel_len; ++k) {
-                const int kreal = k - kernel_len / 2;
-                sum += kernel[k] * tmpline[j + kreal];
+            float sum = kernel.coefs[0] * tmpline[j];
+            for (unsigned int k = 1; k <= half_kernel_len; ++k) {
+                if (symmetric)
+                    sum += kernel.coefs[k] * (tmpline[j + k] + tmpline[j - k]);
+                else
+                    sum += kernel.coefs[k] * (tmpline[j + k] - tmpline[j - k]);
             }
 
             cur_output[j] = sum;
@@ -93,7 +94,7 @@ static void internal_convolve_fir_inner_single_noavx(const float *input, const u
     }
 }
 
-template <unsigned half_kernel_len>
+template <unsigned half_kernel_len, bool symmetric>
 static void internal_convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels,
                                                      const unsigned int pixel_stride, const unsigned n_times,
                                                      const unsigned dim_stride, float *output, Kernel &kernel)
@@ -131,11 +132,12 @@ static void internal_convolve_fir_outer_single_noavx(const float *input, const u
 
         // full line
         for (; j < n_pixels - kernel_len / 2; ++j) {
-            float sum = 0.0;
-
-            for (unsigned int k = 0; k < kernel_len; ++k) {
-                const int kreal = k - kernel_len / 2;
-                sum += kernel[k] * tmpline[(j + kreal)];
+            float sum = kernel.coefs[0] * tmpline[j];
+            for (unsigned int k = 1; k <= half_kernel_len; ++k) {
+                if (symmetric)
+                    sum += kernel.coefs[k] * (tmpline[j + k] + tmpline[j - k]);
+                else
+                    sum += kernel.coefs[k] * (tmpline[j + k] - tmpline[j - k]);
             }
 
             cur_output[j * pixel_stride] = sum;
@@ -160,99 +162,132 @@ static void internal_convolve_fir_outer_single_noavx(const float *input, const u
     }
 }
 
-} // anonymous namespace
-
-void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                     const unsigned int dim_stride, float *output, Kernel &kernel)
+template <bool symmetric>
+static void dispatch_convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels,
+                                                     const unsigned n_times, const unsigned int dim_stride,
+                                                     float *output, Kernel &kernel)
 {
     switch (kernel.half_len()) {
     case 1:
-        internal_convolve_fir_inner_single_noavx<1>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<1, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 2:
-        internal_convolve_fir_inner_single_noavx<2>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<2, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 3:
-        internal_convolve_fir_inner_single_noavx<3>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<3, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 4:
-        internal_convolve_fir_inner_single_noavx<4>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<4, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 5:
-        internal_convolve_fir_inner_single_noavx<5>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<5, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 6:
-        internal_convolve_fir_inner_single_noavx<6>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<6, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 7:
-        internal_convolve_fir_inner_single_noavx<7>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<7, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 8:
-        internal_convolve_fir_inner_single_noavx<8>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<8, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 9:
-        internal_convolve_fir_inner_single_noavx<9>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<9, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 10:
-        internal_convolve_fir_inner_single_noavx<10>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<10, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 11:
-        internal_convolve_fir_inner_single_noavx<11>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<11, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 12:
-        internal_convolve_fir_inner_single_noavx<12>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single_noavx<12, symmetric>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     default:
         throw std::logic_error("Kernel too long.");
     }
 }
 
-void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                                     const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel)
+template <bool symmetric>
+static void dispatch_convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels,
+                                                     const unsigned int pixel_stride, const unsigned n_times,
+                                                     const unsigned dim_stride, float *output, Kernel &kernel)
 {
     switch (kernel.half_len()) {
     case 1:
-        internal_convolve_fir_outer_single_noavx<1>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<1, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 2:
-        internal_convolve_fir_outer_single_noavx<2>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<2, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 3:
-        internal_convolve_fir_outer_single_noavx<3>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<3, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 4:
-        internal_convolve_fir_outer_single_noavx<4>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<4, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 5:
-        internal_convolve_fir_outer_single_noavx<5>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<5, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 6:
-        internal_convolve_fir_outer_single_noavx<6>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<6, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 7:
-        internal_convolve_fir_outer_single_noavx<7>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<7, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 8:
-        internal_convolve_fir_outer_single_noavx<8>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<8, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 9:
-        internal_convolve_fir_outer_single_noavx<9>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_outer_single_noavx<9, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                               output, kernel);
         break;
     case 10:
-        internal_convolve_fir_outer_single_noavx<10>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
-                                                     kernel);
+        internal_convolve_fir_outer_single_noavx<10, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                                output, kernel);
         break;
     case 11:
-        internal_convolve_fir_outer_single_noavx<11>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
-                                                     kernel);
+        internal_convolve_fir_outer_single_noavx<11, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                                output, kernel);
         break;
     case 12:
-        internal_convolve_fir_outer_single_noavx<12>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
-                                                     kernel);
+        internal_convolve_fir_outer_single_noavx<12, symmetric>(input, n_pixels, pixel_stride, n_times, dim_stride,
+                                                                output, kernel);
         break;
     default:
         throw std::logic_error("Kernel too long.");
     }
+}
+
+} // anonymous namespace
+
+void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                     const unsigned int dim_stride, float *output, Kernel &kernel)
+{
+    if (kernel.is_symmetric)
+        dispatch_convolve_fir_inner_single_noavx<true>(input, n_pixels, n_times, dim_stride, output, kernel);
+    else
+        dispatch_convolve_fir_inner_single_noavx<false>(input, n_pixels, n_times, dim_stride, output, kernel);
+}
+
+void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
+                                     const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel)
+{
+    if (kernel.is_symmetric)
+        dispatch_convolve_fir_outer_single_noavx<true>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
+                                                       kernel);
+    else
+        dispatch_convolve_fir_outer_single_noavx<false>(input, n_pixels, pixel_stride, n_times, dim_stride, output,
+                                                        kernel);
 }
 
 } // namespace detail
