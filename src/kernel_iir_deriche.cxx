@@ -156,8 +156,8 @@ static void compute_coefs(const double sigma, const unsigned order, std::array<f
     }
 
     for (unsigned int i = 0; i < 4; ++i) {
-        n_causal[i] = b[i].real() / (M_SQRT2PI * pow(sigma, order + 1));
-        d[i] = a[i + 1].real();
+        n_causal[i] = (float)(b[i].real() / (M_SQRT2PI * pow(sigma, order + 1)));
+        d[i] = (float)(a[i + 1].real());
     }
 
     // eq. 31 for symmetrical filters and eq. 32 for antisymmetrical
