@@ -295,14 +295,14 @@ def build(bld):
 		target  = 'objs_st_avx_fma',
 		uselib  = 'cxxstlib cpu_avx cpu_fma fastopt')
 
-	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_avx_fma objs_noavx fastopt", name="fastfilters_shared")
+	bld.shlib(features='cxx', source=["src/dummy.cxx"], target='fastfilters', use="objs_avx objs_avx_fma objs_noavx", uselib="fastopt", name="fastfilters_shared")
 
 	if 'msvc' in (bld.env.CC_NAME, bld.env.CXX_NAME):
 		static_name = 'fastfilters_static'
 	else:
 		static_name = 'fastfilters'
 
-	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target=static_name, use="objs_st_avx objs_st_avx_fma objs_st_noavx fastopt", name="fastfilters_static")
+	bld(features='cxx cxxstlib', source=["src/dummy.cxx"], target=static_name, use="objs_st_avx objs_st_avx_fma objs_st_noavx", uselib="fastopt", name="fastfilters_static")
 
 	if not bld.env.python_disable:
 		bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
