@@ -191,7 +191,7 @@ def configure(cfg):
 	else:
 		cfg.check_cxx_flag("-Wall")
 		cfg.check_cxx_flag("-Wextra")
-		cfg.check_cxx_flag("-O3")
+		cfg.check_cxx_flag("-Ofast")
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
