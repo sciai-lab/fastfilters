@@ -188,6 +188,7 @@ def configure(cfg):
 		cfg.check_cxx_flag("/O2")
 		cfg.check_cxx_flag("/W4")
 		cfg.check_cxx_flag('/EHsc')
+		cfg.check_cxx_flag('/fp:fast')
 	else:
 		cfg.check_cxx_flag("-Wall")
 		cfg.check_cxx_flag("-Wextra")
