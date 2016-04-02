@@ -75,9 +75,6 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
 
     float *tmp = (float *)detail::avx_memalign(32 * sizeof(float));
 
-    if (half_kernel_len > 32)
-        throw std::logic_error("Kernel too large!");
-
     for (unsigned int dim = 0; dim < n_times; ++dim) {
         // take next line of pixels
         float *cur_output = output + dim * dim_stride;
@@ -457,64 +454,118 @@ FNAME_INTERNAL_OUTER_SINGLE(const float *input, const unsigned int n_pixels, con
 namespace
 {
 
-template <bool symmetric, unsigned N> struct inner_single_unroll
+template <bool symmetric>
+static inline void dispatch_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                         const unsigned dim_stride, float *output, Kernel &kernel)
 {
-    static inline void call(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                            const unsigned dim_stride, float *output, Kernel &kernel)
-    {
-        if (kernel.half_len() == N)
-            CALL_INTERNAL_INNER_SINGLE<symmetric, N>(input, n_pixels, n_times, dim_stride, output, kernel);
-        else
-            inner_single_unroll<symmetric, N - 1>::call(input, n_pixels, n_times, dim_stride, output, kernel);
+    switch (kernel.half_len()) {
+    case 1:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 1>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 2:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 2>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 3:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 3>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 4:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 4>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 5:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 5>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 6:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 6>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 7:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 7>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 8:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 8>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 9:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 9>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 10:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 10>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 11:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 11>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    case 12:
+        CALL_INTERNAL_INNER_SINGLE<symmetric, 12>(input, n_pixels, n_times, dim_stride, output, kernel);
+        break;
+    default:
+        throw std::logic_error("Kernel too long.");
     }
-};
-
-template <bool symmetric> struct inner_single_unroll<symmetric, 0u>
-{
-    static inline void call(const float *, const unsigned int, const unsigned, const unsigned, float *, Kernel &)
-    {
-    }
-};
+}
 }
 
 FNAME_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times, const unsigned dim_stride,
                    float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        inner_single_unroll<true, 12>::call(input, n_pixels, n_times, dim_stride, output, kernel);
+        dispatch_inner_single<true>(input, n_pixels, n_times, dim_stride, output, kernel);
     else
-        inner_single_unroll<false, 12>::call(input, n_pixels, n_times, dim_stride, output, kernel);
+        dispatch_inner_single<false>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
 
 namespace
 {
-template <bool symmetric, unsigned N> struct outer_single_unroll
+template <bool symmetric>
+static inline void dispatch_outer_single(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
+                                         const unsigned n_times, float *output, Kernel &kernel)
 {
-    static inline void call(const float *input, const unsigned int n_pixels, const unsigned pixel_stride,
-                            const unsigned n_times, float *output, Kernel &kernel)
-    {
-        if (kernel.half_len() == N)
-            CALL_INTERNAL_OUTER_SINGLE<symmetric, N>(input, n_pixels, pixel_stride, n_times, output, kernel);
-        else
-            outer_single_unroll<symmetric, N - 1>::call(input, n_pixels, pixel_stride, n_times, output, kernel);
+    switch (kernel.half_len()) {
+    case 1:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 1>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 2:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 2>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 3:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 3>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 4:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 4>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 5:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 5>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 6:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 6>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 7:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 7>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 8:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 8>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 9:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 9>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 10:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 10>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 11:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 11>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    case 12:
+        CALL_INTERNAL_OUTER_SINGLE<symmetric, 12>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        break;
+    default:
+        throw std::logic_error("Kernel too long.");
     }
-};
-
-template <bool symmetric> struct outer_single_unroll<symmetric, 0u>
-{
-    static inline void call(const float *, const unsigned int, const unsigned, const unsigned, float *, Kernel &)
-    {
-    }
-};
+}
 }
 
 FNAME_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned pixel_stride, const unsigned n_times,
                    float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
-        outer_single_unroll<true, 12>::call(input, n_pixels, pixel_stride, n_times, output, kernel);
+        dispatch_outer_single<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
     else
-        outer_single_unroll<false, 12>::call(input, n_pixels, pixel_stride, n_times, output, kernel);
+        dispatch_outer_single<false>(input, n_pixels, pixel_stride, n_times, output, kernel);
 }
 
 } // namespace detail
