@@ -42,7 +42,8 @@
 #endif
 
 #if defined(_MSC_VER)
-FASTFILTERS_EXPIMP_TEMPLATE template class FASTFILTERS_API_EXPORT std::vector<float>;
+FASTFILTERS_EXPIMP_TEMPLATE template class FASTFILTERS_API_EXPORT std::array<float, 13>;
+FASTFILTERS_EXPIMP_TEMPLATE template class FASTFILTERS_API_EXPORT std::array<float, 27>;
 #endif
 
 namespace fastfilters
@@ -65,12 +66,14 @@ namespace fir
 struct FASTFILTERS_API_EXPORT Kernel
 {
     const bool is_symmetric;
-    const std::vector<float> coefs;
-    std::vector<float> coefs2;
+    std::array<float, 13> coefs;
+    std::array<float, 27> coefs2;
+    const unsigned int size;
 
-    inline Kernel(bool is_symmetric, const std::vector<float> &coefs) : is_symmetric(is_symmetric), coefs(coefs)
+    inline Kernel(bool is_symmetric, const std::vector<float> &coefs_) : is_symmetric(is_symmetric), size(coefs_.size())
     {
-        coefs2 = std::vector<float>(len());
+        for (unsigned idx = 0; idx < size; ++idx)
+            coefs[idx] = coefs_[idx];
 
         for (unsigned int idx = 0; idx < len(); ++idx) {
             float v;
@@ -95,11 +98,11 @@ struct FASTFILTERS_API_EXPORT Kernel
 
     inline std::size_t len() const
     {
-        return 2 * coefs.size() - 1;
+        return 2 * size - 1;
     }
     inline std::size_t half_len() const
     {
-        return coefs.size() - 1;
+        return size - 1;
     }
 };
 
