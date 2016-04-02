@@ -70,6 +70,38 @@ int main()
 def check_64bit(self):
 	self.check_cxx(msg='Checking if we compile 64bit binaries', mandatory=True, execute=True, fragment=TEST_64BIT)
 
+TEST_CLANG_HOTFIX = '''
+#include <stdio.h>
+#include <sys/cdefs.h>
+
+extern void foo_alias (void) __asm ("foo");
+
+__extern_always_inline void
+foo (void)
+{
+  puts ("hi oh world!");
+  return foo_alias ();
+}
+
+
+void
+foo_alias (void)
+{
+  puts ("hell oh world");
+}
+
+int
+main ()
+{
+  foo ();
+}
+'''
+@conf
+def check_clang_hotfix(self):
+	res = self.check(msg='Checking if we can compile without the __extern_always_inline clang hotfix', mandatory=False, features='cxx', cxxflags=['-Ofast'], fragment=TEST_CLANG_HOTFIX)
+	if not res:
+		self.env.append_value('CXXFLAGS', '-D__extern_always_inline=extern inline')
+
 @conf
 def check_cxx_flag(self, flag):
 	res = self.check(msg='Checking if the compiler accepts the \'%s\' flag' % flag, mandatory=False, features='cxx', cxxflags=flag)
@@ -194,6 +226,8 @@ def configure(cfg):
 		cfg.check_cxx_flag("-Wextra")
 		cfg.check(msg='Checking if the compiler accepts the \'-O3\' flag', mandatory=True, features='cxx', cxxflags=['-O3'], uselib_store="normalopt")
 		cfg.check(msg='Checking if the compiler accepts the \'-Ofast\' flag', mandatory=True, features='cxx', cxxflags=['-Ofast'], uselib_store="fastopt")
+
+	cfg.check_clang_hotfix()
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
