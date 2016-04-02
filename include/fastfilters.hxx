@@ -54,9 +54,9 @@ FASTFILTERS_API_EXPORT bool cpu_has_avx2();
 FASTFILTERS_API_EXPORT bool cpu_has_avx();
 FASTFILTERS_API_EXPORT bool cpu_has_avx_fma();
 
-FASTFILTERS_API_EXPORT bool cpu_enabled_avx2(bool enable);
-FASTFILTERS_API_EXPORT bool cpu_enabled_avx(bool enable);
-FASTFILTERS_API_EXPORT bool cpu_enabled_avx_fma(bool enable);
+FASTFILTERS_API_EXPORT bool cpu_enable_avx2(bool enable);
+FASTFILTERS_API_EXPORT bool cpu_enable_avx(bool enable);
+FASTFILTERS_API_EXPORT bool cpu_enable_avx_fma(bool enable);
 }
 
 namespace fir
