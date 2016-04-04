@@ -231,7 +231,22 @@ static void internal_convolve_fir_inner_single(const float *input, const unsigne
             _mm256_store_ps(tmp + k, result);
         }
 
-        for (; i < n_pixels; ++i, ++k) {
+        for (; i < n_pixels - half_kernel_len - 1; ++i, ++k) {
+            float sum = cur_input[i] * kernel.coefs[0];
+
+            for (unsigned int k = 0; k <= half_kernel_len; ++k) {
+                if (is_symmetric)
+                    sum += kernel.coefs[k] * (cur_input[i + k] + cur_input[i - k]);
+                else
+                    sum += kernel.coefs[k] * (cur_input[i + k] - cur_input[i - k]);
+            }
+
+            k &= 31;
+            cur_output[i - 32] = tmp[k];
+            tmp[k] = sum;
+        }
+
+        for (unsigned int j = 0; j <= half_kernel_len; ++j, ++i, ++k) {
             float sum = cur_input[i] * kernel.coefs[0];
 
             for (unsigned int k = 0; k <= half_kernel_len; ++k) {
