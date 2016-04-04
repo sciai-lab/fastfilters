@@ -26,37 +26,15 @@ namespace fastfilters
 namespace fir
 {
 
-FASTFILTERS_API_EXPORT void convolve_fir_inner_single_avx(const float *input, const unsigned int n_pixels,
-                                                          const unsigned n_times, const unsigned int dim_stride,
-                                                          float *output, Kernel &kernel);
-
-FASTFILTERS_API_EXPORT void convolve_fir_outer_single_avx(const float *input, const unsigned int n_pixels,
-                                                          const unsigned int pixel_stride, const unsigned n_times,
-                                                          float *output, Kernel &kernel);
-
-FASTFILTERS_API_EXPORT void convolve_fir_inner_single_avx_fma(const float *input, const unsigned int n_pixels,
-                                                              const unsigned n_times, const unsigned int dim_stride,
-                                                              float *output, Kernel &kernel);
-
-FASTFILTERS_API_EXPORT void convolve_fir_outer_single_avx_fma(const float *input, const unsigned int n_pixels,
-                                                              const unsigned int pixel_stride, const unsigned n_times,
-                                                              float *output, Kernel &kernel);
-
-FASTFILTERS_API_EXPORT void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels,
-                                                            const unsigned n_times, const unsigned int dim_stride,
-                                                            float *output, Kernel &kernel);
-
-FASTFILTERS_API_EXPORT void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels,
-                                                            const unsigned int pixel_stride, const unsigned n_times,
-                                                            const unsigned dim_stride, float *output, Kernel &kernel);
-
+template <bool is_avx, bool is_fma>
 FASTFILTERS_API_EXPORT void convolve_fir_inner_single(const float *input, const unsigned int n_pixels,
                                                       const unsigned n_times, const unsigned int dim_stride,
                                                       float *output, Kernel &kernel);
 
+template <bool is_avx, bool is_fma>
 FASTFILTERS_API_EXPORT void convolve_fir_outer_single(const float *input, const unsigned int n_pixels,
                                                       const unsigned int pixel_stride, const unsigned n_times,
-                                                      const unsigned int dim_stride, float *output, Kernel &kernel);
+                                                      const unsigned dim_stride, float *output, Kernel &kernel);
 }
 }
 #endif

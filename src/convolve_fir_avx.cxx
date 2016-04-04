@@ -18,6 +18,7 @@
 #include "fastfilters.hxx"
 #include "util.hxx"
 #include "config.h"
+#include "convolve_fir.hxx"
 
 #include <immintrin.h>
 #include <stdlib.h>
@@ -28,29 +29,20 @@
 
 #if defined(__FMA__) && defined(__AVX__)
 
+#define tpl_avx true
+#define tpl_fma true
 #define _wrap_mm256_fmadd_ps(a, b, c) (_mm256_fmadd_ps((a), (b), (c)))
 
-#define FNAME_INTERNAL_INNER_SINGLE static void internal_convolve_fir_inner_single_avx_fma
-#define FNAME_INTERNAL_OUTER_SINGLE static void internal_convolve_fir_outer_single_avx_fma
-#define CALL_INTERNAL_INNER_SINGLE internal_convolve_fir_inner_single_avx_fma
-#define CALL_INTERNAL_OUTER_SINGLE internal_convolve_fir_outer_single_avx_fma
-#define FNAME_INNER_SINGLE void convolve_fir_inner_single_avx_fma
-#define FNAME_OUTER_SINGLE void convolve_fir_outer_single_avx_fma
-
 #elif defined(__AVX__)
+
+#define tpl_avx true
+#define tpl_fma false
 
 static inline __m256 _wrap_mm256_fmadd_ps(const __m256 a, const __m256 b, const __m256 c)
 {
     __m256 product = _mm256_mul_ps(a, b);
     return _mm256_add_ps(product, c);
 }
-
-#define FNAME_INTERNAL_INNER_SINGLE static void internal_convolve_fir_inner_single_avx
-#define FNAME_INTERNAL_OUTER_SINGLE static void internal_convolve_fir_outer_single_avx
-#define CALL_INTERNAL_INNER_SINGLE internal_convolve_fir_inner_single_avx
-#define CALL_INTERNAL_OUTER_SINGLE internal_convolve_fir_outer_single_avx
-#define FNAME_INNER_SINGLE void convolve_fir_inner_single_avx
-#define FNAME_OUTER_SINGLE void convolve_fir_outer_single_avx
 
 #else
 
@@ -65,13 +57,13 @@ namespace fir
 {
 
 template <bool is_symmetric, unsigned half_kernel_len>
-FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                            const unsigned dim_stride, float *output, Kernel &kernel)
+static void internal_convolve_fir_inner_single(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                               const unsigned dim_stride, float *output, Kernel &kernel)
 {
     const unsigned int kernel_len = 2 * half_kernel_len + 1;
     // const unsigned int half_kernel_len = kernel.half_len();
-    const unsigned int avx_end = (n_pixels - kernel_len) & ~31;
-    const unsigned int avx_end_single = (n_pixels - kernel_len) & ~7;
+    const unsigned int avx_end = (n_pixels - half_kernel_len) & ~31;
+    const unsigned int avx_end_single = (n_pixels - half_kernel_len) & ~7;
 
     float *tmp = (float *)detail::avx_memalign(32 * sizeof(float));
 
@@ -85,8 +77,26 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
         // treament without speed penalties
         unsigned int i = 0;
         for (i = 0; i < ((half_kernel_len + 7) & ~7); ++i) {
-            float sum = 0.0;
+            float sum = kernel.coefs[0] * cur_input[i];
 
+            for (unsigned int k = 1; k <= half_kernel_len; ++k) {
+
+                unsigned int offset;
+                if (i < k)
+                    offset = k - i;
+                else
+                    offset = i - k;
+
+                float diff;
+                if (is_symmetric)
+                    diff = cur_input[i + k] + cur_input[offset];
+                else
+                    diff = cur_input[i + k] - cur_input[offset];
+
+                sum += kernel.coefs[k] * diff;
+            }
+
+#if 0
             for (unsigned int k = 0; k < kernel_len; ++k) {
                 const int kreal = k - kernel_len / 2;
                 unsigned int offset;
@@ -98,6 +108,7 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
                     offset = i + kreal;
                 sum += kernel[k] * cur_input[offset];
             }
+#endif
 
             tmp[i] = sum;
         }
@@ -230,16 +241,19 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
         }
 
         for (; i < n_pixels; ++i, ++k) {
-            float sum = 0.0;
+            float sum = cur_input[i] * kernel.coefs[0];
 
-            for (unsigned int k = 0; k < kernel_len; ++k) {
-                const int kreal = k - kernel_len / 2;
-                unsigned int offset;
-                if (kreal + i >= n_pixels)
-                    offset = n_pixels - ((kreal + i) % n_pixels) - 2;
+            for (unsigned int k = 0; k <= half_kernel_len; ++k) {
+                float right;
+                if (i + k >= n_pixels)
+                    right = cur_input[n_pixels - ((k + i) % n_pixels) - 2];
                 else
-                    offset = i + kreal;
-                sum += kernel[k] * cur_input[offset];
+                    right = cur_input[i + k];
+
+                if (is_symmetric)
+                    sum += kernel.coefs[k] * (right + cur_input[i - k]);
+                else
+                    sum += kernel.coefs[k] * (right - cur_input[i - k]);
             }
 
             k &= 31;
@@ -255,8 +269,9 @@ FNAME_INTERNAL_INNER_SINGLE(const float *input, const unsigned int n_pixels, con
 }
 
 template <bool is_symmetric, unsigned half_kernel_len>
-FNAME_INTERNAL_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                            const unsigned n_times, float *output, Kernel &kernel)
+void internal_convolve_fir_outer_single(const float *input, const unsigned int n_pixels,
+                                        const unsigned int pixel_stride, const unsigned n_times, float *output,
+                                        Kernel &kernel)
 {
     // const unsigned int half_kernel_len = kernel.half_len();
     const unsigned int dim_avx_end = n_times & ~7;
@@ -460,40 +475,40 @@ static inline void dispatch_inner_single(const float *input, const unsigned int 
 {
     switch (kernel.half_len()) {
     case 1:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 1>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 1>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 2:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 2>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 2>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 3:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 3>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 3>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 4:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 4>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 4>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 5:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 5>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 5>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 6:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 6>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 6>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 7:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 7>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 7>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 8:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 8>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 8>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 9:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 9>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 9>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 10:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 10>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 10>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 11:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 11>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 11>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     case 12:
-        CALL_INTERNAL_INNER_SINGLE<symmetric, 12>(input, n_pixels, n_times, dim_stride, output, kernel);
+        internal_convolve_fir_inner_single<symmetric, 12>(input, n_pixels, n_times, dim_stride, output, kernel);
         break;
     default:
         throw std::logic_error("Kernel too long.");
@@ -501,8 +516,10 @@ static inline void dispatch_inner_single(const float *input, const unsigned int 
 }
 }
 
-FNAME_INNER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned n_times, const unsigned dim_stride,
-                   float *output, Kernel &kernel)
+template <>
+void convolve_fir_inner_single<tpl_avx, tpl_fma>(const float *input, const unsigned int n_pixels,
+                                                 const unsigned n_times, const unsigned int dim_stride, float *output,
+                                                 Kernel &kernel)
 {
     if (kernel.is_symmetric)
         dispatch_inner_single<true>(input, n_pixels, n_times, dim_stride, output, kernel);
@@ -518,40 +535,40 @@ static inline void dispatch_outer_single(const float *input, const unsigned int 
 {
     switch (kernel.half_len()) {
     case 1:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 1>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 1>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 2:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 2>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 2>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 3:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 3>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 3>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 4:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 4>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 4>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 5:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 5>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 5>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 6:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 6>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 6>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 7:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 7>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 7>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 8:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 8>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 8>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 9:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 9>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 9>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 10:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 10>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 10>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 11:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 11>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 11>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     case 12:
-        CALL_INTERNAL_OUTER_SINGLE<symmetric, 12>(input, n_pixels, pixel_stride, n_times, output, kernel);
+        internal_convolve_fir_outer_single<symmetric, 12>(input, n_pixels, pixel_stride, n_times, output, kernel);
         break;
     default:
         throw std::logic_error("Kernel too long.");
@@ -559,9 +576,12 @@ static inline void dispatch_outer_single(const float *input, const unsigned int 
 }
 }
 
-FNAME_OUTER_SINGLE(const float *input, const unsigned int n_pixels, const unsigned pixel_stride, const unsigned n_times,
-                   float *output, Kernel &kernel)
+template <>
+void convolve_fir_outer_single<tpl_avx, tpl_fma>(const float *input, const unsigned int n_pixels,
+                                                 const unsigned int pixel_stride, const unsigned n_times,
+                                                 const unsigned dim_stride, float *output, Kernel &kernel)
 {
+    (void)dim_stride;
     if (kernel.is_symmetric)
         dispatch_outer_single<true>(input, n_pixels, pixel_stride, n_times, output, kernel);
     else

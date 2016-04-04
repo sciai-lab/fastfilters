@@ -17,6 +17,7 @@
 //
 #include "fastfilters.hxx"
 #include "vector.hxx"
+#include "convolve_fir.hxx"
 #include <iostream>
 
 namespace fastfilters
@@ -270,8 +271,9 @@ static void dispatch_convolve_fir_outer_single_noavx(const float *input, const u
 
 } // anonymous namespace
 
-void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pixels, const unsigned n_times,
-                                     const unsigned int dim_stride, float *output, Kernel &kernel)
+template <>
+void convolve_fir_inner_single<false, false>(const float *input, const unsigned int n_pixels, const unsigned n_times,
+                                             const unsigned int dim_stride, float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
         dispatch_convolve_fir_inner_single_noavx<true>(input, n_pixels, n_times, dim_stride, output, kernel);
@@ -279,8 +281,10 @@ void convolve_fir_inner_single_noavx(const float *input, const unsigned int n_pi
         dispatch_convolve_fir_inner_single_noavx<false>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
 
-void convolve_fir_outer_single_noavx(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
-                                     const unsigned n_times, const unsigned dim_stride, float *output, Kernel &kernel)
+template <>
+void convolve_fir_outer_single<false, false>(const float *input, const unsigned int n_pixels,
+                                             const unsigned int pixel_stride, const unsigned n_times,
+                                             const unsigned dim_stride, float *output, Kernel &kernel)
 {
     if (kernel.is_symmetric)
         dispatch_convolve_fir_outer_single_noavx<true>(input, n_pixels, pixel_stride, n_times, dim_stride, output,

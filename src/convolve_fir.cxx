@@ -27,22 +27,22 @@ void convolve_fir_inner_single(const float *input, const unsigned int n_pixels, 
                                const unsigned int dim_stride, float *output, Kernel &kernel)
 {
     if (detail::cpu_has_avx_fma())
-        convolve_fir_inner_single_avx_fma(input, n_pixels, n_times, dim_stride, output, kernel);
+        convolve_fir_inner_single<true, true>(input, n_pixels, n_times, dim_stride, output, kernel);
     else if (detail::cpu_has_avx())
-        convolve_fir_inner_single_avx(input, n_pixels, n_times, dim_stride, output, kernel);
+        convolve_fir_inner_single<true, false>(input, n_pixels, n_times, dim_stride, output, kernel);
     else
-        convolve_fir_inner_single_noavx(input, n_pixels, n_times, dim_stride, output, kernel);
+        convolve_fir_inner_single<false, false>(input, n_pixels, n_times, dim_stride, output, kernel);
 }
 
 void convolve_fir_outer_single(const float *input, const unsigned int n_pixels, const unsigned int pixel_stride,
                                const unsigned n_times, const unsigned int dim_stride, float *output, Kernel &kernel)
 {
     if (detail::cpu_has_avx_fma() && dim_stride == 1)
-        convolve_fir_outer_single_avx_fma(input, n_pixels, pixel_stride, n_times, output, kernel);
+        convolve_fir_outer_single<true, true>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
     else if (detail::cpu_has_avx() && dim_stride == 1)
-        convolve_fir_outer_single_avx(input, n_pixels, pixel_stride, n_times, output, kernel);
+        convolve_fir_outer_single<true, false>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
     else
-        convolve_fir_outer_single_noavx(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
+        convolve_fir_outer_single<false, false>(input, n_pixels, pixel_stride, n_times, dim_stride, output, kernel);
 }
 
 void convolve_fir(const float *input, const unsigned int pixel_n, const unsigned int pixel_stride,
