@@ -38,11 +38,7 @@
 #define tpl_avx true
 #define tpl_fma false
 
-static inline __m256 _wrap_mm256_fmadd_ps(const __m256 a, const __m256 b, const __m256 c)
-{
-    __m256 product = _mm256_mul_ps(a, b);
-    return _mm256_add_ps(product, c);
-}
+#define _wrap_mm256_fmadd_ps(a, b, c) (_mm256_add_ps(_mm256_mul_ps((a), (b)), (c)))
 
 #else
 
