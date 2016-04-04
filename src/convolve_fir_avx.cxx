@@ -72,43 +72,38 @@ static void internal_convolve_fir_inner_single(const float *input, const unsigne
         float *cur_output = output + dim * dim_stride;
         const float *cur_input = input + dim * dim_stride;
 
-        // this function is only used for small kernels (<25 pixel)
-        // such that non-vectorized code can be used for the border
-        // treament without speed penalties
+        // FIXME: for small inputs the right boundary will be wrong
         unsigned int i = 0;
-        for (i = 0; i < ((half_kernel_len + 7) & ~7); ++i) {
+        for (i = 0; i < half_kernel_len; ++i) {
+            float sum = kernel.coefs[0] * cur_input[i];
+
+            for (unsigned int k = 1; k < i; ++k) {
+                if (is_symmetric)
+                    sum += kernel.coefs[k] * (cur_input[i + k] + cur_input[i - k]);
+                else
+                    sum += kernel.coefs[k] * (cur_input[i + k] - cur_input[i - k]);
+            }
+
+            for (unsigned int k = i; k <= half_kernel_len; ++k) {
+                if (is_symmetric)
+                    sum += kernel.coefs[k] * (cur_input[i + k] + cur_input[k - i]);
+                else
+                    sum += kernel.coefs[k] * (cur_input[i + k] - cur_input[k - i]);
+            }
+
+            tmp[i] = sum;
+        }
+
+        // align to 8 pixel boundary
+        for (; i < ((half_kernel_len + 7) & ~7); ++i) {
             float sum = kernel.coefs[0] * cur_input[i];
 
             for (unsigned int k = 1; k <= half_kernel_len; ++k) {
-
-                unsigned int offset;
-                if (i < k)
-                    offset = k - i;
-                else
-                    offset = i - k;
-
-                float diff;
                 if (is_symmetric)
-                    diff = cur_input[i + k] + cur_input[offset];
+                    sum += kernel.coefs[k] * (cur_input[i + k] + cur_input[i - k]);
                 else
-                    diff = cur_input[i + k] - cur_input[offset];
-
-                sum += kernel.coefs[k] * diff;
+                    sum += kernel.coefs[k] * (cur_input[i + k] - cur_input[i - k]);
             }
-
-#if 0
-            for (unsigned int k = 0; k < kernel_len; ++k) {
-                const int kreal = k - kernel_len / 2;
-                unsigned int offset;
-                if (kreal + (int)i < 0)
-                    offset = -i - kreal;
-                else if (kreal + i >= n_pixels)
-                    offset = n_pixels - ((kreal + i) % n_pixels) - 2;
-                else
-                    offset = i + kreal;
-                sum += kernel[k] * cur_input[offset];
-            }
-#endif
 
             tmp[i] = sum;
         }
