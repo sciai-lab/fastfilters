@@ -160,6 +160,11 @@ FASTFILTERS_API_EXPORT void convolve_iir_outer_single(const float *input, const 
 
 } // namespace iir
 
+namespace linalg
+{
+void eigen2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const std::size_t len);
+} // namespace linalg
+
 } // namespace fastfilters
 
 #endif
