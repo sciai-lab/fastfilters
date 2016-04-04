@@ -226,8 +226,7 @@ def configure(cfg):
 		cfg.check_cxx_flag("-Wextra")
 		cfg.check(msg='Checking if the compiler accepts the \'-O3\' flag', mandatory=True, features='cxx', cxxflags=['-O3'], uselib_store="normalopt")
 		cfg.check(msg='Checking if the compiler accepts the \'-Ofast\' flag', mandatory=True, features='cxx', cxxflags=['-Ofast'], uselib_store="fastopt")
-
-	cfg.check_clang_hotfix()
+		cfg.check_clang_hotfix()
 
 	if not cfg.options.vigra_disable:
 		cfg.check_vigra([cfg.options.vigra_incdir])
