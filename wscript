@@ -38,6 +38,7 @@ def configure(cfg):
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
 	cfg.env.append_value('CFLAGS', ['-std=c99'])
+	cfg.env.append_value('CXXFLAGS', ['-std=c++11'])
 
 	cfg.write_config_header('include/config.h')
 
