@@ -19,30 +19,51 @@
 #include "fastfilters.h"
 #include "common.h"
 
-#include <immintrin.h>
-
 typedef void (*ev2d_fn_t)(const float *, const float *, const float *, float *, float *, const size_t);
-
 
 void _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len);
 
-static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len)
+static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+                          const size_t len)
 {
+    for (size_t i = 0; i < len; i++) {
+        float v_xx = xx[i];
+        float v_xy = xy[i];
+        float v_yy = yy[i];
 
+        float T = v_xx + v_yy;
+        float Thalf = T / 2;
+        float Thalfsq = Thalf * Thalf;
+
+        float D = v_xx * v_yy + v_xy * v_xy;
+
+        float Dsqrt = sqrt(Thalfsq - D);
+
+        float ev0 = Thalf + Dsqrt;
+        float ev1 = Thalf - Dsqrt;
+
+        if (ev0 > ev1) {
+            ev_small[i] = ev1;
+            ev_big[i] = ev0;
+        } else {
+            ev_small[i] = ev0;
+            ev_big[i] = ev1;
+        }
+    }
 }
 
 static ev2d_fn_t g_ev2d_fn = NULL;
 
-
 void fastfilters_linalg_init()
 {
-	if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
-		g_ev2d_fn = _ev2d_avx;
-	else
-		g_ev2d_fn = _ev2d_default;
+    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
+        g_ev2d_fn = _ev2d_avx;
+    else
+        g_ev2d_fn = _ev2d_default;
 }
 
-void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len)
+void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+                             const size_t len)
 {
-	g_ev2d_fn(xx, xy, yy, ev_small, ev_big, len);
+    g_ev2d_fn(xx, xy, yy, ev_small, ev_big, len);
 }

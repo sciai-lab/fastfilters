@@ -16,8 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
-
 // based on vigra's include/gaussian.gxx with the following license:
 /************************************************************************/
 /*                                                                      */
@@ -57,68 +55,67 @@
 #include "fastfilters.h"
 #include "common.h"
 
-
 fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
 {
-	double norm;
-	double sigma2 = -0.5 / sigma / sigma;
+    double norm;
+    double sigma2 = -0.5 / sigma / sigma;
 
-	if (order > 2)
-		return NULL;
+    if (order > 2)
+        return NULL;
 
-	if (sigma < 0)
-		return NULL;
+    if (sigma < 0)
+        return NULL;
 
-	fastfilters_kernel_fir_t kernel = fastfilters_memory_alloc(sizeof(struct _fastfilters_kernel_fir_t));
-	if (!kernel)
-		return NULL;
+    fastfilters_kernel_fir_t kernel = fastfilters_memory_alloc(sizeof(struct _fastfilters_kernel_fir_t));
+    if (!kernel)
+        return NULL;
 
-	kernel->len = ceil((3.0 + 0.5 * order)*sigma);
-	kernel->coefs = fastfilters_memory_alloc(sizeof(float) * (kernel->len + 1));
-	if (!kernel->coefs) {
-		fastfilters_memory_free(kernel);
-		return NULL;
-	}
+    kernel->len = ceil((3.0 + 0.5 * order) * sigma);
+    kernel->coefs = fastfilters_memory_alloc(sizeof(float) * (kernel->len + 1));
+    if (!kernel->coefs) {
+        fastfilters_memory_free(kernel);
+        return NULL;
+    }
 
-	if (order == 1)
-		kernel->is_symmetric = false;
-	else
-		kernel->is_symmetric = true;
+    if (order == 1)
+        kernel->is_symmetric = false;
+    else
+        kernel->is_symmetric = true;
 
-	switch (order) {
-		case 1:
-		case 2:
-			norm = -1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 3));
-			break;
+    switch (order) {
+    case 1:
+    case 2:
+        norm = -1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 3));
+        break;
 
-		case 3:
-			norm = 1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 5));
-			break;
+    case 3:
+        norm = 1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 5));
+        break;
 
-		default:
-			norm = 1.0 / (sqrt(2.0 * M_PI) / sigma);
-			break;
-	}
+    default:
+        norm = 1.0 / (sqrt(2.0 * M_PI) / sigma);
+        break;
+    }
 
-	for (unsigned int x = 0; x <= kernel->len; ++x) {
-		double x2 = x*x;
-		double g = norm * exp(x2 * sigma2);
-		switch (order) {
-			case 0:
-				kernel->coefs[x] = g;
-				break;
-			case 1:
-				kernel->coefs[x] = x*g;
-			case 2:
-				kernel->coefs[x] = (1.0 - (x/sigma)*(x/sigma)) * g;
-		}
-	}
+    for (unsigned int x = 0; x <= kernel->len; ++x) {
+        double x2 = x * x;
+        double g = norm * exp(x2 * sigma2);
+        switch (order) {
+        case 0:
+            kernel->coefs[x] = g;
+            break;
+        case 1:
+            kernel->coefs[x] = x * g;
+        case 2:
+            kernel->coefs[x] = (1.0 - (x / sigma) * (x / sigma)) * g;
+        }
+    }
 
-	return kernel;
+    return kernel;
 }
 
 void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel)
 {
-	fastfilters_memory_free(kernel->coefs);
-	fastfilters_memory_free(kernel);
+    fastfilters_memory_free(kernel->coefs);
+    fastfilters_memory_free(kernel);
 }

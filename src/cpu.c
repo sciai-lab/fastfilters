@@ -33,7 +33,6 @@
 #include <intrin.h>
 #endif
 
-
 #define cpuid_bit_XSAVE 0x04000000
 #define cpuid_bit_OSXSAVE 0x08000000
 #define cpuid_bit_AVX 0x10000000
@@ -43,11 +42,12 @@
 #define xcr0_bit_XMM 0x00000002
 #define xcr0_bit_YMM 0x00000004
 
-typedef struct {
-	unsigned int eax;
-	unsigned int ebx;
-	unsigned int ecx;
-	unsigned int edx;
+typedef struct
+{
+    unsigned int eax;
+    unsigned int ebx;
+    unsigned int ecx;
+    unsigned int edx;
 } cpuid_t;
 
 typedef unsigned long long xgetbv_t;
@@ -77,8 +77,6 @@ static inline int get_cpuid(unsigned int level, cpuid_t *id)
 #error "No known way to query for CPUID."
 #endif
 }
-
-
 
 #if defined(HAVE_ASM_XGETBV)
 
@@ -114,9 +112,6 @@ static inline xgetbv_t xgetbv()
 #else
 #error "No known way to use xgetbv."
 #endif
-
-
-
 
 #if defined(HAVE_GNU_CPU_SUPPORTS_AVX2)
 
@@ -226,28 +221,27 @@ static bool _supports_fma()
 
 #endif
 
-
 static bool g_supports_avx = false;
 static bool g_supports_fma = false;
 static bool g_supports_avx2 = false;
 
 void fastfilters_cpu_init(void)
 {
-	g_supports_avx = _supports_avx();
-	g_supports_fma = _supports_fma();
-	g_supports_avx2 = _supports_avx2();
+    g_supports_avx = _supports_avx();
+    g_supports_fma = _supports_fma();
+    g_supports_avx2 = _supports_avx2();
 }
 
 bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature)
 {
-	switch (feature) {
-		case FASTFILTERS_CPU_AVX:
-			return g_supports_avx;
-		case FASTFILTERS_CPU_FMA:
-			return g_supports_fma;
-		case FASTFILTERS_CPU_AVX2:
-			return g_supports_avx2;
-		default:
-			return false;
-	}
+    switch (feature) {
+    case FASTFILTERS_CPU_AVX:
+        return g_supports_avx;
+    case FASTFILTERS_CPU_FMA:
+        return g_supports_fma;
+    case FASTFILTERS_CPU_AVX2:
+        return g_supports_avx2;
+    default:
+        return false;
+    }
 }

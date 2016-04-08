@@ -73,12 +73,12 @@ py::array_t<float> linalg_ev2d(py::array_t<float> &mtx)
 
     float *inptr = (float *)info.ptr;
     float *xx = inptr;
-    float *xy = inptr + info.strides[0];
-    float *yy = inptr + 2 * info.strides[0];
+    float *xy = inptr + info.strides[0] / sizeof(float);
+    float *yy = inptr + 2 * info.strides[0] / sizeof(float);
 
     float *outptr = (float *)info_out.ptr;
     float *ev_small = outptr;
-    float *ev_big = outptr + info_out.strides[0];
+    float *ev_big = outptr + info_out.strides[0] / sizeof(float);
 
     fastfilters_linalg_ev2d(xx, xy, yy, ev_small, ev_big, info.shape[1]);
 

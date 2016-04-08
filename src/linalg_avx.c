@@ -49,10 +49,35 @@ void _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_smal
 
         __m256 mask = _mm256_cmp_ps(ev0, ev1, _CMP_LE_OQ);
 
-        __m256 v_ev_small = _mm256_or_ps(_mm256_and_ps(mask, ev1), _mm256_andnot_ps(mask, ev0));
-        __m256 v_ev_big = _mm256_or_ps(_mm256_andnot_ps(mask, ev1), _mm256_and_ps(mask, ev0));
+        __m256 v_ev_big = _mm256_or_ps(_mm256_and_ps(mask, ev1), _mm256_andnot_ps(mask, ev0));
+        __m256 v_ev_small = _mm256_or_ps(_mm256_andnot_ps(mask, ev1), _mm256_and_ps(mask, ev0));
 
         _mm256_storeu_ps(ev_small + i, v_ev_small);
         _mm256_storeu_ps(ev_big + i, v_ev_big);
+    }
+
+    for (size_t i = avx_end; i < len; i++) {
+        float v_xx = xx[i];
+        float v_xy = xy[i];
+        float v_yy = yy[i];
+
+        float T = v_xx + v_yy;
+        float Thalf = T / 2;
+        float Thalfsq = Thalf * Thalf;
+
+        float D = v_xx * v_yy + v_xy * v_xy;
+
+        float Dsqrt = sqrt(Thalfsq - D);
+
+        float ev0 = Thalf + Dsqrt;
+        float ev1 = Thalf - Dsqrt;
+
+        if (ev0 > ev1) {
+            ev_small[i] = ev1;
+            ev_big[i] = ev0;
+        } else {
+            ev_small[i] = ev0;
+            ev_big[i] = ev1;
+        }
     }
 }

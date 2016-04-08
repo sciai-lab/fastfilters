@@ -27,17 +27,12 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct _fastfilters_kernel_fir_t * fastfilters_kernel_fir_t;
+typedef struct _fastfilters_kernel_fir_t *fastfilters_kernel_fir_t;
 
-typedef enum {
-	FASTFILTERS_CPU_AVX,
-	FASTFILTERS_CPU_FMA,
-	FASTFILTERS_CPU_AVX2
-} fastfilters_cpu_feature_t;
+typedef enum { FASTFILTERS_CPU_AVX, FASTFILTERS_CPU_FMA, FASTFILTERS_CPU_AVX2 } fastfilters_cpu_feature_t;
 
-typedef void* (*fastfilters_alloc_fn_t)(size_t size);
+typedef void *(*fastfilters_alloc_fn_t)(size_t size);
 typedef void (*fastfilters_free_fn_t)(void *);
-
 
 void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
@@ -46,7 +41,8 @@ bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
 fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
 void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
-void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len);
+void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+                             const size_t len);
 
 #ifdef __cplusplus
 }
