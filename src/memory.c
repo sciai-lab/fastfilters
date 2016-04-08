@@ -67,7 +67,7 @@ void *fastfilters_memory_align(size_t alignment, size_t size)
 	void *ptr_aligned = (void *)ptr_i;
 	uint64_t *ptr_magic = (uint64_t *)(ptr_i - 8);
 
-	*ptr_magic = ALIGN_MAGIC | ptr_diff&0xff;
+	*ptr_magic = ALIGN_MAGIC | (ptr_diff&0xff);
 
 	return ptr_aligned;
 }
@@ -76,7 +76,7 @@ void fastfilters_memory_align_free(void *ptr)
 {
 	uint64_t magic = *(uint64_t *)(ptr - 8);
 
-	assert(magic & ~0xff == ALIGN_MAGIC);
+	assert((magic & ~0xff) == ALIGN_MAGIC);
 
 	ptr -= magic&0xff;
 	free(ptr);
