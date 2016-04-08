@@ -37,13 +37,13 @@ def configure(cfg):
 	cfg.check_python_headers()
 
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
-	cfg.env.append_value('CFLAGS', ['-std=c99'])
-	cfg.env.append_value('CXXFLAGS', ['-std=c++11'])
+	cfg.env.append_value('CFLAGS', ['-std=c99', '-Wextra', '-Wall'])
+	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-Wextra', '-Wall'])
 
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
-	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c"]
+	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c", "src/kernel_fir.c"]
 	sources_python = ["src/bindings_python.cxx"]
 
 

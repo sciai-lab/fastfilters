@@ -44,7 +44,7 @@ void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t fre
 bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
 
 fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
-
+void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
 
 #ifdef __cplusplus

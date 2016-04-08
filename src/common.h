@@ -19,9 +19,21 @@
 #ifndef FASTFILTERS_COMMON_H
 #define FASTFILTERS_COMMON_H
 
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <math.h>
+
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 struct _fastfilters_kernel_fir_t {
 	size_t len;
@@ -38,5 +50,11 @@ void fastfilters_memory_free(void *ptr);
 
 void *fastfilters_memory_align(size_t alignment, size_t size);
 void fastfilters_memory_align_free(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
+
+
 
 #endif
