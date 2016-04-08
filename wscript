@@ -36,10 +36,13 @@ def configure(cfg):
 	cfg.check_python_version((2,3))
 	cfg.check_python_headers()
 
+	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include'])
+	cfg.env.append_value('CFLAGS', ['-std=c99'])
+
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
-	sources = ["src/kernel_fir.c"]
+	sources = ["src/cpu.c"]
 	sources_python = ["src/bindings_python.cxx"]
 
 
