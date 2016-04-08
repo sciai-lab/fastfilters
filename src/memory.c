@@ -19,7 +19,65 @@
 #include "fastfilters.h"
 #include "common.h"
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
-{
+#include <stdlib.h>
+#include <assert.h>
 
+#define	ALIGN_MAGIC	0xd2ac461d9c25ee00
+
+static fastfilters_alloc_fn_t g_alloc_fn = NULL;
+static fastfilters_free_fn_t g_free_fn = NULL;
+
+void fastfilters_memory_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn)
+{
+	if (alloc_fn)
+		g_alloc_fn = alloc_fn;
+	else
+		g_alloc_fn = malloc;
+
+	if (free_fn)
+		g_free_fn = free_fn;
+	else
+		g_free_fn = free;
+}
+
+void *fastfilters_memory_alloc(size_t size)
+{
+	return g_alloc_fn(size);
+}
+
+void fastfilters_memory_free(void *ptr)
+{
+	g_free_fn(ptr);
+}
+
+void *fastfilters_memory_align(size_t alignment, size_t size)
+{
+	assert(alignment < 0xff);
+	void *ptr = fastfilters_memory_alloc(size + alignment + 8);
+
+	if (!ptr)
+		return NULL;
+
+	uintptr_t ptr_i = (uintptr_t)ptr;
+	ptr_i += 8 + alignment - 1;
+	ptr_i &= alignment;
+
+	uintptr_t ptr_diff = ptr_i - (uintptr_t)ptr;
+
+	void *ptr_aligned = (void *)ptr_i;
+	uint64_t *ptr_magic = (uint64_t *)(ptr_i - 8);
+
+	*ptr_magic = ALIGN_MAGIC | ptr_diff&0xff;
+
+	return ptr_aligned;
+}
+
+void fastfilters_memory_align_free(void *ptr)
+{
+	uint64_t magic = *(uint64_t *)(ptr - 8);
+
+	assert(magic & ~0xff == ALIGN_MAGIC);
+
+	ptr -= magic&0xff;
+	free(ptr);
 }

@@ -19,7 +19,8 @@
 #include "fastfilters.h"
 #include "common.h"
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
+void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn)
 {
-
+	fastfilters_cpu_init();
+	fastfilters_memory_init(alloc_fn, free_fn);
 }

@@ -35,11 +35,16 @@ typedef enum {
 	FASTFILTERS_CPU_AVX2
 } fastfilters_cpu_feature_t;
 
+typedef void* (*fastfilters_alloc_fn_t)(size_t size);
+typedef void (*fastfilters_free_fn_t)(void *);
 
 
+void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
-void fastfilters_cpu_init(void);
 bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
+
+fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
+
 
 
 #ifdef __cplusplus

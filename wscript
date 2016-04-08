@@ -42,7 +42,7 @@ def configure(cfg):
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
-	sources = ["src/cpu.c"]
+	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c"]
 	sources_python = ["src/bindings_python.cxx"]
 
 

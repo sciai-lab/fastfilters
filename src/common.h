@@ -16,10 +16,27 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "fastfilters.h"
-#include "common.h"
+#ifndef FASTFILTERS_COMMON_H
+#define FASTFILTERS_COMMON_H
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
-{
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 
-}
+struct _fastfilters_kernel_fir_t {
+	size_t len;
+	bool is_symmetric;
+	float *coefs;
+};
+
+void fastfilters_cpu_init(void);
+
+void fastfilters_memory_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
+
+void *fastfilters_memory_alloc(size_t size);
+void fastfilters_memory_free(void *ptr);
+
+void *fastfilters_memory_align(size_t alignment, size_t size);
+void fastfilters_memory_align_free(void *ptr);
+
+#endif
