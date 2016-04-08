@@ -143,7 +143,7 @@ TEST_INTR_XGETBV = '''
 
 @conf
 def check_builtin_cpu_supports_flag(self, flag):
-	self.check_cxx(
+	self.check_cc(
 		msg='Checking if the compiler supports \'__builtin_cpu_supports(%s)\'' % flag,
 		mandatory=False,
 		define_name='HAVE_GNU_CPU_SUPPORTS_%s' % flag.upper(),
