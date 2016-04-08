@@ -51,6 +51,7 @@ def build(bld):
 		source  = sources,
 		target  = 'objs_shlib',
 		uselib  = 'cshlib')
+
 	bld.objects(
 		source  = sources,
 		target  = 'objs_stlib',

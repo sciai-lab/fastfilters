@@ -22,6 +22,39 @@
 #include "fastfilters.h"
 #include "common.h"
 
+#include <string>
+
+namespace
+{
+
+struct FIRKernel
+{
+    fastfilters_kernel_fir_t kernel;
+    const unsigned order;
+    const double sigma;
+
+    FIRKernel(unsigned order, double sigma) : order(order), sigma(sigma)
+    {
+        kernel = fastfilters_kernel_fir_gaussian(order, sigma);
+
+        if (!kernel)
+            throw std::runtime_error("fastfilters_kernel_fir_gaussian returned NULL.");
+    }
+
+    ~FIRKernel()
+    {
+        fastfilters_kernel_fir_free(kernel);
+    }
+
+    std::string __repr__()
+    {
+        std::stringstream oss;
+        oss << "<fastfilters.FIRKernel with sigma = " << sigma << " and order = " << order << ">";
+
+        return oss.str();
+    }
+};
+};
 namespace py = pybind11;
 
 PYBIND11_PLUGIN(fastfilters)
@@ -29,6 +62,11 @@ PYBIND11_PLUGIN(fastfilters)
     py::module m_fastfilters("fastfilters", "fast gaussian kernel and derivative filters");
 
     fastfilters_init(PyMem_Malloc, PyMem_Free);
+
+    py::class_<FIRKernel>(m_fastfilters, "FIRKernel")
+        .def(py::init<unsigned, double>())
+        .def_readonly("sigma", &FIRKernel::sigma)
+        .def_readonly("order", &FIRKernel::order);
 
     return m_fastfilters.ptr();
 }
