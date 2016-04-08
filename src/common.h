@@ -42,6 +42,7 @@ struct _fastfilters_kernel_fir_t {
 };
 
 void fastfilters_cpu_init(void);
+void fastfilters_linalg_init(void);
 
 void fastfilters_memory_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
@@ -50,6 +51,8 @@ void fastfilters_memory_free(void *ptr);
 
 void *fastfilters_memory_align(size_t alignment, size_t size);
 void fastfilters_memory_align_free(void *ptr);
+
+
 
 #ifdef __cplusplus
 }

@@ -43,7 +43,8 @@ def configure(cfg):
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
-	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c", "src/kernel_fir.c"]
+	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c", "src/kernel_fir.c", "src/linalg.c"]
+	sources_avx = ["src/linalg_avx.c"]
 	sources_python = ["src/bindings_python.cxx"]
 
 
@@ -51,12 +52,20 @@ def build(bld):
 		source  = sources,
 		target  = 'objs_shlib',
 		uselib  = 'cshlib')
+	bld.objects(
+		source  = sources_avx,
+		target  = 'objs_shlib_avx',
+		uselib  = 'cshlib cpu_avx')
 
 	bld.objects(
 		source  = sources,
 		target  = 'objs_stlib',
 		uselib  = 'cstlib')
+	bld.objects(
+		source  = sources_avx,
+		target  = 'objs_stlib_avx',
+		uselib  = 'cstlib cpu_avx')
 
-	bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib", name="fastfilters_shared")
-	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib", name="fastfilters_static")
-	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_shlib", name="fastfilters_pyext")
+	bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx", name="fastfilters_shared")
+	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx", name="fastfilters_static")
+	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_shlib objs_shlib_avx", name="fastfilters_pyext")

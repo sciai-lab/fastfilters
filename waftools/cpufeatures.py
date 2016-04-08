@@ -164,21 +164,21 @@ def options(opt):
 
 @conf
 def check_cpuid(cfg, mandatory=True):
-	res = cfg.check(
+	res = cfg.check_cc(
 		header_name='cpuid.h',
 		define_name='HAVE_CPUID_H',
 		msg='Checking if the compiler supports the \'__get_cpuid\' intrinsic',
 		fragment=TEST_CPUID_H,
 		mandatory=False)
 
-	res2 = cfg.check(
+	res2 = cfg.check_cc(
 		header_name='intrin.h',
 		define_name='HAVE_CPUIDEX',
 		msg='Checking if the compiler supports the \'__cpuidex\' intrinsic',
 		fragment=TEST_CPUIDEX,
 		mandatory=False)
 
-	res3 = cfg.check(
+	res3 = cfg.check_cc(
 		define_name='HAVE_ASM_CPUID',
 		msg='Checking if the compiler supports the \'cpuid\' instruction',
 		fragment=TEST_ASM_CPUID,
@@ -190,13 +190,13 @@ def check_cpuid(cfg, mandatory=True):
 
 @conf
 def check_xgetbv(cfg, mandatory=True):
-	res = cfg.check(
+	res = cfg.check_cc(
 		define_name='HAVE_ASM_XGETBV',
 		msg='Checking if the compiler supports the \'xgetbv\' instruction',
 		fragment=TEST_ASM_XGETBV,
 		mandatory=False)
 
-	res2 = cfg.check(
+	res2 = cfg.check_cc(
 		define_name='HAVE_INTRIN_XGETBV',
 		msg='Checking if the compiler supports the \'_xgetbv\' intrinsic',
 		fragment=TEST_INTR_XGETBV,
@@ -231,7 +231,7 @@ def check_cpufeatures(cfg, required_compiler_features=[]):
 
 	for flag in enabled:
 		cfg.check_builtin_cpu_supports_flag(flag)
-		cfg.check(
+		cfg.check_cc(
 				header_name='immintrin.h',
 				define_name='HAVE_%s' % flag.upper(),
 				msg="Checking if the compiler is able to emit \'%s\' instructions." % flag,
@@ -239,5 +239,5 @@ def check_cpufeatures(cfg, required_compiler_features=[]):
 				errmsg='Compiler does not support the \'%s\' instruction set.' % flag,
 				uselib_store="cpu_%s" % flag,
 				cflags = flags[flag],
-				cxxflags = flags[flag],
+				#cxxflags = flags[flag],
 				mandatory = flag in required_compiler_features)

@@ -24,6 +24,8 @@
 
 #include <string>
 
+namespace py = pybind11;
+
 namespace
 {
 
@@ -54,8 +56,35 @@ struct FIRKernel
         return oss.str();
     }
 };
+
+py::array_t<float> linalg_ev2d(py::array_t<float> &mtx)
+{
+    py::buffer_info info = mtx.request();
+
+    if (info.ndim != 2)
+        throw std::runtime_error("matrix must have two dimensions.");
+
+    if (info.shape[0] != 3)
+        throw std::runtime_error("1st dimension must have len = 3.");
+
+    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
+                                            {2, info.shape[1]}, {sizeof(float) * info.shape[1], sizeof(float)}));
+    py::buffer_info info_out = result.request();
+
+    float *inptr = (float *)info.ptr;
+    float *xx = inptr;
+    float *xy = inptr + info.strides[0];
+    float *yy = inptr + 2 * info.strides[0];
+
+    float *outptr = (float *)info_out.ptr;
+    float *ev_small = outptr;
+    float *ev_big = outptr + info_out.strides[0];
+
+    fastfilters_linalg_ev2d(xx, xy, yy, ev_small, ev_big, info.shape[1]);
+
+    return result;
+}
 };
-namespace py = pybind11;
 
 PYBIND11_PLUGIN(fastfilters)
 {
@@ -67,6 +96,8 @@ PYBIND11_PLUGIN(fastfilters)
         .def(py::init<unsigned, double>())
         .def_readonly("sigma", &FIRKernel::sigma)
         .def_readonly("order", &FIRKernel::order);
+
+    m_fastfilters.def("linalg_ev2d", &linalg_ev2d);
 
     return m_fastfilters.ptr();
 }

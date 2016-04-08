@@ -16,40 +16,33 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#ifndef FASTFILTERS_H
-#define FASTFILTERS_H
+#include "fastfilters.h"
+#include "common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <immintrin.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
-
-typedef struct _fastfilters_kernel_fir_t * fastfilters_kernel_fir_t;
-
-typedef enum {
-	FASTFILTERS_CPU_AVX,
-	FASTFILTERS_CPU_FMA,
-	FASTFILTERS_CPU_AVX2
-} fastfilters_cpu_feature_t;
-
-typedef void* (*fastfilters_alloc_fn_t)(size_t size);
-typedef void (*fastfilters_free_fn_t)(void *);
+typedef void (*ev2d_fn_t)(const float *, const float *, const float *, float *, float *, const size_t);
 
 
-void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
+void _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len);
 
-bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
+static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len)
+{
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
-void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
-
-void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len);
-
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+static ev2d_fn_t g_ev2d_fn = NULL;
+
+
+void fastfilters_linalg_init()
+{
+	if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
+		g_ev2d_fn = _ev2d_avx;
+	else
+		g_ev2d_fn = _ev2d_default;
+}
+
+void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len)
+{
+	g_ev2d_fn(xx, xy, yy, ev_small, ev_big, len);
+}
