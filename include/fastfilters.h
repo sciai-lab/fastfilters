@@ -39,16 +39,13 @@ typedef void (*fastfilters_free_fn_t)(void *);
 void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
 bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
+bool fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable);
 
 fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
 void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
-bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t border);
-bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t border);
+bool fastfilters_fir_convolve2d(const float *inptr, float *outptr, size_t n_x, size_t n_y, size_t stride_x,
+                                size_t stride_y, size_t x0, size_t y0, size_t x1, size_t y1);
 
 void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                              const size_t len);

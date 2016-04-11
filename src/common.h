@@ -50,6 +50,13 @@ void fastfilters_memory_free(void *ptr);
 void *fastfilters_memory_align(size_t alignment, size_t size);
 void fastfilters_memory_align_free(void *ptr);
 
+bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
+                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
+                                        fastfilters_border_treatment_t border);
+bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
+                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
+                                        fastfilters_border_treatment_t border);
+
 #ifdef __cplusplus
 }
 #endif

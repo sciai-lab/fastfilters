@@ -232,6 +232,34 @@ void fastfilters_cpu_init(void)
     g_supports_avx2 = _supports_avx2();
 }
 
+bool fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable)
+{
+    switch (feature) {
+    case FASTFILTERS_CPU_AVX:
+        if (enable)
+            g_supports_avx = _supports_avx();
+        else
+            g_supports_avx = false;
+        break;
+    case FASTFILTERS_CPU_FMA:
+        if (enable)
+            g_supports_fma = _supports_fma();
+        else
+            g_supports_fma = false;
+        break;
+    case FASTFILTERS_CPU_AVX2:
+        if (enable)
+            g_supports_avx2 = _supports_avx2();
+        else
+            g_supports_avx2 = false;
+        break;
+    default:
+        return false;
+    }
+
+    return fastfilters_cpu_check(feature);
+}
+
 bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature)
 {
     switch (feature) {
