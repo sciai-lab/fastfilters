@@ -16,6 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#ifndef FF_NOP
 #include <boost/preprocessor/list/cat.hpp>
 
 #if !defined(FF_BOUNDARY_OPTIMISTIC) && !defined(FF_BOUNDARY_MIRROR)
@@ -57,15 +58,6 @@
 #endif
 
 #define KERNEL_LEN BOOST_PP_ITERATION()
-
-// hack to make waf dependency tracking + warning generation work correctly
-// this files in included to create a function called fir_convolve_impl_optimistic_symmetric0 that is never used
-// in the header of fir_convolve_nosimd.c
-// mapping the kernel length to 10 here avoid a spurious warning about an unsigned < 0 compare
-#if KERNEL_LEN == 0
-#undef KERNEL_LEN
-#define KERNEL_LEN 10
-#endif
 
 static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)),
                          BOOST_PP_ITERATION())(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
@@ -163,7 +155,124 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
     return true;
 }
 
+static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)),
+                         BOOST_PP_ITERATION())(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
+                                               size_t outer_stride, float *outptr, const float *kernel)
+{
+    float *tmp = fastfilters_memory_alloc(KERNEL_LEN * n_outer * sizeof(float));
+
+    if (!tmp)
+        return false;
+
+    unsigned int i_pixel = 0;
+
+// left border
+#ifdef FF_BOUNDARY_MIRROR
+    for (; i_pixel < KERNEL_LEN; ++i_pixel) {
+        for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
+            float sum = 0.0;
+
+            sum = kernel[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+
+            for (unsigned int k = 1; k < KERNEL_LEN; ++k) {
+                unsigned int offset_left, offset_right;
+                if (-(int)k + (int)i_pixel < 0)
+                    offset_left = -i_pixel + k;
+                else
+                    offset_left = i_pixel - k;
+
+                if (k + i_pixel >= n_pixels)
+                    offset_right = n_pixels - ((k + i_pixel) % n_pixels) - 2;
+                else
+                    offset_right = i_pixel + k;
+
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] +
+                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+#else
+                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] -
+                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+#endif
+            }
+
+            tmp[n_pixels * i_pixel + i_outer] = sum;
+        }
+    }
+#endif
+
+// 'valid'
+#ifdef FF_BOUNDARY_MIRROR
+    const unsigned int end = n_pixels - KERNEL_LEN;
+#else
+    const unsigned int end = n_pixels;
+#endif
+    for (; i_pixel < end; ++i_pixel) {
+        for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
+            float sum = 0.0;
+
+            sum = kernel[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+
+            for (unsigned int k = 1; k < KERNEL_LEN; ++k) {
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] +
+                                    inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+#else
+                sum += kernel[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] -
+                                    inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+#endif
+            }
+
+            outptr[pixel_stride * i_pixel + outer_stride * i_outer] = sum;
+        }
+
+#ifdef FF_BOUNDARY_OPTIMISTIC
+        if (i_pixel < KERNEL_LEN)
+            continue;
+#endif
+    }
+
+// right border
+#ifdef FF_BOUNDARY_MIRROR
+    for (; i_pixel < n_pixels; ++i_pixel) {
+        for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
+            float sum = 0.0;
+
+            sum = kernel[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+
+            for (unsigned int k = 1; k < KERNEL_LEN; ++k) {
+                unsigned int offset_left, offset_right;
+                if (-(int)k + (int)i_pixel < 0)
+                    offset_left = -i_pixel + k;
+                else
+                    offset_left = i_pixel - k;
+
+                if (k + i_pixel >= n_pixels)
+                    offset_right = n_pixels - ((k + i_pixel) % n_pixels) - 2;
+                else
+                    offset_right = i_pixel + k;
+
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] +
+                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+#else
+                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] -
+                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+#endif
+            }
+
+            outptr[pixel_stride * i_pixel + outer_stride * i_outer] = sum;
+        }
+    }
+#endif
+
+    fastfilters_memory_free(tmp);
+    return false;
+}
+
 #undef symmetry_name
 #undef boundary_name
 #undef KERNEL_LEN
+
+#endif
+
 #endif

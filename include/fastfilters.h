@@ -46,6 +46,9 @@ void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
                                         fastfilters_border_treatment_t border);
+bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
+                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
+                                        fastfilters_border_treatment_t border);
 
 void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                              const size_t len);

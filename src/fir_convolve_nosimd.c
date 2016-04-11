@@ -25,10 +25,9 @@
 #include <stddef.h>
 
 // hack to make waf dependency tracking + warning generation work correctly
-// this creates fours functions called fir_convolve_impl_{mirror,optimistic}_{anti,}symmetric0 that is never used
-#define BOOST_PP_ITERATION() 0
+#define FF_NOP
 #include "fir_convolve_nosimd_impl.h"
-#undef BOOST_PP_ITERATION
+#undef FF_NOP
 
 #define FF_UNROLL 20
 
@@ -46,26 +45,25 @@
 typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *, const float *);
 
 #define IMPL_FNAME(z, n, text) &BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, text), BOOST_PP_INC(n))
+#define IMPL_OUTER_FNAME(z, n, text) &BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, text), BOOST_PP_INC(n))
 
 static impl_fn_t impl_fn_symmetric_mirror[] = {BOOST_PP_ENUM(FF_UNROLL, IMPL_FNAME, mirror_symmetric)};
-
 static impl_fn_t impl_fn_antisymmetric_mirror[] = {BOOST_PP_ENUM(FF_UNROLL, IMPL_FNAME, mirror_antisymmetric)};
-
 static impl_fn_t impl_fn_symmetric_optimistic[] = {BOOST_PP_ENUM(FF_UNROLL, IMPL_FNAME, optimistic_symmetric)};
-
 static impl_fn_t impl_fn_antisymmetric_optimistic[] = {BOOST_PP_ENUM(FF_UNROLL, IMPL_FNAME, optimistic_antisymmetric)};
+
+static impl_fn_t impl_fn_outer_symmetric_mirror[] = {BOOST_PP_ENUM(FF_UNROLL, IMPL_OUTER_FNAME, mirror_symmetric)};
+static impl_fn_t impl_fn_outer_antisymmetric_mirror[] = {
+    BOOST_PP_ENUM(FF_UNROLL, IMPL_OUTER_FNAME, mirror_antisymmetric)};
+static impl_fn_t impl_fn_outer_symmetric_optimistic[] = {
+    BOOST_PP_ENUM(FF_UNROLL, IMPL_OUTER_FNAME, optimistic_symmetric)};
+static impl_fn_t impl_fn_outer_antisymmetric_optimistic[] = {
+    BOOST_PP_ENUM(FF_UNROLL, IMPL_OUTER_FNAME, optimistic_antisymmetric)};
 
 bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
                                         fastfilters_border_treatment_t border)
 {
-    // disable warnings about the function that is never used and just there to create
-    // compiler warnings
-    (void)fir_convolve_impl_optimistic_symmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
-    (void)fir_convolve_impl_optimistic_antisymmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
-    (void)fir_convolve_impl_mirror_symmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
-    (void)fir_convolve_impl_mirror_antisymmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
-
     if (kernel->len == 0)
         return false;
 
@@ -86,6 +84,38 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
             jmptbl = impl_fn_symmetric_optimistic;
         else
             jmptbl = impl_fn_antisymmetric_optimistic;
+        break;
+    default:
+        return false;
+    }
+
+    return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel->coefs);
+}
+
+bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
+                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
+                                        fastfilters_border_treatment_t border)
+{
+    if (kernel->len == 0)
+        return false;
+
+    if (kernel->len > FF_UNROLL)
+        return false;
+
+    impl_fn_t *jmptbl = NULL;
+
+    switch (border) {
+    case FASTFILTERS_BORDER_MIRROR:
+        if (kernel->is_symmetric)
+            jmptbl = impl_fn_outer_symmetric_mirror;
+        else
+            jmptbl = impl_fn_outer_antisymmetric_mirror;
+        break;
+    case FASTFILTERS_BORDER_OPTIMISTIC:
+        if (kernel->is_symmetric)
+            jmptbl = impl_fn_outer_symmetric_optimistic;
+        else
+            jmptbl = impl_fn_outer_antisymmetric_optimistic;
         break;
     default:
         return false;
