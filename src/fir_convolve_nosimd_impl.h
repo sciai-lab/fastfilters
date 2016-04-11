@@ -86,10 +86,10 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
 
             for (unsigned int k = 1; k < KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
-                if (k + (int)j < 0)
-                    offset_left = -j - k;
+                if (-(int)k + (int)j < 0)
+                    offset_left = -j + k;
                 else
-                    offset_left = j + k;
+                    offset_left = j - k;
 
                 if (k + j >= n_pixels)
                     offset_right = n_pixels - ((k + j) % n_pixels) - 2;
@@ -137,10 +137,10 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
 
             for (unsigned int k = 1; k < KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
-                if (k + (int)i_inner < 0)
-                    offset_left = -i_inner - k;
+                if (-(int)k + (int)i_inner < 0)
+                    offset_left = -i_inner + k;
                 else
-                    offset_left = i_inner + k;
+                    offset_left = i_inner - k;
 
                 if (k + i_inner >= n_pixels)
                     offset_right = n_pixels - ((k + i_inner) % n_pixels) - 2;
@@ -163,4 +163,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
     return true;
 }
 
+#undef symmetry_name
+#undef boundary_name
+#undef KERNEL_LEN
 #endif

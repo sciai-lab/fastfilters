@@ -25,14 +25,10 @@
 #include <stddef.h>
 
 // hack to make waf dependency tracking + warning generation work correctly
-// this creates a function called fir_convolve_impl_optimistic_symmetric0 that is never used
-#define FF_BOUNDARY_OPTIMISTIC
-#define FF_KERNEL_SYMMETRIC
+// this creates fours functions called fir_convolve_impl_{mirror,optimistic}_{anti,}symmetric0 that is never used
 #define BOOST_PP_ITERATION() 0
 #include "fir_convolve_nosimd_impl.h"
 #undef BOOST_PP_ITERATION
-#undef FF_KERNEL_SYMMETRIC
-#undef FF_BOUNDARY_OPTIMISTIC
 
 #define FF_UNROLL 20
 
@@ -65,8 +61,10 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
 {
     // disable warnings about the function that is never used and just there to create
     // compiler warnings
-    (void)fir_convolve_impl_optimistic_symmetric0(inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
-                                                  kernel->coefs);
+    (void)fir_convolve_impl_optimistic_symmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
+    (void)fir_convolve_impl_optimistic_antisymmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
+    (void)fir_convolve_impl_mirror_symmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
+    (void)fir_convolve_impl_mirror_antisymmetric0(NULL, 0, 0, 0, 0, NULL, NULL);
 
     if (kernel->len == 0)
         return false;
