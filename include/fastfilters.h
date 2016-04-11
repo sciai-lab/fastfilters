@@ -31,6 +31,8 @@ typedef struct _fastfilters_kernel_fir_t *fastfilters_kernel_fir_t;
 
 typedef enum { FASTFILTERS_CPU_AVX, FASTFILTERS_CPU_FMA, FASTFILTERS_CPU_AVX2 } fastfilters_cpu_feature_t;
 
+typedef enum { FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_OPTIMISTIC } fastfilters_border_treatment_t;
+
 typedef void *(*fastfilters_alloc_fn_t)(size_t size);
 typedef void (*fastfilters_free_fn_t)(void *);
 
@@ -40,6 +42,10 @@ bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
 
 fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
 void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
+
+bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
+                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
+                                        fastfilters_border_treatment_t border);
 
 void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                              const size_t len);
