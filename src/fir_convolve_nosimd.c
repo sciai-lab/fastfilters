@@ -23,6 +23,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
+
+#define FASTFILTERS_FIR_CONVOLVE_NOSIMD_IMPL_H
 
 // hack to make waf dependency tracking + warning generation work correctly
 #define FF_NOP
