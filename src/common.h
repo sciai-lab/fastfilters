@@ -48,6 +48,8 @@ struct _fastfilters_kernel_fir_t {
     float *coefs;
 };
 
+typedef enum { FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_OPTIMISTIC } fastfilters_border_treatment_t;
+
 void fastfilters_cpu_init(void);
 void fastfilters_linalg_init(void);
 

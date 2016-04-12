@@ -31,8 +31,6 @@ typedef struct _fastfilters_kernel_fir_t *fastfilters_kernel_fir_t;
 
 typedef enum { FASTFILTERS_CPU_AVX, FASTFILTERS_CPU_FMA, FASTFILTERS_CPU_AVX2 } fastfilters_cpu_feature_t;
 
-typedef enum { FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_OPTIMISTIC } fastfilters_border_treatment_t;
-
 typedef struct _fastfilters_array2d_t {
     float *ptr;
     size_t n_x;
