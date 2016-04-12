@@ -102,7 +102,7 @@ static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size
         for (unsigned int j = 0; j < KERNEL_LEN; ++j) {
             float sum = 0.0;
 
-            sum = kernel->coefs[0] * cur_inptr[0];
+            sum = kernel->coefs[0] * cur_inptr[j * pixel_stride];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
@@ -137,7 +137,7 @@ static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size
         const unsigned int end = n_pixels;
 #endif
         for (; i_inner < end; ++i_inner) {
-            float sum = kernel->coefs[0] * cur_inptr[0];
+            float sum = kernel->coefs[0] * cur_inptr[i_inner * pixel_stride];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
 #ifdef FF_KERNEL_SYMMETRIC
@@ -157,7 +157,7 @@ static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size
         for (; i_inner < n_pixels; ++i_inner) {
             float sum = 0.0;
 
-            sum = kernel->coefs[0] * cur_inptr[0];
+            sum = kernel->coefs[0] * cur_inptr[i_inner * pixel_stride];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
