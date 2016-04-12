@@ -9,6 +9,20 @@ APPNAME='libfastfilters'
 srcdir = 'src'
 blddir = 'build'
 
+@conf
+def check_builtin_expect(cfg):
+	cfg.check_cc(
+		msg='Checking if the compiler supports \'__builin_expect\'',
+		mandatory=False,
+		define_name='HAVE_BUILTIN_EXPECT',
+		fragment='''
+		#include <stdbool.h>
+		int main(int argc, char *argv[])
+		{
+			(void)argv;
+			return __builtin_expect(argc > 2, false);
+		}
+		''')
 
 def options(opt):
 	opt.load('python')
@@ -28,6 +42,7 @@ def configure(cfg):
 
 	cfg.check_library(mode='c')
 
+	cfg.check_builtin_expect()
 	cfg.check_cpufeatures(['avx', 'fma'])
 	cfg.check_cpuid()
 	cfg.check_xgetbv()

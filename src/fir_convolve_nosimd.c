@@ -27,7 +27,7 @@
 
 #define FASTFILTERS_FIR_CONVOLVE_NOSIMD_IMPL_H
 
-// hack to make waf dependency tracking + warning generation work correctly
+// hack to make waf dependency tracking work correctly
 #define FF_NOP
 #include "fir_convolve_nosimd_impl.h"
 #undef FF_NOP
@@ -45,7 +45,12 @@
 #undef BOOST_PP_ITERATION_LIMITS
 #undef BOOST_PP_FILENAME_1
 
-typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *, const float *);
+#define KERNEL_LEN_RUNTIME
+#include "fir_convolve_nosimd_impl.h"
+#undef KERNEL_LEN_RUNTIME
+
+typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *,
+                          const fastfilters_kernel_fir_t kernel);
 
 #define IMPL_FNAME(z, n, text) &BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, text), BOOST_PP_INC(n))
 #define IMPL_OUTER_FNAME(z, n, text) &BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, text), BOOST_PP_INC(n))
@@ -55,6 +60,8 @@ typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *
 #define TBLNAME_BORDER(x) BOOST_PP_IF(x, optimistic_, mirror_)
 #define TBLNAME_BORDER2(x) BOOST_PP_IF(x, optimistic, mirror)
 
+#define BOOST_PP_CAT5(a, b, c, d, e) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(a, b), BOOST_PP_CAT(c, d)), e)
+
 #define DEFINE_JMPTBL(outer, left_border, right_border, symmetric)                                                     \
     static impl_fn_t BOOST_PP_CAT(                                                                                     \
         BOOST_PP_IF(outer, impl_fn_outer_, impl_fn_),                                                                  \
@@ -62,7 +69,9 @@ typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *
                      BOOST_PP_CAT(TBLNAME_BORDER(left_border), TBLNAME_BORDER2(right_border))))[] = {                  \
         BOOST_PP_ENUM(FF_UNROLL, BOOST_PP_IF(outer, IMPL_OUTER_FNAME, IMPL_FNAME),                                     \
                       BOOST_PP_CAT(BOOST_PP_CAT(TBLNAME_BORDER(left_border), TBLNAME_BORDER(right_border)),            \
-                                   TBLNAME_SYMMETRIC2(symmetric)))};
+                                   TBLNAME_SYMMETRIC2(symmetric))),                                                    \
+        BOOST_PP_CAT5(BOOST_PP_IF(outer, fir_convolve_outer_impl_, fir_convolve_impl_), TBLNAME_BORDER(left_border),   \
+                      TBLNAME_BORDER(right_border), TBLNAME_SYMMETRIC2(symmetric), N)};
 
 DEFINE_JMPTBL(0, 0, 0, 0);
 DEFINE_JMPTBL(0, 0, 0, 1);
@@ -118,9 +127,6 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
     if (kernel->len == 0)
         return false;
 
-    if (kernel->len > FF_UNROLL)
-        return false;
-
     impl_fn_t *jmptbl = NULL;
 
     for (unsigned int i = 0; i < ARRAY_LENGTH(impl_fn_tbls_inner); ++i) {
@@ -137,7 +143,10 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
     if (jmptbl == NULL)
         return false;
 
-    return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel->coefs);
+    if (kernel->len > FF_UNROLL)
+        return jmptbl[FF_UNROLL + 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+    else
+        return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
 }
 
 bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
@@ -146,9 +155,6 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
                                         fastfilters_border_treatment_t right_border)
 {
     if (kernel->len == 0)
-        return false;
-
-    if (kernel->len > FF_UNROLL)
         return false;
 
     impl_fn_t *jmptbl = NULL;
@@ -167,5 +173,8 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
     if (jmptbl == NULL)
         return false;
 
-    return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel->coefs);
+    if (kernel->len > FF_UNROLL)
+        return jmptbl[FF_UNROLL + 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+    else
+        return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
 }

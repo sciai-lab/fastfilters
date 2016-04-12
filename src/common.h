@@ -28,8 +28,18 @@ extern "C" {
 #include <stddef.h>
 #include <math.h>
 
+#include "config.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
+
+#ifdef HAVE_BUILTIN_EXPECT
+#define likely(x) __builtin_expect(x, true)
+#define unlikely(x) __builtin_expect(x, false)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
 #endif
 
 struct _fastfilters_kernel_fir_t {

@@ -80,11 +80,19 @@
 #endif
 
 #define boundary_name BOOST_PP_CAT(boundary_name_left, boundary_name_right)
-#define KERNEL_LEN BOOST_PP_ITERATION()
 
-static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)),
-                         BOOST_PP_ITERATION())(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                               size_t outer_stride, float *outptr, const float *kernel)
+#ifdef KERNEL_LEN_RUNTIME
+#define KERNEL_LEN kernel->len
+#define FNAME BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)), N)
+#else
+#define KERNEL_LEN BOOST_PP_ITERATION()
+#define FNAME                                                                                                          \
+    BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)), BOOST_PP_ITERATION())
+#endif
+
+static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer, size_t outer_stride,
+                  float *outptr, const fastfilters_kernel_fir_t kernel)
+
 {
     for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
         const float *cur_inptr = inptr + outer_stride * i_outer;
@@ -97,7 +105,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
         for (unsigned int j = 0; j < KERNEL_LEN; ++j) {
             float sum = 0.0;
 
-            sum = kernel[0] * cur_inptr[0];
+            sum = kernel->coefs[0] * cur_inptr[0];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
@@ -111,9 +119,11 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
                 else
                     offset_right = j + k;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel[k] * (cur_inptr[offset_right * pixel_stride] + cur_inptr[offset_left * pixel_stride]);
+                sum +=
+                    kernel->coefs[k] * (cur_inptr[offset_right * pixel_stride] + cur_inptr[offset_left * pixel_stride]);
 #else
-                sum += kernel[k] * (cur_inptr[offset_right * pixel_stride] - cur_inptr[offset_left * pixel_stride]);
+                sum +=
+                    kernel->coefs[k] * (cur_inptr[offset_right * pixel_stride] - cur_inptr[offset_left * pixel_stride]);
 #endif
             }
 
@@ -130,13 +140,15 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
         const unsigned int end = n_pixels;
 #endif
         for (; i_inner < end; ++i_inner) {
-            float sum = kernel[0] * cur_inptr[0];
+            float sum = kernel->coefs[0] * cur_inptr[0];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel[k] * (cur_inptr[(i_inner + k) * pixel_stride] + cur_inptr[(i_inner - k) * pixel_stride]);
+                sum += kernel->coefs[k] *
+                       (cur_inptr[(i_inner + k) * pixel_stride] + cur_inptr[(i_inner - k) * pixel_stride]);
 #else
-                sum += kernel[k] * (cur_inptr[(i_inner + k) * pixel_stride] - cur_inptr[(i_inner - k) * pixel_stride]);
+                sum += kernel->coefs[k] *
+                       (cur_inptr[(i_inner + k) * pixel_stride] - cur_inptr[(i_inner - k) * pixel_stride]);
 #endif
             }
 
@@ -148,7 +160,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
         for (; i_inner < n_pixels; ++i_inner) {
             float sum = 0.0;
 
-            sum = kernel[0] * cur_inptr[0];
+            sum = kernel->coefs[0] * cur_inptr[0];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
@@ -162,9 +174,11 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
                 else
                     offset_right = i_inner + k;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel[k] * (cur_inptr[offset_right * pixel_stride] + cur_inptr[offset_left * pixel_stride]);
+                sum +=
+                    kernel->coefs[k] * (cur_inptr[offset_right * pixel_stride] + cur_inptr[offset_left * pixel_stride]);
 #else
-                sum += kernel[k] * (cur_inptr[offset_right * pixel_stride] - cur_inptr[offset_left * pixel_stride]);
+                sum +=
+                    kernel->coefs[k] * (cur_inptr[offset_right * pixel_stride] - cur_inptr[offset_left * pixel_stride]);
 #endif
             }
 
@@ -178,9 +192,18 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
     return true;
 }
 
-static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)),
-                         BOOST_PP_ITERATION())(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                               size_t outer_stride, float *outptr, const float *kernel)
+#undef FNAME
+
+#ifdef KERNEL_LEN_RUNTIME
+#define FNAME BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)), N)
+#else
+#define FNAME                                                                                                          \
+    BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)),                   \
+                 BOOST_PP_ITERATION())
+#endif
+
+static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer, size_t outer_stride,
+                  float *outptr, const fastfilters_kernel_fir_t kernel)
 {
     float *tmp = fastfilters_memory_alloc(KERNEL_LEN * n_outer * sizeof(float));
 
@@ -195,7 +218,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
         for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
             float sum = 0.0;
 
-            sum = kernel[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+            sum = kernel->coefs[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
@@ -210,11 +233,11 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
                     offset_right = i_pixel + k;
 
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] +
-                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] +
+                                           inptr[offset_left * pixel_stride + outer_stride * i_outer]);
 #else
-                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] -
-                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] -
+                                           inptr[offset_left * pixel_stride + outer_stride * i_outer]);
 #endif
             }
 
@@ -236,15 +259,15 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
         for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
             float sum = 0.0;
 
-            sum = kernel[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+            sum = kernel->coefs[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] +
-                                    inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] +
+                                           inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
 #else
-                sum += kernel[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] -
-                                    inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] -
+                                           inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
 #endif
             }
 
@@ -270,7 +293,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
         for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
             float sum = 0.0;
 
-            sum = kernel[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+            sum = kernel->coefs[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 unsigned int offset_left, offset_right;
@@ -285,11 +308,11 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
                     offset_right = i_pixel + k;
 
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] +
-                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] +
+                                           inptr[offset_left * pixel_stride + outer_stride * i_outer]);
 #else
-                sum += kernel[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] -
-                                    inptr[offset_left * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] * (inptr[offset_right * pixel_stride + outer_stride * i_outer] -
+                                           inptr[offset_left * pixel_stride + outer_stride * i_outer]);
 #endif
             }
 
@@ -318,6 +341,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
 #undef boundary_name_left
 #undef boundary_name_right
 #undef KERNEL_LEN
+#undef FNAME
 
 #endif
 

@@ -41,6 +41,16 @@ typedef struct _fastfilters_array2d_t {
     size_t stride_y;
 } fastfilters_array2d_t;
 
+typedef struct _fastfilters_array3d_t {
+    float *ptr;
+    size_t n_x;
+    size_t n_y;
+    size_t n_z;
+    size_t stride_x;
+    size_t stride_y;
+    size_t stride_z;
+} fastfilters_array3d_t;
+
 typedef void *(*fastfilters_alloc_fn_t)(size_t size);
 typedef void (*fastfilters_free_fn_t)(void *);
 
@@ -52,8 +62,12 @@ bool fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable);
 fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
 void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
-bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernel,
-                                float *outptr, size_t x0, size_t y0, size_t x1, size_t y1);
+bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
+                                const fastfilters_kernel_fir_t kernely, float *outptr, size_t x0, size_t y0, size_t x1,
+                                size_t y1);
+bool fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
+                                const fastfilters_kernel_fir_t kernely, const fastfilters_kernel_fir_t kernelz,
+                                float *outptr, size_t x0, size_t y0, size_t z0, size_t x1, size_t y1, size_t z1);
 
 void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                              const size_t len);
