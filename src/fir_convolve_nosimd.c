@@ -144,7 +144,7 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL + 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[FF_UNROLL](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
     else
         return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
 }
@@ -174,7 +174,7 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL + 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[FF_UNROLL](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
     else
         return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
 }
