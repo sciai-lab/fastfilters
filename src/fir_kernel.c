@@ -88,12 +88,8 @@ fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, dou
         norm = -1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 3));
         break;
 
-    case 3:
-        norm = 1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 5));
-        break;
-
     default:
-        norm = 1.0 / (sqrt(2.0 * M_PI) / sigma);
+        norm = 1.0 / (sqrt(2.0 * M_PI) * sigma);
         break;
     }
 
