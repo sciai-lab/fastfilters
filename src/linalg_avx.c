@@ -25,7 +25,8 @@
 #error "linalg_avx.c need to be compiled with AVX support"
 #endif
 
-void _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len)
+void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+                         const size_t len)
 {
     const size_t avx_end = len & ~7;
 

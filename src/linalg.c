@@ -21,7 +21,8 @@
 
 typedef void (*ev2d_fn_t)(const float *, const float *, const float *, float *, float *, const size_t);
 
-void _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len);
+void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+                         const size_t len);
 
 static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                           const size_t len)

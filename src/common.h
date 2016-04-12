@@ -42,6 +42,32 @@ extern "C" {
 #define unlikely(x) (x)
 #endif
 
+// https://gcc.gnu.org/wiki/Visibility
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef BUILDING_DLL
+#ifdef __GNUC__
+#define DLL_PUBLIC __attribute__((dllexport))
+#else
+#define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+#endif
+#else
+#ifdef __GNUC__
+#define DLL_PUBLIC __attribute__((dllimport))
+#else
+#define DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+#endif
+#endif
+#define DLL_LOCAL
+#else
+#if __GNUC__ >= 4
+#define DLL_PUBLIC __attribute__((visibility("default")))
+#define DLL_LOCAL __attribute__((visibility("hidden")))
+#else
+#define DLL_PUBLIC
+#define DLL_LOCAL
+#endif
+#endif
+
 struct _fastfilters_kernel_fir_t {
     size_t len;
     bool is_symmetric;
@@ -50,27 +76,29 @@ struct _fastfilters_kernel_fir_t {
 
 typedef enum { FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_OPTIMISTIC } fastfilters_border_treatment_t;
 
-void fastfilters_cpu_init(void);
-void fastfilters_linalg_init(void);
+void DLL_LOCAL fastfilters_cpu_init(void);
+void DLL_LOCAL fastfilters_linalg_init(void);
 
-void fastfilters_memory_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
+void DLL_LOCAL fastfilters_memory_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
-void *fastfilters_memory_alloc(size_t size);
-void fastfilters_memory_free(void *ptr);
+void DLL_LOCAL *fastfilters_memory_alloc(size_t size);
+void DLL_LOCAL fastfilters_memory_free(void *ptr);
 
-void *fastfilters_memory_align(size_t alignment, size_t size);
-void fastfilters_memory_align_free(void *ptr);
+void DLL_LOCAL *fastfilters_memory_align(size_t alignment, size_t size);
+void DLL_LOCAL fastfilters_memory_align_free(void *ptr);
 
-void fastfilters_fir_init(void);
+void DLL_LOCAL fastfilters_fir_init(void);
 
-bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t left_border,
-                                        fastfilters_border_treatment_t right_border);
-bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t left_border,
-                                        fastfilters_border_treatment_t right_border);
+bool DLL_LOCAL fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride,
+                                                  size_t n_outer, size_t outer_stride, float *outptr,
+                                                  fastfilters_kernel_fir_t kernel,
+                                                  fastfilters_border_treatment_t left_border,
+                                                  fastfilters_border_treatment_t right_border);
+bool DLL_LOCAL fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride,
+                                                  size_t n_outer, size_t outer_stride, float *outptr,
+                                                  fastfilters_kernel_fir_t kernel,
+                                                  fastfilters_border_treatment_t left_border,
+                                                  fastfilters_border_treatment_t right_border);
 
 #ifdef __cplusplus
 }
