@@ -51,5 +51,25 @@ bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fast
                                 FASTFILTERS_BORDER_MIRROR);
     }
 
-    return false;
+    if (unlikely(x1 <= x0))
+        return false;
+    if (unlikely(y1 <= y0))
+        return false;
+
+    if (unlikely(x0 > 0 && x0 < kernelx->len))
+        return false;
+    if (unlikely(y0 > 0 && y0 < kernely->len))
+        return false;
+
+    if (unlikely(x0 > (inarray->n_x - kernelx->len - 1)))
+        return false;
+    if (unlikely(y0 > (inarray->n_y - kernely->len - 1)))
+        return false;
+
+    if (unlikely(x1 != (inarray->n_x - 1) && x1 > (inarray->n_x - kernelx->len - 1)))
+        return false;
+    if (unlikely(y1 != (inarray->n_y - 1) && y1 > (inarray->n_y - kernely->len - 1)))
+        return false;
+
+    return true;
 }
