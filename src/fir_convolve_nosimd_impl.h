@@ -23,15 +23,25 @@
 #ifndef FF_NOP
 #include <boost/preprocessor/list/cat.hpp>
 
-#if !defined(FF_BOUNDARY_OPTIMISTIC) && !defined(FF_BOUNDARY_MIRROR)
+#if !defined(FF_BOUNDARY_OPTIMISTIC_LEFT) && !defined(FF_BOUNDARY_MIRROR_LEFT)
 
-#define FF_BOUNDARY_OPTIMISTIC
+#define FF_BOUNDARY_OPTIMISTIC_LEFT
 #include "fir_convolve_nosimd_impl.h"
-#undef FF_BOUNDARY_OPTIMISTIC
+#undef FF_BOUNDARY_OPTIMISTIC_LEFT
 
-#define FF_BOUNDARY_MIRROR
+#define FF_BOUNDARY_MIRROR_LEFT
 #include "fir_convolve_nosimd_impl.h"
-#undef FF_BOUNDARY_MIRROR
+#undef FF_BOUNDARY_MIRROR_LEFT
+
+#elif !defined(FF_BOUNDARY_OPTIMISTIC_RIGHT) && !defined(FF_BOUNDARY_MIRROR_RIGHT)
+
+#define FF_BOUNDARY_OPTIMISTIC_RIGHT
+#include "fir_convolve_nosimd_impl.h"
+#undef FF_BOUNDARY_OPTIMISTIC_RIGHT
+
+#define FF_BOUNDARY_MIRROR_RIGHT
+#include "fir_convolve_nosimd_impl.h"
+#undef FF_BOUNDARY_MIRROR_RIGHT
 
 #elif !defined(FF_KERNEL_SYMMETRIC) && !defined(FF_KERNEL_ANTISYMMETRIC)
 
@@ -45,10 +55,18 @@
 
 #else
 
-#ifdef FF_BOUNDARY_OPTIMISTIC
-#define boundary_name optimistic_
-#elif defined(FF_BOUNDARY_MIRROR)
-#define boundary_name mirror_
+#ifdef FF_BOUNDARY_OPTIMISTIC_LEFT
+#define boundary_name_left optimistic_
+#elif defined(FF_BOUNDARY_MIRROR_LEFT)
+#define boundary_name_left mirror_
+#else
+#error "No boundary treatment mode defined."
+#endif
+
+#ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
+#define boundary_name_right optimistic_
+#elif defined(FF_BOUNDARY_MIRROR_RIGHT)
+#define boundary_name_right mirror_
 #else
 #error "No boundary treatment mode defined."
 #endif
@@ -61,6 +79,7 @@
 #error "FF_KERNEL_SYMMETRIC and FF_KERNEL_ANTISYMMETRIC not defined"
 #endif
 
+#define boundary_name BOOST_PP_CAT(boundary_name_left, boundary_name_right)
 #define KERNEL_LEN BOOST_PP_ITERATION()
 
 static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)),
@@ -74,7 +93,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
         unsigned int i_inner = 0;
 
 // left border
-#ifdef FF_BOUNDARY_MIRROR
+#ifdef FF_BOUNDARY_MIRROR_LEFT
         for (unsigned int j = 0; j < KERNEL_LEN; ++j) {
             float sum = 0.0;
 
@@ -105,7 +124,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
 #endif
 
 // 'valid' area of line
-#ifdef FF_BOUNDARY_MIRROR
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
         const unsigned int end = n_pixels - KERNEL_LEN;
 #else
         const unsigned int end = n_pixels;
@@ -125,7 +144,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_
         }
 
 // right border
-#ifdef FF_BOUNDARY_MIRROR
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
         for (; i_inner < n_pixels; ++i_inner) {
             float sum = 0.0;
 
@@ -171,7 +190,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
     unsigned int i_pixel = 0;
 
 // left border
-#ifdef FF_BOUNDARY_MIRROR
+#ifdef FF_BOUNDARY_MIRROR_LEFT
     for (; i_pixel < KERNEL_LEN; ++i_pixel) {
         for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
             float sum = 0.0;
@@ -205,7 +224,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
 #endif
 
 // 'valid'
-#ifdef FF_BOUNDARY_MIRROR
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
     const unsigned int end = n_pixels - KERNEL_LEN;
 #else
     const unsigned int end = n_pixels;
@@ -232,7 +251,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
             tmpptr[i_outer] = sum;
         }
 
-#ifdef FF_BOUNDARY_OPTIMISTIC
+#ifdef FF_BOUNDARY_OPTIMISTIC_LEFT
         if (i_pixel < KERNEL_LEN)
             continue;
 #endif
@@ -243,7 +262,7 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
     }
 
 // right border
-#ifdef FF_BOUNDARY_MIRROR
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
     for (; i_pixel < n_pixels; ++i_pixel) {
         const unsigned tmpidx = i_pixel % (KERNEL_LEN + 1);
         float *tmpptr = tmp + tmpidx * n_outer;
@@ -296,6 +315,8 @@ static bool BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, BOOST_PP_CAT(bou
 
 #undef symmetry_name
 #undef boundary_name
+#undef boundary_name_left
+#undef boundary_name_right
 #undef KERNEL_LEN
 
 #endif

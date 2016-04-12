@@ -29,8 +29,7 @@ namespace py = pybind11;
 namespace
 {
 
-struct FIRKernel
-{
+struct FIRKernel {
     fastfilters_kernel_fir_t kernel;
     const unsigned order;
     const double sigma;

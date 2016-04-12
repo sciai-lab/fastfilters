@@ -42,8 +42,7 @@
 #define xcr0_bit_XMM 0x00000002
 #define xcr0_bit_YMM 0x00000004
 
-typedef struct
-{
+typedef struct {
     unsigned int eax;
     unsigned int ebx;
     unsigned int ecx;

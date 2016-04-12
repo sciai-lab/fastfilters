@@ -32,8 +32,7 @@ extern "C" {
 #define M_PI 3.14159265358979323846
 #endif
 
-struct _fastfilters_kernel_fir_t
-{
+struct _fastfilters_kernel_fir_t {
     size_t len;
     bool is_symmetric;
     float *coefs;
@@ -52,10 +51,12 @@ void fastfilters_memory_align_free(void *ptr);
 
 bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t border);
+                                        fastfilters_border_treatment_t left_border,
+                                        fastfilters_border_treatment_t right_border);
 bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t border);
+                                        fastfilters_border_treatment_t left_border,
+                                        fastfilters_border_treatment_t right_border);
 
 #ifdef __cplusplus
 }
