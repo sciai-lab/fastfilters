@@ -20,9 +20,6 @@
 #error "Do not include/compile fir_convolve_nosimd_impl.h directly"
 #endif
 
-#ifndef FF_NOP
-#include <boost/preprocessor/list/cat.hpp>
-
 #if !defined(FF_BOUNDARY_OPTIMISTIC_LEFT) && !defined(FF_BOUNDARY_MIRROR_LEFT)
 
 #define FF_BOUNDARY_OPTIMISTIC_LEFT
@@ -342,7 +339,5 @@ static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size
 #undef boundary_name_right
 #undef KERNEL_LEN
 #undef FNAME
-
-#endif
 
 #endif

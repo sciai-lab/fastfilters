@@ -26,12 +26,6 @@
 #include <string.h>
 
 #define FASTFILTERS_FIR_CONVOLVE_NOSIMD_IMPL_H
-
-// hack to make waf dependency tracking work correctly
-#define FF_NOP
-#include "fir_convolve_nosimd_impl.h"
-#undef FF_NOP
-
 #define FF_UNROLL 20
 
 // yo dawg, i herd you like #includes so i put an #include in your #include so you can #include while you #include
