@@ -37,6 +37,7 @@ typedef struct _fastfilters_array2d_t {
     size_t n_y;
     size_t stride_x;
     size_t stride_y;
+    size_t n_channels;
 } fastfilters_array2d_t;
 
 typedef struct _fastfilters_array3d_t {
@@ -47,6 +48,7 @@ typedef struct _fastfilters_array3d_t {
     size_t stride_x;
     size_t stride_y;
     size_t stride_z;
+    size_t n_channels;
 } fastfilters_array3d_t;
 
 typedef void *(*fastfilters_alloc_fn_t)(size_t size);

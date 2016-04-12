@@ -40,12 +40,15 @@ bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fast
                                 size_t y1)
 {
     if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
-        if (!g_convolve_inner(inarray->ptr, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y, outptr,
-                              kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR))
-            return false;
+        for (unsigned int c = 0; c < inarray->n_channels; ++c) {
+            if (!g_convolve_inner(inarray->ptr + c, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y,
+                                  outptr + c, kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR))
+                return false;
+        }
 
-        return g_convolve_outer(outptr, inarray->n_y, inarray->stride_y, inarray->n_x, inarray->stride_x, outptr,
-                                kernely, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR);
+        return g_convolve_outer(outptr, inarray->n_y, inarray->stride_y, inarray->n_x * inarray->n_channels,
+                                inarray->stride_x / inarray->n_channels, outptr, kernely, FASTFILTERS_BORDER_MIRROR,
+                                FASTFILTERS_BORDER_MIRROR);
     }
 
     return false;
