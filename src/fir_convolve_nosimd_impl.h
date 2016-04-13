@@ -104,9 +104,15 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
                   size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 
 {
+#ifndef FF_BOUNDARY_PTR_RIGHT
     (void)in_border_right;
+#endif
+#ifndef FF_BOUNDARY_PTR_LEFT
     (void)in_border_left;
+#endif
+#if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
     (void)borderptr_outer_stride;
+#endif
 
     for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
         const float *cur_inptr = inptr + outer_stride * i_outer;
@@ -269,9 +275,15 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
                   size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr, size_t outptr_outer_stride,
                   size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 {
+#ifndef FF_BOUNDARY_PTR_RIGHT
     (void)in_border_right;
+#endif
+#ifndef FF_BOUNDARY_PTR_LEFT
     (void)in_border_left;
+#endif
+#if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
     (void)borderptr_outer_stride;
+#endif
     (void)outptr_outer_stride;
 
     float *tmp = fastfilters_memory_alloc(KERNEL_LEN * n_outer * sizeof(float));
@@ -331,11 +343,9 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
                     left = inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer];
 
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] +
-                                           left);
+                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] + left);
 #else
-                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] -
-                                           left);
+                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] - left);
 #endif
             }
 
@@ -426,7 +436,38 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
 
 #ifdef FF_BOUNDARY_PTR_RIGHT
-    return false;
+    for (; i_pixel < n_pixels; ++i_pixel) {
+        const unsigned tmpidx = i_pixel % (KERNEL_LEN + 1);
+        float *tmpptr = tmp + tmpidx * n_outer;
+
+        for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
+            float sum = 0.0;
+
+            sum = kernel->coefs[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+
+            for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
+                float right;
+                if (k + i_pixel >= n_pixels)
+                    right =
+                        in_border_right[i_outer * outer_stride + ((k + i_pixel) % n_pixels) * borderptr_outer_stride];
+                else
+                    right = inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer];
+
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (right + inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+#else
+                sum += kernel->coefs[k] * (right - inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+#endif
+            }
+
+            tmpptr[i_outer] = sum;
+        }
+
+        const unsigned writeidx = (i_pixel + 1) % (KERNEL_LEN + 1);
+        float *writeptr = tmp + writeidx * n_outer;
+        // FIXME: outer_stride
+        memcpy(outptr + (i_pixel - KERNEL_LEN) * pixel_stride, writeptr, n_outer * sizeof(float));
+    }
 #endif
 
     for (unsigned i = 0; i < KERNEL_LEN; ++i) {

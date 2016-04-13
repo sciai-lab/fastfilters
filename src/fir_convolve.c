@@ -24,7 +24,8 @@
 #include "common.h"
 
 typedef bool (*fir_convolve_fn_t)(const float *, size_t, size_t, size_t, size_t, float *, fastfilters_kernel_fir_t,
-                                  fastfilters_border_treatment_t, fastfilters_border_treatment_t, const float *, const float *, size_t);
+                                  fastfilters_border_treatment_t, fastfilters_border_treatment_t, const float *,
+                                  const float *, size_t);
 
 static fir_convolve_fn_t g_convolve_inner = NULL;
 static fir_convolve_fn_t g_convolve_outer = NULL;
@@ -42,7 +43,8 @@ bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fast
     if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
         for (unsigned int c = 0; c < inarray->n_channels; ++c) {
             if (!g_convolve_inner(inarray->ptr + c, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y,
-                                  outptr + c, kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0))
+                                  outptr + c, kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL, NULL,
+                                  0))
                 return false;
         }
 
