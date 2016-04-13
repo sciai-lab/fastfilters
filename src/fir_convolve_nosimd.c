@@ -46,13 +46,28 @@
 typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *,
                           const fastfilters_kernel_fir_t kernel);
 
+#define BORDER_MIRROR 0
+#define BORDER_OPTIMISTIC 1
+
+#define BORDER2STR_mirror(x) BOOST_PP_IF(BOOST_PP_EQUAL(x, BORDER_MIRROR), mirror, ~)
+#define BORDER2STR(x)
+
 #define IMPL_FNAME(z, n, text) &BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, text), BOOST_PP_INC(n))
 #define IMPL_OUTER_FNAME(z, n, text) &BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_outer_impl_, text), BOOST_PP_INC(n))
 
-#define TBLNAME_SYMMETRIC(x) BOOST_PP_IF(x, symmetric_, antisymmetric_)
 #define TBLNAME_SYMMETRIC2(x) BOOST_PP_IF(x, symmetric, antisymmetric)
-#define TBLNAME_BORDER(x) BOOST_PP_IF(x, optimistic_, mirror_)
-#define TBLNAME_BORDER2(x) BOOST_PP_IF(x, optimistic, mirror)
+#define TBLNAME_SYMMETRIC(x) BOOST_PP_CAT(TBLNAME_SYMMETRIC2(x), _)
+
+#define border_0 mirror
+#define border_enum_0 FASTFILTERS_BORDER_MIRROR
+
+#define border_1 optimistic
+#define border_enum_1 FASTFILTERS_BORDER_OPTIMISTIC
+
+#define TBLNAME_BORDER2(x) BOOST_PP_CAT(border_, x)
+#define TBLNAME_BORDER(x) BOOST_PP_CAT(TBLNAME_BORDER2(x), _)
+
+#define ENUM_BORDER(x) BOOST_PP_CAT(border_enum_, x)
 
 #define BOOST_PP_CAT5(a, b, c, d, e) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(a, b), BOOST_PP_CAT(c, d)), e)
 
@@ -67,22 +82,14 @@ typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *
         BOOST_PP_CAT5(BOOST_PP_IF(outer, fir_convolve_outer_impl_, fir_convolve_impl_), TBLNAME_BORDER(left_border),   \
                       TBLNAME_BORDER(right_border), TBLNAME_SYMMETRIC2(symmetric), N)};
 
-DEFINE_JMPTBL(0, 0, 0, 0);
-DEFINE_JMPTBL(0, 0, 0, 1);
-DEFINE_JMPTBL(0, 0, 1, 0);
-DEFINE_JMPTBL(0, 0, 1, 1);
-DEFINE_JMPTBL(0, 1, 0, 0);
-DEFINE_JMPTBL(0, 1, 0, 1);
-DEFINE_JMPTBL(0, 1, 1, 0);
-DEFINE_JMPTBL(0, 1, 1, 1);
-DEFINE_JMPTBL(1, 0, 0, 0);
-DEFINE_JMPTBL(1, 0, 0, 1);
-DEFINE_JMPTBL(1, 0, 1, 0);
-DEFINE_JMPTBL(1, 0, 1, 1);
-DEFINE_JMPTBL(1, 1, 0, 0);
-DEFINE_JMPTBL(1, 1, 0, 1);
-DEFINE_JMPTBL(1, 1, 1, 0);
-DEFINE_JMPTBL(1, 1, 1, 1);
+#define DECL_DEFINE_JMPTBL_INNER(z, n0, n1)                                                                            \
+    DEFINE_JMPTBL(0, n0, n1, 0);                                                                                       \
+    DEFINE_JMPTBL(0, n0, n1, 1);                                                                                       \
+    DEFINE_JMPTBL(1, n0, n1, 0);                                                                                       \
+    DEFINE_JMPTBL(1, n0, n1, 1);
+
+#define DECL_DEFINE_JMPTBL_OUTER(z, n, text) BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_INNER, n)
+BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_OUTER, ~);
 
 struct impl_fn_jmptbl_selection {
     impl_fn_t *jmptbl;
@@ -96,20 +103,25 @@ struct impl_fn_jmptbl_selection {
         .jmptbl = BOOST_PP_CAT(                                                                                        \
             BOOST_PP_IF(outer, impl_fn_outer_, impl_fn_),                                                              \
             BOOST_PP_CAT(TBLNAME_SYMMETRIC(symmetric), BOOST_PP_CAT(TBLNAME_BORDER(x), TBLNAME_BORDER2(y)))),          \
-        .left_border = BOOST_PP_IF(x, FASTFILTERS_BORDER_OPTIMISTIC, FASTFILTERS_BORDER_MIRROR),                       \
-        .right_border = BOOST_PP_IF(y, FASTFILTERS_BORDER_OPTIMISTIC, FASTFILTERS_BORDER_MIRROR),                      \
+        .left_border = ENUM_BORDER(x), .right_border = ENUM_BORDER(y),                                                 \
         .is_symmetric = BOOST_PP_IF(symmetric, true, false)                                                            \
     }
 
+#define DECL_DEFINE_JMPTBL_STRUCT_INNER(z, n0, n1)                                                                     \
+    DEFINE_JMPTBL_STRUCT(0, n0, n1, 0), DEFINE_JMPTBL_STRUCT(0, n0, n1, 1),
+
+#define DECL_DEFINE_JMPTBL_STRUCT_OUTER(z, n0, text) BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_INNER, n0)
+
+#define DECL_DEFINE_JMPTBL_STRUCT_INNER2(z, n0, n1)                                                                    \
+    DEFINE_JMPTBL_STRUCT(1, n0, n1, 0), DEFINE_JMPTBL_STRUCT(1, n0, n1, 1),
+
+#define DECL_DEFINE_JMPTBL_STRUCT_OUTER2(z, n0, text) BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_INNER2, n0)
+
 static const struct impl_fn_jmptbl_selection impl_fn_tbls_inner[] = {
-    DEFINE_JMPTBL_STRUCT(0, 0, 0, 0), DEFINE_JMPTBL_STRUCT(0, 0, 0, 1), DEFINE_JMPTBL_STRUCT(0, 0, 1, 0),
-    DEFINE_JMPTBL_STRUCT(0, 0, 1, 1), DEFINE_JMPTBL_STRUCT(0, 1, 0, 0), DEFINE_JMPTBL_STRUCT(0, 1, 0, 1),
-    DEFINE_JMPTBL_STRUCT(0, 1, 1, 0), DEFINE_JMPTBL_STRUCT(0, 1, 1, 1)};
+    BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_OUTER, 0)};
 
 static const struct impl_fn_jmptbl_selection impl_fn_tbls_outer[] = {
-    DEFINE_JMPTBL_STRUCT(1, 0, 0, 0), DEFINE_JMPTBL_STRUCT(1, 0, 0, 1), DEFINE_JMPTBL_STRUCT(1, 0, 1, 0),
-    DEFINE_JMPTBL_STRUCT(1, 0, 1, 1), DEFINE_JMPTBL_STRUCT(1, 1, 0, 0), DEFINE_JMPTBL_STRUCT(1, 1, 0, 1),
-    DEFINE_JMPTBL_STRUCT(1, 1, 1, 0), DEFINE_JMPTBL_STRUCT(1, 1, 1, 1)};
+    BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_OUTER2, 0)};
 
 #define ARRAY_LENGTH(x) (sizeof((x)) / sizeof((x)[0]))
 
