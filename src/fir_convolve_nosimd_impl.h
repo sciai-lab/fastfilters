@@ -316,7 +316,32 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
 
 #ifdef FF_BOUNDARY_PTR_LEFT
-    return false;
+    for (; i_pixel < KERNEL_LEN; ++i_pixel) {
+        for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
+            float sum = 0.0;
+
+            sum = kernel->coefs[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
+
+            for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
+                float left;
+                if (-(int)k + (int)i_pixel < 0)
+                    left = in_border_left[i_outer * outer_stride +
+                                          (KERNEL_LEN - (int)k + (int)i_pixel) * borderptr_outer_stride];
+                else
+                    left = inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer];
+
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] +
+                                           left);
+#else
+                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] -
+                                           left);
+#endif
+            }
+
+            tmp[n_pixels * i_pixel + i_outer] = sum;
+        }
+    }
 #endif
 
 // 'valid'
