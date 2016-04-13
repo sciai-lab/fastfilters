@@ -72,12 +72,16 @@ bool DLL_LOCAL fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_p
                                                   size_t n_outer, size_t outer_stride, float *outptr,
                                                   fastfilters_kernel_fir_t kernel,
                                                   fastfilters_border_treatment_t left_border,
-                                                  fastfilters_border_treatment_t right_border);
+                                                  fastfilters_border_treatment_t right_border,
+                                                  const float *borderptr_left, const float *borderptr_right,
+                                                  size_t border_outer_stride);
 bool DLL_LOCAL fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride,
                                                   size_t n_outer, size_t outer_stride, float *outptr,
                                                   fastfilters_kernel_fir_t kernel,
                                                   fastfilters_border_treatment_t left_border,
-                                                  fastfilters_border_treatment_t right_border);
+                                                  fastfilters_border_treatment_t right_border,
+                                                  const float *borderptr_left, const float *borderptr_right,
+                                                  size_t border_outer_stride);
 
 #ifdef __cplusplus
 }

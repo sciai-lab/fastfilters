@@ -135,7 +135,8 @@ static const struct impl_fn_jmptbl_selection impl_fn_tbls_outer[] = {
 bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
                                         fastfilters_border_treatment_t left_border,
-                                        fastfilters_border_treatment_t right_border)
+                                        fastfilters_border_treatment_t right_border, const float *borderptr_left,
+                                        const float *borderptr_right, size_t border_outer_stride)
 {
     if (kernel->len == 0)
         return false;
@@ -157,17 +158,18 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
-                                 kernel);
+        return jmptbl[FF_UNROLL](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride,
+                                 outptr, outer_stride, border_outer_stride, kernel);
     else
-        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
-                                       kernel);
+        return jmptbl[kernel->len - 1](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer,
+                                       outer_stride, outptr, outer_stride, border_outer_stride, kernel);
 }
 
 bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
                                         fastfilters_border_treatment_t left_border,
-                                        fastfilters_border_treatment_t right_border)
+                                        fastfilters_border_treatment_t right_border, const float *borderptr_left,
+                                        const float *borderptr_right, size_t border_outer_stride)
 {
     if (kernel->len == 0)
         return false;
@@ -189,9 +191,9 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
-                                 kernel);
+        return jmptbl[FF_UNROLL](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride,
+                                 outptr, outer_stride, border_outer_stride, kernel);
     else
-        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
-                                       kernel);
+        return jmptbl[kernel->len - 1](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer,
+                                       outer_stride, outptr, outer_stride, border_outer_stride, kernel);
 }
