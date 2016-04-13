@@ -20,7 +20,7 @@
 #error "Do not include/compile fir_convolve_nosimd_impl.h directly"
 #endif
 
-#if !defined(FF_BOUNDARY_OPTIMISTIC_LEFT) && !defined(FF_BOUNDARY_MIRROR_LEFT)
+#if !defined(FF_BOUNDARY_OPTIMISTIC_LEFT) && !defined(FF_BOUNDARY_MIRROR_LEFT) && !defined(FF_BOUNDARY_PTR_LEFT)
 
 #define FF_BOUNDARY_OPTIMISTIC_LEFT
 #include "fir_convolve_nosimd_impl.h"
@@ -30,7 +30,11 @@
 #include "fir_convolve_nosimd_impl.h"
 #undef FF_BOUNDARY_MIRROR_LEFT
 
-#elif !defined(FF_BOUNDARY_OPTIMISTIC_RIGHT) && !defined(FF_BOUNDARY_MIRROR_RIGHT)
+#define FF_BOUNDARY_PTR_LEFT
+#include "fir_convolve_nosimd_impl.h"
+#undef FF_BOUNDARY_PTR_LEFT
+
+#elif !defined(FF_BOUNDARY_OPTIMISTIC_RIGHT) && !defined(FF_BOUNDARY_MIRROR_RIGHT) && !defined(FF_BOUNDARY_PTR_RIGHT)
 
 #define FF_BOUNDARY_OPTIMISTIC_RIGHT
 #include "fir_convolve_nosimd_impl.h"
@@ -39,6 +43,10 @@
 #define FF_BOUNDARY_MIRROR_RIGHT
 #include "fir_convolve_nosimd_impl.h"
 #undef FF_BOUNDARY_MIRROR_RIGHT
+
+#define FF_BOUNDARY_PTR_RIGHT
+#include "fir_convolve_nosimd_impl.h"
+#undef FF_BOUNDARY_PTR_RIGHT
 
 #elif !defined(FF_KERNEL_SYMMETRIC) && !defined(FF_KERNEL_ANTISYMMETRIC)
 
@@ -56,6 +64,8 @@
 #define boundary_name_left optimistic_
 #elif defined(FF_BOUNDARY_MIRROR_LEFT)
 #define boundary_name_left mirror_
+#elif defined(FF_BOUNDARY_PTR_LEFT)
+#define boundary_name_left ptr_
 #else
 #error "No boundary treatment mode defined."
 #endif
@@ -64,6 +74,8 @@
 #define boundary_name_right optimistic_
 #elif defined(FF_BOUNDARY_MIRROR_RIGHT)
 #define boundary_name_right mirror_
+#elif defined(FF_BOUNDARY_PTR_RIGHT)
+#define boundary_name_right ptr_
 #else
 #error "No boundary treatment mode defined."
 #endif
@@ -87,10 +99,14 @@
     BOOST_PP_CAT(BOOST_PP_CAT(fir_convolve_impl_, BOOST_PP_CAT(boundary_name, symmetry_name)), BOOST_PP_ITERATION())
 #endif
 
-static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer, size_t outer_stride,
-                  float *outptr, const fastfilters_kernel_fir_t kernel)
+static bool FNAME(const float *inptr, const float *in_border_left, const float *in_border_right, size_t n_pixels,
+                  size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
+                  const fastfilters_kernel_fir_t kernel)
 
 {
+    (void)in_border_right;
+    (void)in_border_left;
+
     for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
         const float *cur_inptr = inptr + outer_stride * i_outer;
         float *cur_outptr = outptr + outer_stride * i_outer;
@@ -199,9 +215,13 @@ static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size
                  BOOST_PP_ITERATION())
 #endif
 
-static bool FNAME(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer, size_t outer_stride,
-                  float *outptr, const fastfilters_kernel_fir_t kernel)
+static bool FNAME(const float *inptr, const float *in_border_left, const float *in_border_right, size_t n_pixels,
+                  size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
+                  const fastfilters_kernel_fir_t kernel)
 {
+    (void)in_border_right;
+    (void)in_border_left;
+
     float *tmp = fastfilters_memory_alloc(KERNEL_LEN * n_outer * sizeof(float));
 
     if (!tmp)

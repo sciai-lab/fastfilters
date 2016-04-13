@@ -28,6 +28,7 @@ extern "C" {
 #include <stddef.h>
 #include <math.h>
 
+#include "fastfilters.h"
 #include "config.h"
 
 #ifndef M_PI
@@ -74,7 +75,11 @@ struct _fastfilters_kernel_fir_t {
     float *coefs;
 };
 
-typedef enum { FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_OPTIMISTIC } fastfilters_border_treatment_t;
+typedef enum {
+    FASTFILTERS_BORDER_MIRROR,
+    FASTFILTERS_BORDER_OPTIMISTIC,
+    FASTFILTERS_BORDER_PTR
+} fastfilters_border_treatment_t;
 
 void DLL_LOCAL fastfilters_cpu_init(void);
 void DLL_LOCAL fastfilters_linalg_init(void);

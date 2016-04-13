@@ -43,7 +43,7 @@
 #include "fir_convolve_nosimd_impl.h"
 #undef KERNEL_LEN_RUNTIME
 
-typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *,
+typedef bool (*impl_fn_t)(const float *, const float *, const float *, size_t, size_t, size_t, size_t, float *,
                           const fastfilters_kernel_fir_t kernel);
 
 #define BORDER_MIRROR 0
@@ -64,8 +64,13 @@ typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *
 #define border_1 optimistic
 #define border_enum_1 FASTFILTERS_BORDER_OPTIMISTIC
 
+#define border_2 ptr
+#define border_enum_2 FASTFILTERS_BORDER_PTR
+
 #define TBLNAME_BORDER2(x) BOOST_PP_CAT(border_, x)
 #define TBLNAME_BORDER(x) BOOST_PP_CAT(TBLNAME_BORDER2(x), _)
+
+#define N_BORDER_TYPES 3
 
 #define ENUM_BORDER(x) BOOST_PP_CAT(border_enum_, x)
 
@@ -88,8 +93,8 @@ typedef bool (*impl_fn_t)(const float *, size_t, size_t, size_t, size_t, float *
     DEFINE_JMPTBL(1, n0, n1, 0);                                                                                       \
     DEFINE_JMPTBL(1, n0, n1, 1);
 
-#define DECL_DEFINE_JMPTBL_OUTER(z, n, text) BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_INNER, n)
-BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_OUTER, ~);
+#define DECL_DEFINE_JMPTBL_OUTER(z, n, text) BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_INNER, n)
+BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_OUTER, ~);
 
 struct impl_fn_jmptbl_selection {
     impl_fn_t *jmptbl;
@@ -110,18 +115,20 @@ struct impl_fn_jmptbl_selection {
 #define DECL_DEFINE_JMPTBL_STRUCT_INNER(z, n0, n1)                                                                     \
     DEFINE_JMPTBL_STRUCT(0, n0, n1, 0), DEFINE_JMPTBL_STRUCT(0, n0, n1, 1),
 
-#define DECL_DEFINE_JMPTBL_STRUCT_OUTER(z, n0, text) BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_INNER, n0)
+#define DECL_DEFINE_JMPTBL_STRUCT_OUTER(z, n0, text)                                                                   \
+    BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_STRUCT_INNER, n0)
 
 #define DECL_DEFINE_JMPTBL_STRUCT_INNER2(z, n0, n1)                                                                    \
     DEFINE_JMPTBL_STRUCT(1, n0, n1, 0), DEFINE_JMPTBL_STRUCT(1, n0, n1, 1),
 
-#define DECL_DEFINE_JMPTBL_STRUCT_OUTER2(z, n0, text) BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_INNER2, n0)
+#define DECL_DEFINE_JMPTBL_STRUCT_OUTER2(z, n0, text)                                                                  \
+    BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_STRUCT_INNER2, n0)
 
 static const struct impl_fn_jmptbl_selection impl_fn_tbls_inner[] = {
-    BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_OUTER, 0)};
+    BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_STRUCT_OUTER, 0)};
 
 static const struct impl_fn_jmptbl_selection impl_fn_tbls_outer[] = {
-    BOOST_PP_REPEAT(2, DECL_DEFINE_JMPTBL_STRUCT_OUTER2, 0)};
+    BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_STRUCT_OUTER2, 0)};
 
 #define ARRAY_LENGTH(x) (sizeof((x)) / sizeof((x)[0]))
 
@@ -150,9 +157,10 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
     else
-        return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+                                       kernel);
 }
 
 bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
@@ -180,7 +188,8 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
     else
-        return jmptbl[kernel->len - 1](inptr, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+                                       kernel);
 }
