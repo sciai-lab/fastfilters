@@ -100,16 +100,17 @@
 #endif
 
 static bool FNAME(const float *inptr, const float *in_border_left, const float *in_border_right, size_t n_pixels,
-                  size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
-                  const fastfilters_kernel_fir_t kernel)
+                  size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr, size_t outptr_outer_stride,
+                  size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 
 {
     (void)in_border_right;
     (void)in_border_left;
+    (void)borderptr_outer_stride;
 
     for (unsigned int i_outer = 0; i_outer < n_outer; ++i_outer) {
         const float *cur_inptr = inptr + outer_stride * i_outer;
-        float *cur_outptr = outptr + outer_stride * i_outer;
+        float *cur_outptr = outptr + outptr_outer_stride * i_outer;
 
         unsigned int i_inner = 0;
 
@@ -146,8 +147,11 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
         i_inner = KERNEL_LEN;
 #endif
 
+#ifdef FF_BOUNDARY_PTR_LEFT
+#endif
+
 // 'valid' area of line
-#ifdef FF_BOUNDARY_MIRROR_RIGHT
+#if defined(FF_BOUNDARY_MIRROR_RIGHT) || defined(FF_BOUNDARY_PTR_RIGHT)
         const unsigned int end = n_pixels - KERNEL_LEN;
 #else
         const unsigned int end = n_pixels;
@@ -200,6 +204,9 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 
         i_inner = KERNEL_LEN;
 #endif
+
+#ifdef FF_BOUNDARY_PTR_RIGHT
+#endif
     }
 
     return true;
@@ -216,11 +223,13 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
 
 static bool FNAME(const float *inptr, const float *in_border_left, const float *in_border_right, size_t n_pixels,
-                  size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
-                  const fastfilters_kernel_fir_t kernel)
+                  size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr, size_t outptr_outer_stride,
+                  size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 {
     (void)in_border_right;
     (void)in_border_left;
+    (void)borderptr_outer_stride;
+    (void)outptr_outer_stride;
 
     float *tmp = fastfilters_memory_alloc(KERNEL_LEN * n_outer * sizeof(float));
 
@@ -264,7 +273,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
 
 // 'valid'
-#ifdef FF_BOUNDARY_MIRROR_RIGHT
+#if defined(FF_BOUNDARY_MIRROR_RIGHT) || defined(FF_BOUNDARY_PTR_RIGHT)
     const unsigned int end = n_pixels - KERNEL_LEN;
 #else
     const unsigned int end = n_pixels;
@@ -298,6 +307,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 
         const unsigned writeidx = (i_pixel + 1) % (KERNEL_LEN + 1);
         float *writeptr = tmp + writeidx * n_outer;
+        // FIXME: outer_stride
         memcpy(outptr + (i_pixel - KERNEL_LEN) * pixel_stride, writeptr, n_outer * sizeof(float));
     }
 
@@ -338,14 +348,19 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 
         const unsigned writeidx = (i_pixel + 1) % (KERNEL_LEN + 1);
         float *writeptr = tmp + writeidx * n_outer;
+        // FIXME: outer_stride
         memcpy(outptr + (i_pixel - KERNEL_LEN) * pixel_stride, writeptr, n_outer * sizeof(float));
     }
+#endif
+
+#ifdef FF_BOUNDARY_PTR_RIGHT
 #endif
 
     for (unsigned i = 0; i < KERNEL_LEN; ++i) {
         unsigned pixel = n_pixels + i;
         const unsigned writeidx = (pixel + 1) % (KERNEL_LEN + 1);
         float *writeptr = tmp + writeidx * n_outer;
+        // FIXME: outer_stride
         memcpy(outptr + (pixel - KERNEL_LEN) * pixel_stride, writeptr, n_outer * sizeof(float));
     }
 

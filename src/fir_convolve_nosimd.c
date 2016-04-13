@@ -43,8 +43,8 @@
 #include "fir_convolve_nosimd_impl.h"
 #undef KERNEL_LEN_RUNTIME
 
-typedef bool (*impl_fn_t)(const float *, const float *, const float *, size_t, size_t, size_t, size_t, float *,
-                          const fastfilters_kernel_fir_t kernel);
+typedef bool (*impl_fn_t)(const float *, const float *, const float *, size_t, size_t, size_t, size_t, float *, size_t,
+                          size_t, const fastfilters_kernel_fir_t kernel);
 
 #define BORDER_MIRROR 0
 #define BORDER_OPTIMISTIC 1
@@ -157,9 +157,10 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
+                                 kernel);
     else
-        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
                                        kernel);
 }
 
@@ -188,8 +189,9 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
         return false;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, kernel);
+        return jmptbl[FF_UNROLL](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
+                                 kernel);
     else
-        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+        return jmptbl[kernel->len - 1](inptr, NULL, NULL, n_pixels, pixel_stride, n_outer, outer_stride, outptr, 0, 0,
                                        kernel);
 }
