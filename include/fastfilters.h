@@ -27,6 +27,32 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
+// https://gcc.gnu.org/wiki/Visibility
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef FASTFILTERS_SHARED_LIBRARY
+#ifdef __GNUC__
+#define DLL_PUBLIC __attribute__((dllexport))
+#else
+#define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+#endif
+#else
+#ifdef __GNUC__
+#define DLL_PUBLIC __attribute__((dllimport))
+#else
+#define DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+#endif
+#endif
+#define DLL_LOCAL
+#else
+#if __GNUC__ >= 4
+#define DLL_PUBLIC __attribute__((visibility("default")))
+#define DLL_LOCAL __attribute__((visibility("hidden")))
+#else
+#define DLL_PUBLIC
+#define DLL_LOCAL
+#endif
+#endif
+
 typedef struct _fastfilters_kernel_fir_t *fastfilters_kernel_fir_t;
 
 typedef enum { FASTFILTERS_CPU_AVX, FASTFILTERS_CPU_FMA, FASTFILTERS_CPU_AVX2 } fastfilters_cpu_feature_t;
@@ -54,23 +80,24 @@ typedef struct _fastfilters_array3d_t {
 typedef void *(*fastfilters_alloc_fn_t)(size_t size);
 typedef void (*fastfilters_free_fn_t)(void *);
 
-void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
+void DLL_PUBLIC fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
-bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
-bool fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable);
+bool DLL_PUBLIC fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
+bool DLL_PUBLIC fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable);
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
-void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
+fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
+void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
-bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
-                                const fastfilters_kernel_fir_t kernely, float *outptr, size_t x0, size_t y0, size_t x1,
-                                size_t y1);
-bool fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
-                                const fastfilters_kernel_fir_t kernely, const fastfilters_kernel_fir_t kernelz,
-                                float *outptr, size_t x0, size_t y0, size_t z0, size_t x1, size_t y1, size_t z1);
+bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
+                                           const fastfilters_kernel_fir_t kernely, float *outptr, size_t x0, size_t y0,
+                                           size_t x1, size_t y1);
+bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
+                                           const fastfilters_kernel_fir_t kernely,
+                                           const fastfilters_kernel_fir_t kernelz, float *outptr, size_t x0, size_t y0,
+                                           size_t z0, size_t x1, size_t y1, size_t z1);
 
-void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
-                             const size_t len);
+void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small,
+                                        float *ev_big, const size_t len);
 
 #ifdef __cplusplus
 }

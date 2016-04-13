@@ -55,6 +55,9 @@ def configure(cfg):
 	cfg.env.append_value('CFLAGS', ['-std=c99', '-Wextra', '-Wall', '-Ofast', '-funroll-loops', '-funswitch-loops'])
 	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-Wextra', '-Wall', '-Ofast'])
 
+	cfg.env.append_value('CFLAGS_cshlib', ['-DFASTFILTERS_SHARED_LIBRARY=1'])
+	cfg.env.append_value('CFLAGS_cstlib', ['-DFASTFILTERS_STATIC_LIBRARY=1'])
+
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
