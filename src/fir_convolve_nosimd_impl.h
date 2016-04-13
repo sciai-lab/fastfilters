@@ -148,6 +148,30 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
 
 #ifdef FF_BOUNDARY_PTR_LEFT
+        for (unsigned int j = 0; j < KERNEL_LEN; ++j) {
+            float sum = 0.0;
+
+            sum = kernel->coefs[0] * cur_inptr[j * pixel_stride];
+
+            for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
+                float left;
+                if (-(int)k + (int)j < 0)
+                    left = in_border_left[i_outer * borderptr_outer_stride +
+                                          (KERNEL_LEN - (int)k + (int)j) * pixel_stride];
+                else
+                    left = cur_inptr[(j - k) * pixel_stride];
+
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (cur_inptr[(j + k) * pixel_stride] + left);
+#else
+                sum += kernel->coefs[k] * (cur_inptr[(j + k) * pixel_stride] - left);
+#endif
+            }
+
+            cur_outptr[j * pixel_stride] = sum;
+        }
+
+        i_inner = KERNEL_LEN;
 #endif
 
 // 'valid' area of line
@@ -201,11 +225,30 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 
             cur_outptr[i_inner * pixel_stride] = sum;
         }
-
-        i_inner = KERNEL_LEN;
 #endif
 
 #ifdef FF_BOUNDARY_PTR_RIGHT
+        for (; i_inner < n_pixels; ++i_inner) {
+            float sum = 0.0;
+
+            sum = kernel->coefs[0] * cur_inptr[i_inner * pixel_stride];
+
+            for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
+                float right;
+
+                if (k + i_inner >= n_pixels)
+                    right = in_border_right[i_outer * borderptr_outer_stride + ((k + i_inner) % n_pixels)];
+                else
+                    right = cur_inptr[(i_inner + k) * pixel_stride];
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (right + cur_inptr[(i_inner - k) * pixel_stride]);
+#else
+                sum += kernel->coefs[k] * (right - cur_inptr[(i_inner - k) * pixel_stride]);
+#endif
+            }
+
+            cur_outptr[i_inner * pixel_stride] = sum;
+        }
 #endif
     }
 
@@ -270,6 +313,10 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
             tmp[n_pixels * i_pixel + i_outer] = sum;
         }
     }
+#endif
+
+#ifdef FF_BOUNDARY_PTR_LEFT
+    return false;
 #endif
 
 // 'valid'
@@ -354,6 +401,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
 
 #ifdef FF_BOUNDARY_PTR_RIGHT
+    return false;
 #endif
 
     for (unsigned i = 0; i < KERNEL_LEN; ++i) {
