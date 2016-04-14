@@ -29,9 +29,7 @@
 #define FF_UNROLL 20
 
 // yo dawg, i herd you like #includes so i put an #include in your #include so you can #include while you #include
-#include <boost/preprocessor/iteration/iterate.hpp>
-#include <boost/preprocessor/repetition/enum.hpp>
-#include <boost/preprocessor/list/cat.hpp>
+#include <boost/preprocessor/library.hpp>
 
 #define BOOST_PP_ITERATION_LIMITS (1, FF_UNROLL)
 #define BOOST_PP_FILENAME_1 "fir_convolve_nosimd_impl.h"
@@ -42,9 +40,6 @@
 #define KERNEL_LEN_RUNTIME
 #include "fir_convolve_nosimd_impl.h"
 #undef KERNEL_LEN_RUNTIME
-
-typedef bool (*impl_fn_t)(const float *, const float *, const float *, size_t, size_t, size_t, size_t, float *, size_t,
-                          size_t, const fastfilters_kernel_fir_t kernel);
 
 #define BORDER_MIRROR 0
 #define BORDER_OPTIMISTIC 1
@@ -57,15 +52,6 @@ typedef bool (*impl_fn_t)(const float *, const float *, const float *, size_t, s
 
 #define TBLNAME_SYMMETRIC2(x) BOOST_PP_IF(x, symmetric, antisymmetric)
 #define TBLNAME_SYMMETRIC(x) BOOST_PP_CAT(TBLNAME_SYMMETRIC2(x), _)
-
-#define border_0 mirror
-#define border_enum_0 FASTFILTERS_BORDER_MIRROR
-
-#define border_1 optimistic
-#define border_enum_1 FASTFILTERS_BORDER_OPTIMISTIC
-
-#define border_2 ptr
-#define border_enum_2 FASTFILTERS_BORDER_PTR
 
 #define TBLNAME_BORDER2(x) BOOST_PP_CAT(border_, x)
 #define TBLNAME_BORDER(x) BOOST_PP_CAT(TBLNAME_BORDER2(x), _)
@@ -130,7 +116,34 @@ static const struct impl_fn_jmptbl_selection impl_fn_tbls_inner[] = {
 static const struct impl_fn_jmptbl_selection impl_fn_tbls_outer[] = {
     BOOST_PP_REPEAT(N_BORDER_TYPES, DECL_DEFINE_JMPTBL_STRUCT_OUTER2, 0)};
 
-#define ARRAY_LENGTH(x) (sizeof((x)) / sizeof((x)[0]))
+static impl_fn_t find_fn(fastfilters_kernel_fir_t kernel, fastfilters_border_treatment_t left_border,
+                         fastfilters_border_treatment_t right_border, const struct impl_fn_jmptbl_selection *jmptbls,
+                         size_t n_jmptbls)
+{
+    if (kernel->len == 0)
+        return NULL;
+
+    impl_fn_t *jmptbl = NULL;
+
+    for (unsigned int i = 0; i < n_jmptbls; ++i) {
+        if (left_border != jmptbls[i].left_border)
+            continue;
+        if (right_border != jmptbls[i].right_border)
+            continue;
+        if (kernel->is_symmetric != jmptbls[i].is_symmetric)
+            continue;
+        jmptbl = jmptbls[i].jmptbl;
+        break;
+    }
+
+    if (jmptbl == NULL)
+        return NULL;
+
+    if (kernel->len > FF_UNROLL)
+        return jmptbl[FF_UNROLL];
+    else
+        return jmptbl[kernel->len - 1];
+}
 
 bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
                                         size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
@@ -138,31 +151,13 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
                                         fastfilters_border_treatment_t right_border, const float *borderptr_left,
                                         const float *borderptr_right, size_t border_outer_stride)
 {
-    if (kernel->len == 0)
+    impl_fn_t fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
+
+    if (fn == NULL)
         return false;
 
-    impl_fn_t *jmptbl = NULL;
-
-    for (unsigned int i = 0; i < ARRAY_LENGTH(impl_fn_tbls_inner); ++i) {
-        if (left_border != impl_fn_tbls_inner[i].left_border)
-            continue;
-        if (right_border != impl_fn_tbls_inner[i].right_border)
-            continue;
-        if (kernel->is_symmetric != impl_fn_tbls_inner[i].is_symmetric)
-            continue;
-        jmptbl = impl_fn_tbls_inner[i].jmptbl;
-        break;
-    }
-
-    if (jmptbl == NULL)
-        return false;
-
-    if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride,
-                                 outptr, outer_stride, border_outer_stride, kernel);
-    else
-        return jmptbl[kernel->len - 1](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer,
-                                       outer_stride, outptr, outer_stride, border_outer_stride, kernel);
+    return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+              outer_stride, border_outer_stride, kernel);
 }
 
 bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
@@ -171,29 +166,11 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
                                         fastfilters_border_treatment_t right_border, const float *borderptr_left,
                                         const float *borderptr_right, size_t border_outer_stride)
 {
-    if (kernel->len == 0)
+    impl_fn_t fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_outer, ARRAY_LENGTH(impl_fn_tbls_outer));
+
+    if (fn == NULL)
         return false;
 
-    impl_fn_t *jmptbl = NULL;
-
-    for (unsigned int i = 0; i < ARRAY_LENGTH(impl_fn_tbls_outer); ++i) {
-        if (left_border != impl_fn_tbls_outer[i].left_border)
-            continue;
-        if (right_border != impl_fn_tbls_outer[i].right_border)
-            continue;
-        if (kernel->is_symmetric != impl_fn_tbls_outer[i].is_symmetric)
-            continue;
-        jmptbl = impl_fn_tbls_outer[i].jmptbl;
-        break;
-    }
-
-    if (jmptbl == NULL)
-        return false;
-
-    if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride,
-                                 outptr, outer_stride, border_outer_stride, kernel);
-    else
-        return jmptbl[kernel->len - 1](inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer,
-                                       outer_stride, outptr, outer_stride, border_outer_stride, kernel);
+    return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+              outer_stride, border_outer_stride, kernel);
 }
