@@ -9,6 +9,8 @@ APPNAME='libfastfilters'
 srcdir = 'src'
 blddir = 'build'
 
+FF_UNROLL = 10
+
 @conf
 def check_builtin_expect(cfg):
 	cfg.check_cc(
@@ -58,8 +60,7 @@ def configure(cfg):
 	cfg.env.append_value('CFLAGS_cshlib', ['-DFASTFILTERS_SHARED_LIBRARY=1'])
 	cfg.env.append_value('CFLAGS_cstlib', ['-DFASTFILTERS_STATIC_LIBRARY=1'])
 
-
-	cfg.define('FF_UNROLL', 20)
+	cfg.define('FF_UNROLL', FF_UNROLL)
 
 	cfg.write_config_header('include/config.h')
 
@@ -99,7 +100,7 @@ def build(bld):
 
 	avx_use_st = []
 	avx_use_sh = []
-	for i in range(1,20):
+	for i in range(1,FF_UNROLL):
 		tname = 'objs_avx_st_%d' % i
 		bld.objects(source="src/fir_convolve_avx_impl.c", target=tname, uselib='cstlib cpu_avx', cflags='-DFF_KERNEL_LEN=%d' % i)
 		avx_use_st.append(tname)

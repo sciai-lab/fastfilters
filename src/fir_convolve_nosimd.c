@@ -26,7 +26,6 @@
 #include <string.h>
 
 #define FASTFILTERS_FIR_CONVOLVE_NOSIMD_IMPL_H
-#define FF_UNROLL 20
 
 // yo dawg, i herd you like #includes so i put an #include in your #include so you can #include while you #include
 #include <boost/preprocessor/library.hpp>

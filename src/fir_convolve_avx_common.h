@@ -27,8 +27,6 @@
 #error "fir_convolve_avx*.c need to be compiled with AVX support."
 #endif
 
-#define FF_UNROLL 20
-
 #include <boost/preprocessor/library.hpp>
 #define N_BORDER_TYPES 3
 
