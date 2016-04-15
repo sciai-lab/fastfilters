@@ -32,8 +32,16 @@ static fir_convolve_fn_t g_convolve_outer = NULL;
 
 void fastfilters_fir_init(void)
 {
-    g_convolve_outer = &fastfilters_fir_convolve_fir_outer;
-    g_convolve_inner = &fastfilters_fir_convolve_fir_inner;
+    if (fastfilters_cpu_check(FASTFILTERS_CPU_FMA)) {
+        g_convolve_outer = &fastfilters_fir_convolve_fir_outer;
+        g_convolve_inner = &fastfilters_fir_convolve_fir_inner_avxfma;
+    } else if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
+        g_convolve_outer = &fastfilters_fir_convolve_fir_outer;
+        g_convolve_inner = &fastfilters_fir_convolve_fir_inner_avx;
+    } else {
+        g_convolve_outer = &fastfilters_fir_convolve_fir_outer;
+        g_convolve_inner = &fastfilters_fir_convolve_fir_inner;
+    }
 }
 
 bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
