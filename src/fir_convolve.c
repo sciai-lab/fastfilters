@@ -23,9 +23,9 @@
 #include "fastfilters.h"
 #include "common.h"
 
-typedef bool (*fir_convolve_fn_t)(const float *, size_t, size_t, size_t, size_t, float *, fastfilters_kernel_fir_t,
-                                  fastfilters_border_treatment_t, fastfilters_border_treatment_t, const float *,
-                                  const float *, size_t);
+typedef bool (*fir_convolve_fn_t)(const float *, size_t, size_t, size_t, size_t, float *, size_t,
+                                  fastfilters_kernel_fir_t, fastfilters_border_treatment_t,
+                                  fastfilters_border_treatment_t, const float *, const float *, size_t);
 
 static fir_convolve_fn_t g_convolve_inner = NULL;
 static fir_convolve_fn_t g_convolve_outer = NULL;
@@ -37,20 +37,21 @@ void fastfilters_fir_init(void)
 }
 
 bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
-                                const fastfilters_kernel_fir_t kernely, float *outptr, size_t x0, size_t y0, size_t x1,
-                                size_t y1)
+                                const fastfilters_kernel_fir_t kernely, const fastfilters_array2d_t *outarray,
+                                size_t x0, size_t y0, size_t x1, size_t y1)
 {
     if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
         for (unsigned int c = 0; c < inarray->n_channels; ++c) {
             if (!g_convolve_inner(inarray->ptr + c, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y,
-                                  outptr + c, kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL, NULL,
-                                  0))
+                                  outarray->ptr + c, outarray->stride_y, kernelx, FASTFILTERS_BORDER_MIRROR,
+                                  FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0))
                 return false;
         }
 
-        return g_convolve_outer(outptr, inarray->n_y, inarray->stride_y, inarray->n_x * inarray->n_channels,
-                                inarray->stride_x / inarray->n_channels, outptr, kernely, FASTFILTERS_BORDER_MIRROR,
-                                FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0);
+        return true;
+        return g_convolve_outer(outarray->ptr, inarray->n_y, inarray->stride_y, inarray->n_x * inarray->n_channels,
+                                inarray->stride_x / inarray->n_channels, outarray->ptr, outarray->stride_y, kernely,
+                                FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0);
     }
 
     if (unlikely(x1 <= x0))

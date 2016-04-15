@@ -145,8 +145,8 @@ static impl_fn_t find_fn(fastfilters_kernel_fir_t kernel, fastfilters_border_tre
 }
 
 bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t left_border,
+                                        size_t outer_stride, float *outptr, size_t outptr_stride,
+                                        fastfilters_kernel_fir_t kernel, fastfilters_border_treatment_t left_border,
                                         fastfilters_border_treatment_t right_border, const float *borderptr_left,
                                         const float *borderptr_right, size_t border_outer_stride)
 {
@@ -156,12 +156,12 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
         return false;
 
     return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
-              outer_stride, border_outer_stride, kernel);
+              outptr_stride, border_outer_stride, kernel);
 }
 
 bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, size_t pixel_stride, size_t n_outer,
-                                        size_t outer_stride, float *outptr, fastfilters_kernel_fir_t kernel,
-                                        fastfilters_border_treatment_t left_border,
+                                        size_t outer_stride, float *outptr, size_t outptr_stride,
+                                        fastfilters_kernel_fir_t kernel, fastfilters_border_treatment_t left_border,
                                         fastfilters_border_treatment_t right_border, const float *borderptr_left,
                                         const float *borderptr_right, size_t border_outer_stride)
 {
@@ -171,5 +171,5 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
         return false;
 
     return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
-              outer_stride, border_outer_stride, kernel);
+              outptr_stride, border_outer_stride, kernel);
 }
