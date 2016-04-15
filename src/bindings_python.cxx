@@ -145,18 +145,36 @@ template <typename fastfilters_array_t> void convert_py2ff(py::array_t<float> &n
     }
 }
 
+py::array_t<float> array_like(py::array_t<float> &base)
+{
+    py::buffer_info info = base.request();
+    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), info.ndim,
+                                            info.shape, info.strides));
+
+    return result;
+}
+
 py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1)
 {
     fastfilters_array2d_t ff;
+    fastfilters_array2d_t ff_out;
+
+    auto result = array_like(input);
+
     convert_py2ff(input, ff);
-    throw std::logic_error("All good.");
+    convert_py2ff(result, ff_out);
+
+    if (!fastfilters_fir_convolve2d(&ff, k0->kernel, k1->kernel, &ff_out, 0, 0, 0, 0))
+        throw std::logic_error("fastfilters_fir_convolve2d returned false.");
+
+    return result;
 }
 
 py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2)
 {
     fastfilters_array3d_t ff;
     convert_py2ff(input, ff);
-    throw std::logic_error("All good.");
+    throw std::logic_error("3D unsupported.");
 }
 
 py::array_t<float> convolve_fir(py::array_t<float> &input, std::vector<FIRKernel *> k)
