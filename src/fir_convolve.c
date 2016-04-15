@@ -73,5 +73,5 @@ bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fast
     if (unlikely(y1 != (inarray->n_y - 1) && y1 > (inarray->n_y - kernely->len - 1)))
         return false;
 
-    return true;
+    return false;
 }
