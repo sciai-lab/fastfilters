@@ -346,7 +346,7 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 #endif
     }
 
-    return false;
+    return true;
 }
 
 bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, param_avxfma,
