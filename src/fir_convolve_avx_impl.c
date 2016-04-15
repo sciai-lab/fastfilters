@@ -136,13 +136,31 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
         float *cur_output = outptr + y * outptr_outer_stride;
         const float *cur_input = inptr + y * outer_stride;
 
-        (void)cur_input;
-        (void)cur_output;
-
         // left border
         unsigned int x = 0;
 
 #ifdef FF_BOUNDARY_MIRROR_LEFT
+        for (x = 0; x < FF_KERNEL_LEN; ++x) {
+            float sum = kernel->coefs[0] * cur_input[x];
+
+            for (unsigned int k = 1; k < x; ++k) {
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
+#else
+                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
+#endif
+            }
+
+            for (unsigned int k = x; k <= FF_KERNEL_LEN; ++k) {
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[k - x]);
+#else
+                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[k - x]);
+#endif
+            }
+
+            cur_output[x] = sum;
+        }
 #endif
 #ifdef FF_BOUNDARY_PTR_LEFT
 #endif
