@@ -284,9 +284,11 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
     (void)borderptr_outer_stride;
 #endif
-    (void)outptr_outer_stride;
 
-    float *tmp = fastfilters_memory_alloc(KERNEL_LEN * n_outer * sizeof(float));
+    if (n_outer != outptr_outer_stride)
+        return false;
+
+    float *tmp = fastfilters_memory_alloc((KERNEL_LEN + 1) * n_outer * sizeof(float));
 
     if (!tmp)
         return false;
@@ -322,7 +324,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
             }
 
-            tmp[n_pixels * i_pixel + i_outer] = sum;
+            tmp[n_outer * i_pixel + i_outer] = sum;
         }
     }
 #endif
@@ -349,7 +351,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 #endif
             }
 
-            tmp[n_pixels * i_pixel + i_outer] = sum;
+            tmp[n_outer * i_pixel + i_outer] = sum;
         }
     }
 #endif
@@ -479,7 +481,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
     }
 
     fastfilters_memory_free(tmp);
-    return false;
+    return true;
 }
 
 #undef symmetry_name
