@@ -283,6 +283,25 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
 // right border
 #ifdef FF_BOUNDARY_MIRROR_RIGHT
+        for (unsigned int j = 0; j <= FF_KERNEL_LEN; ++j, ++x) {
+            float sum = cur_input[x] * kernel->coefs[0];
+
+            for (unsigned int k = 0; k <= FF_KERNEL_LEN; ++k) {
+                float right;
+                if (x + k >= n_pixels)
+                    right = cur_input[n_pixels - ((k + x) % n_pixels) - 2];
+                else
+                    right = cur_input[x + k];
+
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (right + cur_input[x - k]);
+#else
+                sum += kernel->coefs[k] * (right - cur_input[x - k]);
+#endif
+            }
+
+            cur_output[x] = sum;
+        }
 #endif
 #ifdef FF_BOUNDARY_PTR_RIGHT
 #endif
