@@ -48,7 +48,6 @@ bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fast
                 return false;
         }
 
-        return true;
         return g_convolve_outer(outarray->ptr, inarray->n_y, inarray->stride_y, inarray->n_x * inarray->n_channels,
                                 inarray->stride_x / inarray->n_channels, outarray->ptr, outarray->stride_y, kernely,
                                 FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0);
