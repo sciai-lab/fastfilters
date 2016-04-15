@@ -23,6 +23,7 @@
 #include "common.h"
 
 #include <string>
+#include <stdlib.h>
 
 namespace py = pybind11;
 
@@ -45,6 +46,7 @@ struct FIRKernel {
     ~FIRKernel()
     {
         fastfilters_kernel_fir_free(kernel);
+        kernel = NULL;
     }
 
     std::string __repr__()
@@ -83,6 +85,89 @@ py::array_t<float> linalg_ev2d(py::array_t<float> &mtx)
 
     return result;
 }
+
+template <typename fastfilters_array_t> struct ff_ndim_t {
+};
+
+template <> struct ff_ndim_t<fastfilters_array2d_t> {
+    static const unsigned int ndim = 2;
+
+    static void set_z(size_t /*n_z*/, fastfilters_array2d_t /*&k*/)
+    {
+    }
+    static void set_stride_z(size_t /*n_z*/, fastfilters_array2d_t /*&k*/)
+    {
+    }
+};
+
+template <> struct ff_ndim_t<fastfilters_array3d_t> {
+    static const unsigned int ndim = 3;
+
+    static void set_z(size_t n_z, fastfilters_array3d_t &k)
+    {
+        k.n_z = n_z;
+    }
+    static void set_stride_z(size_t stride_z, fastfilters_array3d_t &k)
+    {
+        k.stride_z = stride_z;
+    }
+};
+
+template <typename fastfilters_array_t> void convert_py2ff(py::array_t<float> &np, fastfilters_array_t &ff)
+{
+    const unsigned int ff_ndim = ff_ndim_t<fastfilters_array_t>::ndim;
+    py::buffer_info np_info = np.request();
+
+    if (np_info.ndim >= (int)ff_ndim) {
+        ff.ptr = (float *)np_info.ptr;
+
+        ff.n_x = np_info.shape[ff_ndim - 1];
+        ff.stride_x = np_info.strides[ff_ndim - 1] / sizeof(float);
+
+        ff.n_y = np_info.shape[ff_ndim - 2];
+        ff.stride_y = np_info.strides[ff_ndim - 2] / sizeof(float);
+
+        if (ff_ndim == 3) {
+            ff_ndim_t<fastfilters_array_t>::set_z(np_info.shape[ff_ndim - 3], ff);
+            ff_ndim_t<fastfilters_array_t>::set_stride_z(np_info.strides[ff_ndim - 3] / sizeof(float), ff);
+        }
+    } else {
+        throw std::logic_error("Too few dimensions.");
+    }
+
+    if (np_info.ndim == ff_ndim) {
+        ff.n_channels = 1;
+    } else if ((np_info.ndim == ff_ndim + 1) && np_info.shape[ff_ndim] < 8 &&
+               np_info.strides[ff_ndim + 1] == sizeof(float)) {
+        ff.n_channels = np_info.shape[ff_ndim];
+    } else {
+        throw std::logic_error("Invalid number of dimensions or too many channels or stride between channels.");
+    }
+}
+
+py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1)
+{
+    fastfilters_array2d_t ff;
+    convert_py2ff(input, ff);
+    throw std::logic_error("All good.");
+}
+
+py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2)
+{
+    fastfilters_array3d_t ff;
+    convert_py2ff(input, ff);
+    throw std::logic_error("All good.");
+}
+
+py::array_t<float> convolve_fir(py::array_t<float> &input, std::vector<FIRKernel *> k)
+{
+    if (k.size() == 2)
+        return convolve_2d_fir(input, k[0], k[1]);
+    else if (k.size() == 3)
+        return convolve_3d_fir(input, k[0], k[1], k[2]);
+    else
+        throw std::logic_error("Invalid number of dimensions.");
+}
 };
 
 PYBIND11_PLUGIN(fastfilters)
@@ -97,6 +182,7 @@ PYBIND11_PLUGIN(fastfilters)
         .def_readonly("order", &FIRKernel::order);
 
     m_fastfilters.def("linalg_ev2d", &linalg_ev2d);
+    m_fastfilters.def("convolve_fir", &convolve_fir);
 
     return m_fastfilters.ptr();
 }
