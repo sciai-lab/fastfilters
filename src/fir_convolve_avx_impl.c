@@ -123,6 +123,16 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                                           float *outptr, size_t outptr_outer_stride, size_t borderptr_outer_stride,
                                           const fastfilters_kernel_fir_t kernel)
 {
+#ifndef FF_BOUNDARY_PTR_RIGHT
+    (void)in_border_right;
+#endif
+#ifndef FF_BOUNDARY_PTR_LEFT
+    (void)in_border_left;
+#endif
+#if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
+    (void)borderptr_outer_stride;
+#endif
+
 #ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
     const unsigned int avx_end = (n_pixels) & ~31;
     const unsigned int avx_end_single = (n_pixels) & ~7;
@@ -130,6 +140,9 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
     const unsigned int avx_end = (n_pixels - FF_KERNEL_LEN) & ~31;
     const unsigned int avx_end_single = (n_pixels - FF_KERNEL_LEN) & ~7;
 #endif
+
+    if (unlikely(pixel_stride != 1))
+        return false;
 
     for (unsigned int y = 0; y < n_outer; ++y) {
         // take next line of pixels
@@ -162,7 +175,31 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             cur_output[x] = sum;
         }
 #endif
+
 #ifdef FF_BOUNDARY_PTR_LEFT
+        for (x = 0; x < FF_KERNEL_LEN; ++x) {
+            float sum = kernel->coefs[0] * cur_input[x];
+
+            for (unsigned int k = 1; k < x; ++k) {
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
+#else
+                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
+#endif
+            }
+
+            for (unsigned int k = x; k <= FF_KERNEL_LEN; ++k) {
+                float left =
+                    in_border_left[y * borderptr_outer_stride + (FF_KERNEL_LEN - (int)k + (int)x) * pixel_stride];
+#ifdef FF_KERNEL_SYMMETRIC
+                sum += kernel->coefs[k] * (cur_input[x + k] + left);
+#else
+                sum += kernel->coefs[k] * (cur_input[x + k] - left);
+#endif
+            }
+
+            cur_output[x] = sum;
+        }
 #endif
 
         // align to 8 pixel boundary
@@ -282,14 +319,18 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
         }
 
 // right border
-#ifdef FF_BOUNDARY_MIRROR_RIGHT
+#if defined(FF_BOUNDARY_MIRROR_RIGHT) || defined(FF_BOUNDARY_PTR_RIGHT)
         for (unsigned int j = 0; j <= FF_KERNEL_LEN; ++j, ++x) {
             float sum = cur_input[x] * kernel->coefs[0];
 
             for (unsigned int k = 0; k <= FF_KERNEL_LEN; ++k) {
                 float right;
                 if (x + k >= n_pixels)
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
                     right = cur_input[n_pixels - ((k + x) % n_pixels) - 2];
+#else
+                    right = in_border_right[y * borderptr_outer_stride + ((k + x) % n_pixels)];
+#endif
                 else
                     right = cur_input[x + k];
 
@@ -303,24 +344,8 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             cur_output[x] = sum;
         }
 #endif
-#ifdef FF_BOUNDARY_PTR_RIGHT
-#endif
     }
 
-    (void)avx_end;
-    (void)avx_end_single;
-
-    (void)inptr;
-    (void)in_border_left;
-    (void)in_border_right;
-    (void)n_pixels;
-    (void)pixel_stride;
-    (void)n_outer;
-    (void)outer_stride;
-    (void)outptr;
-    (void)outptr_outer_stride;
-    (void)borderptr_outer_stride;
-    (void)kernel;
     return false;
 }
 
