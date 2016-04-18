@@ -33,10 +33,10 @@ static fir_convolve_fn_t g_convolve_outer = NULL;
 void fastfilters_fir_init(void)
 {
     if (fastfilters_cpu_check(FASTFILTERS_CPU_FMA)) {
-        g_convolve_outer = &fastfilters_fir_convolve_fir_outer;
+        g_convolve_outer = &fastfilters_fir_convolve_fir_outer_avxfma;
         g_convolve_inner = &fastfilters_fir_convolve_fir_inner_avxfma;
     } else if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
-        g_convolve_outer = &fastfilters_fir_convolve_fir_outer;
+        g_convolve_outer = &fastfilters_fir_convolve_fir_outer_avx;
         g_convolve_inner = &fastfilters_fir_convolve_fir_inner_avx;
     } else {
         g_convolve_outer = &fastfilters_fir_convolve_fir_outer;

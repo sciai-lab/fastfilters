@@ -355,18 +355,115 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
                                           float *outptr, size_t outptr_outer_stride, size_t borderptr_outer_stride,
                                           const fastfilters_kernel_fir_t kernel)
 {
+#ifndef FF_BOUNDARY_PTR_RIGHT
+    (void)in_border_right;
+#endif
+#ifndef FF_BOUNDARY_PTR_LEFT
+    (void)in_border_left;
+#endif
+#if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
+    (void)borderptr_outer_stride;
+#endif
+
+    if (outer_stride != 1)
+        return false;
+
+    const unsigned int avx_end = n_outer & ~7;
+    const unsigned int noavx_left = n_outer - avx_end;
+    const unsigned int n_outer_aligned = (n_outer + 8) & ~7;
+
+    const __m256i mask =
+        _mm256_set_epi32(0, noavx_left >= 7 ? 0xffffffff : 0, noavx_left >= 6 ? 0xffffffff : 0,
+                         noavx_left >= 5 ? 0xffffffff : 0, noavx_left >= 4 ? 0xffffffff : 0,
+                         noavx_left >= 3 ? 0xffffffff : 0, noavx_left >= 2 ? 0xffffffff : 0, 0xffffffff);
+
+    float *tmp = fastfilters_memory_align(32, (FF_KERNEL_LEN + 1) * n_outer_aligned * sizeof(float));
+
+    if (!tmp)
+        return false;
+
+    size_t pixel = 0;
+
+// left border
+#if defined(FF_BOUNDARY_MIRROR_LEFT) || defined(FF_BOUNDARY_PTR_LEFT)
+    for (; pixel < FF_KERNEL_LEN; ++pixel) {
+    }
+#endif
+
+// valid part of line
+#if defined(FF_BOUNDARY_OPTIMISTIC_RIGHT)
+    const size_t pixel_end = n_pixels;
+#else
+    const size_t pixel_end = n_pixels - FF_KERNEL_LEN;
+#endif
+
+    for (; pixel < pixel_end; ++pixel) {
+        const float *cur_inptr = inptr + pixel * pixel_stride;
+        const unsigned tmpidx = pixel % (FF_KERNEL_LEN + 1);
+        float *tmpptr = tmp + tmpidx * n_outer_aligned;
+
+        unsigned dim;
+        for (dim = 0; dim < avx_end; dim += 8) {
+            __m256 pixels = _mm256_loadu_ps(cur_inptr + dim);
+            __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+            __m256 result = _mm256_mul_ps(pixels, kernel_val);
+
+            for (unsigned int i = 1; i <= FF_KERNEL_LEN; ++i) {
+                kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
+
+                pixels = kernel_addsub_ps(_mm256_loadu_ps(inptr + (pixel + i) * pixel_stride + dim),
+                                          _mm256_loadu_ps(inptr + (pixel - i) * pixel_stride + dim));
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmpptr + dim, result);
+        }
+
+        if (noavx_left > 0) {
+            __m256 pixels = _mm256_maskload_ps(cur_inptr + dim, mask);
+            __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+            __m256 result = _mm256_mul_ps(pixels, kernel_val);
+
+            for (unsigned int i = 1; i <= FF_KERNEL_LEN; ++i) {
+                kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
+
+                pixels = kernel_addsub_ps(_mm256_maskload_ps(inptr + (pixel + i) * pixel_stride + dim, mask),
+                                          _mm256_maskload_ps(inptr + (pixel - i) * pixel_stride + dim, mask));
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmpptr + dim, result);
+        }
+
+        const unsigned writeidx = (pixel + 1) % (FF_KERNEL_LEN + 1);
+        float *writeptr = tmp + writeidx * n_outer_aligned;
+        memcpy(outptr + (pixel - FF_KERNEL_LEN) * outptr_outer_stride, writeptr, n_outer * sizeof(float));
+    }
+
+// right border
+#if defined(FF_BOUNDARY_PTR_RIGHT) || defined(FF_BOUNDARY_MIRROR_RIGHT)
+    for (; pixel < n_pixels; ++pixel) {
+    }
+#endif
+
+    // copy from scratch memory to real output
+    for (unsigned i = 0; i < FF_KERNEL_LEN; ++i) {
+        unsigned pixel = n_pixels + i;
+        const unsigned writeidx = (pixel + 1) % (FF_KERNEL_LEN + 1);
+        float *writeptr = tmp + writeidx * n_outer_aligned;
+        memcpy(outptr + (pixel - FF_KERNEL_LEN) * outptr_outer_stride, writeptr, n_outer * sizeof(float));
+    }
+
+    fastfilters_memory_align_free(tmp);
+
     (void)inptr;
     (void)in_border_left;
     (void)in_border_right;
-    (void)n_pixels;
     (void)pixel_stride;
-    (void)n_outer;
     (void)outer_stride;
-    (void)outptr;
-    (void)outptr_outer_stride;
     (void)borderptr_outer_stride;
     (void)kernel;
-    return false;
+    return true;
 }
 
 #undef param_symm

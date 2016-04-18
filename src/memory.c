@@ -60,7 +60,7 @@ void *fastfilters_memory_align(size_t alignment, size_t size)
 
     uintptr_t ptr_i = (uintptr_t)ptr;
     ptr_i += 8 + alignment - 1;
-    ptr_i &= alignment;
+    ptr_i &= ~(alignment - 1);
 
     uintptr_t ptr_diff = ptr_i - (uintptr_t)ptr;
 
