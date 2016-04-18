@@ -178,10 +178,10 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
         }
     }
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         return false;
 
     return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
@@ -222,10 +222,10 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
         }
     }
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_outer, ARRAY_LENGTH(impl_fn_tbls_outer));
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         return false;
 
     return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,

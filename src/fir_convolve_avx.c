@@ -153,10 +153,10 @@ bool APPEND_AVXFMA(fastfilters_fir_convolve_fir_inner)(const float *inptr, size_
         }
     }
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         fn = find_fn(kernel, left_border, right_border, jmptbls_inner, ARRAY_LENGTH(jmptbls_inner));
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         return false;
 
     return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
@@ -199,10 +199,10 @@ bool APPEND_AVXFMA(fastfilters_fir_convolve_fir_outer)(const float *inptr, size_
         }
     }
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         fn = find_fn(kernel, left_border, right_border, jmptbls_outer, ARRAY_LENGTH(jmptbls_outer));
 
-    if (fn == NULL)
+    if (unlikely(fn == NULL))
         return false;
 
     return fn(inptr, borderptr_left, borderptr_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
