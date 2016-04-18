@@ -365,7 +365,7 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
     (void)borderptr_outer_stride;
 #endif
 
-    if (outer_stride != 1)
+    if (unlikely(outer_stride != 1))
         return false;
 
     const unsigned int avx_end = n_outer & ~7;
@@ -497,7 +497,67 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
 
 // right border
 #if defined(FF_BOUNDARY_PTR_RIGHT) || defined(FF_BOUNDARY_MIRROR_RIGHT)
+    // right border
     for (; pixel < n_pixels; ++pixel) {
+        const float *cur_inptr = inptr + pixel * pixel_stride;
+        const unsigned tmpidx = pixel % (FF_KERNEL_LEN + 1);
+        float *tmpptr = tmp + tmpidx * n_outer_aligned;
+
+        unsigned dim;
+        for (dim = 0; dim < avx_end; dim += 8) {
+            __m256 pixels = _mm256_loadu_ps(cur_inptr + dim);
+            __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+            __m256 result = _mm256_mul_ps(pixels, kernel_val);
+
+            for (unsigned int i = 1; i <= FF_KERNEL_LEN; ++i) {
+                kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
+                __m256 pixel_right;
+
+                if (pixel + i < n_pixels)
+                    pixel_right = _mm256_loadu_ps(inptr + (pixel + i) * pixel_stride + dim);
+                else
+                    pixel_right =
+                        _mm256_loadu_ps(inptr + (n_pixels - ((i + pixel) % n_pixels) - 2) * pixel_stride + dim);
+
+                pixels = kernel_addsub_ps(pixel_right, _mm256_loadu_ps(inptr + (pixel - i) * pixel_stride + dim));
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmpptr + dim, result);
+        }
+
+        if (noavx_left > 0) {
+            __m256 pixels = _mm256_maskload_ps(inptr + dim, mask);
+            __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+            __m256 result = _mm256_mul_ps(pixels, kernel_val);
+
+            for (unsigned int i = 1; i <= FF_KERNEL_LEN; ++i) {
+                kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
+                __m256 pixel_right;
+
+                if (pixel + i < n_pixels)
+                    pixel_right = _mm256_maskload_ps(inptr + (pixel + i) * pixel_stride + dim, mask);
+                else
+#ifdef FF_BOUNDARY_PTR_RIGHT
+                    pixel_right = _mm256_maskload_ps(
+                        in_border_right + ((i + pixel) % n_pixels) * borderptr_outer_stride + dim, mask);
+#endif
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
+                pixel_right =
+                    _mm256_maskload_ps(inptr + (n_pixels - ((i + pixel) % n_pixels) - 2) * pixel_stride + dim, mask);
+#endif
+
+                pixels =
+                    kernel_addsub_ps(pixel_right, _mm256_maskload_ps(inptr + (pixel - i) * pixel_stride + dim, mask));
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmpptr + dim, result);
+        }
+
+        const unsigned writeidx = (pixel + 1) % (FF_KERNEL_LEN + 1);
+        float *writeptr = tmp + writeidx * n_outer_aligned;
+        memcpy(outptr + (pixel - FF_KERNEL_LEN) * outptr_outer_stride, writeptr, n_outer * sizeof(float));
     }
 #endif
 
@@ -511,13 +571,6 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
 
     fastfilters_memory_align_free(tmp);
 
-    (void)inptr;
-    (void)in_border_left;
-    (void)in_border_right;
-    (void)pixel_stride;
-    (void)outer_stride;
-    (void)borderptr_outer_stride;
-    (void)kernel;
     return true;
 }
 
