@@ -387,6 +387,61 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
 // left border
 #if defined(FF_BOUNDARY_MIRROR_LEFT) || defined(FF_BOUNDARY_PTR_LEFT)
     for (; pixel < FF_KERNEL_LEN; ++pixel) {
+        const float *cur_inptr = inptr + pixel * pixel_stride;
+        float *tmpptr = tmp + pixel * n_outer_aligned;
+
+        unsigned dim;
+        for (dim = 0; dim < avx_end; dim += 8) {
+            __m256 pixels = _mm256_loadu_ps(cur_inptr + dim);
+            __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+            __m256 result = _mm256_mul_ps(pixels, kernel_val);
+
+            for (unsigned int i = 1; i <= FF_KERNEL_LEN; ++i) {
+                kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
+                __m256 pixel_left;
+
+                if (i > pixel)
+                    pixel_left = _mm256_loadu_ps(inptr + (i - pixel) * pixel_stride + dim);
+                else
+#ifdef FF_BOUNDARY_MIRROR_LEFT
+                    pixel_left = _mm256_loadu_ps(inptr + (pixel - i) * pixel_stride + dim);
+#else
+                    pixel_left =
+                        _mm256_loadu_ps(in_border_left + (FF_KERNEL_LEN + pixel - i) * borderptr_outer_stride + dim);
+#endif
+                pixels = kernel_addsub_ps(_mm256_loadu_ps(inptr + (pixel + i) * pixel_stride + dim), pixel_left);
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmpptr + dim, result);
+        }
+
+        if (noavx_left > 0) {
+            __m256 pixels = _mm256_maskload_ps(cur_inptr + dim, mask);
+            __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+            __m256 result = _mm256_mul_ps(pixels, kernel_val);
+
+            for (unsigned int i = 1; i <= FF_KERNEL_LEN; ++i) {
+                kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
+                __m256 pixel_left;
+
+                if (i > pixel)
+                    pixel_left = _mm256_maskload_ps(inptr + (i - pixel) * pixel_stride + dim, mask);
+                else
+#ifdef FF_BOUNDARY_MIRROR_LEFT
+                    pixel_left = _mm256_maskload_ps(inptr + (pixel - i) * pixel_stride + dim, mask);
+#else
+                    pixel_left = _mm256_maskload_ps(
+                        in_border_left + (FF_KERNEL_LEN + pixel - i) * borderptr_outer_stride + dim, mask);
+#endif
+
+                pixels =
+                    kernel_addsub_ps(_mm256_maskload_ps(inptr + (pixel + i) * pixel_stride + dim, mask), pixel_left);
+                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+            }
+
+            _mm256_store_ps(tmpptr + dim, result);
+        }
     }
 #endif
 
