@@ -107,6 +107,13 @@ fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, dou
         }
     }
 
+    kernel->fn_inner_mirror = NULL;
+    kernel->fn_inner_ptr = NULL;
+    kernel->fn_inner_optimistic = NULL;
+    kernel->fn_outer_mirror = NULL;
+    kernel->fn_outer_ptr = NULL;
+    kernel->fn_outer_optimistic = NULL;
+
     return kernel;
 }
 

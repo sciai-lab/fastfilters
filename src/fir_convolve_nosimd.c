@@ -150,7 +150,36 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
                                         fastfilters_border_treatment_t right_border, const float *borderptr_left,
                                         const float *borderptr_right, size_t border_outer_stride)
 {
-    impl_fn_t fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
+    impl_fn_t fn = NULL;
+
+    if (unlikely(kernel->fn_inner_mirror == NULL)) {
+        kernel->fn_inner_mirror = find_fn(kernel, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR,
+                                          impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
+        kernel->fn_inner_optimistic = find_fn(kernel, FASTFILTERS_BORDER_OPTIMISTIC, FASTFILTERS_BORDER_OPTIMISTIC,
+                                              impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
+        kernel->fn_inner_ptr = find_fn(kernel, FASTFILTERS_BORDER_PTR, FASTFILTERS_BORDER_PTR, impl_fn_tbls_inner,
+                                       ARRAY_LENGTH(impl_fn_tbls_inner));
+    }
+
+    if (likely(left_border == right_border)) {
+        switch (left_border) {
+        case FASTFILTERS_BORDER_MIRROR:
+            fn = kernel->fn_inner_mirror;
+            break;
+        case FASTFILTERS_BORDER_OPTIMISTIC:
+            fn = kernel->fn_inner_optimistic;
+            break;
+        case FASTFILTERS_BORDER_PTR:
+            fn = kernel->fn_inner_ptr;
+            break;
+        default:
+            fn = NULL;
+            break;
+        }
+    }
+
+    if (fn == NULL)
+        fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
 
     if (fn == NULL)
         return false;
@@ -165,7 +194,36 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
                                         fastfilters_border_treatment_t right_border, const float *borderptr_left,
                                         const float *borderptr_right, size_t border_outer_stride)
 {
-    impl_fn_t fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_outer, ARRAY_LENGTH(impl_fn_tbls_outer));
+    impl_fn_t fn = NULL;
+
+    if (unlikely(kernel->fn_outer_mirror == NULL)) {
+        kernel->fn_outer_mirror = find_fn(kernel, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR,
+                                          impl_fn_tbls_outer, ARRAY_LENGTH(impl_fn_tbls_outer));
+        kernel->fn_outer_optimistic = find_fn(kernel, FASTFILTERS_BORDER_OPTIMISTIC, FASTFILTERS_BORDER_OPTIMISTIC,
+                                              impl_fn_tbls_outer, ARRAY_LENGTH(impl_fn_tbls_outer));
+        kernel->fn_outer_ptr = find_fn(kernel, FASTFILTERS_BORDER_PTR, FASTFILTERS_BORDER_PTR, impl_fn_tbls_outer,
+                                       ARRAY_LENGTH(impl_fn_tbls_outer));
+    }
+
+    if (likely(left_border == right_border)) {
+        switch (left_border) {
+        case FASTFILTERS_BORDER_MIRROR:
+            fn = kernel->fn_outer_mirror;
+            break;
+        case FASTFILTERS_BORDER_OPTIMISTIC:
+            fn = kernel->fn_outer_optimistic;
+            break;
+        case FASTFILTERS_BORDER_PTR:
+            fn = kernel->fn_outer_ptr;
+            break;
+        default:
+            fn = NULL;
+            break;
+        }
+    }
+
+    if (fn == NULL)
+        fn = find_fn(kernel, left_border, right_border, impl_fn_tbls_outer, ARRAY_LENGTH(impl_fn_tbls_outer));
 
     if (fn == NULL)
         return false;

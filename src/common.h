@@ -61,6 +61,14 @@ struct _fastfilters_kernel_fir_t {
     size_t len;
     bool is_symmetric;
     float *coefs;
+
+    impl_fn_t fn_inner_mirror;
+    impl_fn_t fn_inner_ptr;
+    impl_fn_t fn_inner_optimistic;
+
+    impl_fn_t fn_outer_mirror;
+    impl_fn_t fn_outer_ptr;
+    impl_fn_t fn_outer_optimistic;
 };
 
 typedef enum {
