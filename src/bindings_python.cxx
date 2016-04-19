@@ -160,12 +160,31 @@ py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIR
     fastfilters_array2d_t ff;
     fastfilters_array2d_t ff_out;
 
-    auto result = array_like(input);
+    py::array_t<float> result;
+
+    if (x0 == 0 && x1 == 0 && y0 == 0 && y1 == 0)
+        result = array_like(input);
+    else {
+        py::buffer_info input_info = input.request();
+        size_t n_x = x1 - x0;
+        size_t n_y = y1 - y0;
+
+        std::cout << x1 << " " << x0 << "\n";
+
+        if (input_info.ndim == 2)
+            result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
+                                               {n_y, n_x}, {sizeof(float) * n_x, sizeof(float)}));
+        else if(input_info.ndim == 3)
+            result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
+                                               {n_y, n_x, input_info.shape[2]}, {sizeof(float) * n_x * input_info.strides[2], input_info.strides[2], input_info.strides[1]}));
+        else
+            throw std::logic_error("Not implemented.");
+    }
 
     convert_py2ff(input, ff);
     convert_py2ff(result, ff_out);
 
-    if (!fastfilters_fir_convolve2d(&ff, k0->kernel, k1->kernel, &ff_out, x0, x1, y0, y1))
+    if (!fastfilters_fir_convolve2d(&ff, k0->kernel, k1->kernel, &ff_out, x0, y0, x1, y1))
         throw std::logic_error("fastfilters_fir_convolve2d returned false.");
 
     return result;
