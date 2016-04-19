@@ -63,8 +63,8 @@ void fastfilters_linalg_init()
         g_ev2d_fn = _ev2d_default;
 }
 
-void fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
-                             const size_t len)
+void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small,
+                                        float *ev_big, const size_t len)
 {
     g_ev2d_fn(xx, xy, yy, ev_small, ev_big, len);
 }

@@ -44,9 +44,10 @@ void fastfilters_fir_init(void)
     }
 }
 
-bool fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
-                                const fastfilters_kernel_fir_t kernely, const fastfilters_array2d_t *outarray,
-                                size_t x0, size_t y0, size_t x1, size_t y1)
+bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
+                                           const fastfilters_kernel_fir_t kernely,
+                                           const fastfilters_array2d_t *outarray, size_t x0, size_t y0, size_t x1,
+                                           size_t y1)
 {
     if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
         for (unsigned int c = 0; c < inarray->n_channels; ++c) {

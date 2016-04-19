@@ -55,7 +55,7 @@
 #include "fastfilters.h"
 #include "common.h"
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
+fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
 {
     double norm;
     double sigma2 = -0.5 / sigma / sigma;
@@ -117,7 +117,7 @@ fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, dou
     return kernel;
 }
 
-void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel)
+void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel)
 {
     fastfilters_memory_free(kernel->coefs);
     fastfilters_memory_free(kernel);

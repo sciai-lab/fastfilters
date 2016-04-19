@@ -23,7 +23,7 @@
 #include "fastfilters.h"
 #include "common.h"
 
-void fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn)
+void DLL_PUBLIC fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn)
 {
     fastfilters_cpu_init();
     fastfilters_memory_init(alloc_fn, free_fn);
