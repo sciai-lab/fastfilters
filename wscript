@@ -42,7 +42,7 @@ def configure(cfg):
 	cfg.load('waf_unit_test')
 	cfg.load('cpufeatures', tooldir='waftools')
 
-	cfg.check_library(mode='c')
+	#cfg.check_library(mode='c')
 
 	cfg.check_builtin_expect()
 	cfg.check_cpufeatures(['avx', 'fma'])
@@ -53,9 +53,18 @@ def configure(cfg):
 	cfg.check_python_version((2,3))
 	cfg.check_python_headers()
 
+	cfg.check(features='c cprogram', lib=['m'], cflags=['-Wall'], uselib_store='M')
+
 	cfg.env.append_value('INCLUDES', ['pybind11/include', 'include', 'src', 'boost-preprocessor/include'])
-	cfg.env.append_value('CFLAGS', ['-std=c99', '-Wextra', '-Wall', '-Ofast', '-funroll-loops', '-funswitch-loops'])
-	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-Wextra', '-Wall', '-Ofast'])
+	cfg.env.append_value('CFLAGS', ['-std=c99', '-Wextra', '-Wall', '-funroll-loops', '-ffast-math'])
+	cfg.env.append_value('CXXFLAGS', ['-std=c++11', '-Wextra', '-Wall'])
+
+	if cfg.options.enable_debug:
+		cfg.env.append_value('CFLAGS', ['-Og', '-g'])
+		cfg.env.append_value('CXXFLAGS', ['-Og', '-g'])
+	else:
+		cfg.env.append_value('CFLAGS', ['-Ofast'])
+		cfg.env.append_value('CXXFLAGS', ['-Ofast'])
 
 	cfg.env.append_value('CFLAGS_cshlib', ['-DFASTFILTERS_SHARED_LIBRARY=1'])
 	cfg.env.append_value('CFLAGS_cstlib', ['-DFASTFILTERS_STATIC_LIBRARY=1'])
@@ -122,8 +131,4 @@ def build(bld):
 
 	bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma " + avx_use_sh, name="fastfilters_shared")
 	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma " + avx_use_st, name="fastfilters_static")
-	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma " + avx_use_sh, name="fastfilters_pyext")
-
-	bld(features='c cprogram test', use="fastfilters_shared M", source='tests/fir.c', target='test_fir')
-
-	bld.add_post_fun(waf_unit_test.set_exit_code)
+	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext"
