@@ -67,20 +67,72 @@ bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray,
     if (unlikely(y1 <= y0))
         return false;
 
-    if (unlikely(x0 > 0 && x0 < kernelx->len))
-        return false;
-    if (unlikely(y0 > 0 && y0 < kernely->len))
+    const size_t n_x = x1 - x0;
+    const size_t n_y = y1 - y0;
+    bool result = false;
+
+    float *border_top = fastfilters_memory_alloc(sizeof(float) * n_x * inarray->n_channels * kernely->len);
+    if (!border_top)
         return false;
 
-    if (unlikely(x0 > (inarray->n_x - kernelx->len - 1)))
+    float *border_bottom = fastfilters_memory_alloc(sizeof(float) * n_x * inarray->n_channels * kernely->len);
+    if (!border_bottom) {
+        fastfilters_memory_free(border_top);
         return false;
-    if (unlikely(y0 > (inarray->n_y - kernely->len - 1)))
-        return false;
+    }
 
-    if (unlikely(x1 != (inarray->n_x - 1) && x1 > (inarray->n_x - kernelx->len - 1)))
+    // top halo
+    // enough distance from top to avoid mirroring?
+    if (y0 >= kernely->len) {
+        // enough distance from left and right to avoid mirroring?
+        if (x0 >= kernelx->len && x1 < inarray->n_x - kernelx->len) {
+            if (!g_convolve_inner(inarray->ptr + x0 * inarray->stride_x + (y0 - kernely->len) * inarray->stride_y, n_x,
+                                  inarray->stride_x, kernely->len, inarray->stride_y, border_top,
+                                  n_x * inarray->n_channels, kernelx, FASTFILTERS_BORDER_OPTIMISTIC,
+                                  FASTFILTERS_BORDER_OPTIMISTIC, NULL, NULL, 0))
+                goto free_and_out;
+        } else {
+            return false;
+        }
+    } else {
         return false;
-    if (unlikely(y1 != (inarray->n_y - 1) && y1 > (inarray->n_y - kernely->len - 1)))
-        return false;
+    }
 
-    return false;
+    // bottom halo
+    // enough distance from bottom to avoid mirroring?
+    if (y1 < inarray->n_y - kernely->len) {
+        // enough distance from left and right to avoid mirroring?
+        if (x0 >= kernelx->len && x1 < inarray->n_x - kernelx->len) {
+            if (!g_convolve_inner(inarray->ptr + x0 * inarray->stride_x + y1 * inarray->stride_y, n_x,
+                                  inarray->stride_x, kernely->len, inarray->stride_y, border_bottom,
+                                  n_x * inarray->n_channels, kernelx, FASTFILTERS_BORDER_OPTIMISTIC,
+                                  FASTFILTERS_BORDER_OPTIMISTIC, NULL, NULL, 0))
+                goto free_and_out;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    // ROI area x pass
+    // enough distance from left and right to avoid mirroring?
+    if (x0 >= kernelx->len && x1 < inarray->n_x - kernelx->len) {
+        g_convolve_inner(inarray->ptr + x0 * inarray->stride_x + y0 * inarray->stride_y, n_x, inarray->stride_x, n_y,
+                         inarray->stride_y, outarray->ptr, outarray->stride_y, kernelx, FASTFILTERS_BORDER_OPTIMISTIC,
+                         FASTFILTERS_BORDER_OPTIMISTIC, NULL, NULL, 0);
+    } else {
+        return false;
+    }
+
+    // ROI area y pass
+    result = g_convolve_outer(outarray->ptr, n_y, outarray->stride_y, n_x * inarray->n_channels,
+                              inarray->stride_x / inarray->n_channels, outarray->ptr, outarray->stride_y, kernely,
+                              FASTFILTERS_BORDER_PTR, FASTFILTERS_BORDER_PTR, border_top, border_bottom,
+                              n_x * inarray->n_channels);
+
+free_and_out:
+    fastfilters_memory_free(border_top);
+    fastfilters_memory_free(border_bottom);
+    return result;
 }
