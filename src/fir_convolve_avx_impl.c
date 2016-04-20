@@ -208,10 +208,11 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             float sum = kernel->coefs[0] * cur_input[x];
 
             for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+                int offset_left = x - k;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
+                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[offset_left]);
 #else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
+                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[offset_left]);
 #endif
             }
 
@@ -227,9 +228,10 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
             for (unsigned j = 1; j <= FF_KERNEL_LEN; ++j) {
                 __m256 pixels;
-                kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
+                int offset_left = x - j;
 
-                pixels = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
+                kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
+                pixels = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + offset_left));
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
@@ -253,6 +255,7 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
             // work on both sides of symmetric kernel simultaneously
             for (unsigned int j = 1; j <= FF_KERNEL_LEN; ++j) {
+                int offset_left = x - j;
                 kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
@@ -260,13 +263,14 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                 // since kernel[-j] = kernel[j] or kernel[-j] = -kernel[j]
                 __m256 pixels0, pixels1, pixels2, pixels3;
 
-                pixels0 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
-                pixels1 =
-                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 8), _mm256_loadu_ps(cur_input + x - j + 8));
-                pixels2 =
-                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 16), _mm256_loadu_ps(cur_input + x - j + 16));
-                pixels3 =
-                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 24), _mm256_loadu_ps(cur_input + x - j + 24));
+                pixels0 =
+                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + offset_left));
+                pixels1 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 8),
+                                           _mm256_loadu_ps(cur_input + offset_left + 8));
+                pixels2 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 16),
+                                           _mm256_loadu_ps(cur_input + offset_left + 16));
+                pixels3 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 24),
+                                           _mm256_loadu_ps(cur_input + offset_left + 24));
 
                 // multiply with kernel value and add to result
                 result0 = _mm256_fmadd_ps(pixels0, kernel_val, result0);

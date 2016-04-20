@@ -190,12 +190,11 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
             float sum = kernel->coefs[0] * cur_inptr[i_inner * pixel_stride];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
+                int offset_left = (int)(i_inner - k) * pixel_stride;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] *
-                       (cur_inptr[(i_inner + k) * pixel_stride] + cur_inptr[(i_inner - k) * pixel_stride]);
+                sum += kernel->coefs[k] * (cur_inptr[(i_inner + k) * pixel_stride] + cur_inptr[offset_left]);
 #else
-                sum += kernel->coefs[k] *
-                       (cur_inptr[(i_inner + k) * pixel_stride] - cur_inptr[(i_inner - k) * pixel_stride]);
+                sum += kernel->coefs[k] * (cur_inptr[(i_inner + k) * pixel_stride] - cur_inptr[offset_left]);
 #endif
             }
 
@@ -372,12 +371,13 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
             sum = kernel->coefs[0] * inptr[pixel_stride * i_pixel + outer_stride * i_outer];
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
+                int offset_left = (i_pixel - k) * pixel_stride + outer_stride * i_outer;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] +
-                                           inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] *
+                       (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] + inptr[offset_left]);
 #else
-                sum += kernel->coefs[k] * (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] -
-                                           inptr[(i_pixel - k) * pixel_stride + outer_stride * i_outer]);
+                sum += kernel->coefs[k] *
+                       (inptr[(i_pixel + k) * pixel_stride + outer_stride * i_outer] - inptr[offset_left]);
 #endif
             }
 
