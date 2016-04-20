@@ -110,7 +110,7 @@ static impl_fn_t find_fn(fastfilters_kernel_fir_t kernel, fastfilters_border_tre
         return NULL;
 
     if (kernel->len > FF_UNROLL)
-        return jmptbl[FF_UNROLL];
+        return jmptbl[FF_UNROLL - 1];
     else
         return jmptbl[kernel->len - 1];
 }

@@ -156,19 +156,16 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
         for (x = 0; x < FF_KERNEL_LEN; ++x) {
             float sum = kernel->coefs[0] * cur_input[x];
 
-            for (unsigned int k = 1; k < x; ++k) {
+            for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+                unsigned int offset_left;
+                if (-(int)k + (int)x < 0)
+                    offset_left = -x + k;
+                else
+                    offset_left = x - k;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
+                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[offset_left]);
 #else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
-#endif
-            }
-
-            for (unsigned int k = x; k <= FF_KERNEL_LEN; ++k) {
-#ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[k - x]);
-#else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[k - x]);
+                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[offset_left]);
 #endif
             }
 
@@ -181,16 +178,12 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             float sum = kernel->coefs[0] * cur_input[x];
 
             for (unsigned int k = 1; k < x; ++k) {
-#ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
-#else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
-#endif
-            }
-
-            for (unsigned int k = x; k <= FF_KERNEL_LEN; ++k) {
-                float left =
-                    in_border_left[y * borderptr_outer_stride + (FF_KERNEL_LEN - (int)k + (int)x) * pixel_stride];
+                float left;
+                if (-(int)k + (int)x < 0)
+                    left =
+                        in_border_left[y * borderptr_outer_stride + (FF_KERNEL_LEN - (int)k + (int)x) * pixel_stride];
+                else
+                    left = cur_input[x - k];
 #ifdef FF_KERNEL_SYMMETRIC
                 sum += kernel->coefs[k] * (cur_input[x + k] + left);
 #else
@@ -208,11 +201,10 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             float sum = kernel->coefs[0] * cur_input[x];
 
             for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
-                int offset_left = x - k;
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[offset_left]);
+                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
 #else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[offset_left]);
+                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
 #endif
             }
 
@@ -228,10 +220,9 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
             for (unsigned j = 1; j <= FF_KERNEL_LEN; ++j) {
                 __m256 pixels;
-                int offset_left = x - j;
 
                 kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
-                pixels = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + offset_left));
+                pixels = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
@@ -255,7 +246,6 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
             // work on both sides of symmetric kernel simultaneously
             for (unsigned int j = 1; j <= FF_KERNEL_LEN; ++j) {
-                int offset_left = x - j;
                 kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
 
                 // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
@@ -263,14 +253,13 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                 // since kernel[-j] = kernel[j] or kernel[-j] = -kernel[j]
                 __m256 pixels0, pixels1, pixels2, pixels3;
 
-                pixels0 =
-                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + offset_left));
-                pixels1 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 8),
-                                           _mm256_loadu_ps(cur_input + offset_left + 8));
+                pixels0 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + (x - j)));
+                pixels1 =
+                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 8), _mm256_loadu_ps(cur_input + (x - j) + 8));
                 pixels2 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 16),
-                                           _mm256_loadu_ps(cur_input + offset_left + 16));
+                                           _mm256_loadu_ps(cur_input + (x - j) + 16));
                 pixels3 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 24),
-                                           _mm256_loadu_ps(cur_input + offset_left + 24));
+                                           _mm256_loadu_ps(cur_input + (x - j) + 24));
 
                 // multiply with kernel value and add to result
                 result0 = _mm256_fmadd_ps(pixels0, kernel_val, result0);
@@ -306,12 +295,12 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 #ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
         const size_t n_pixels_end = n_pixels;
 #else
-        const size_t n_pixels_end = n_pixels - FF_KERNEL_LEN - 1;
+        const size_t n_pixels_end = n_pixels - FF_KERNEL_LEN;
 #endif
         for (; x < n_pixels_end; ++x) {
             float sum = cur_input[x] * kernel->coefs[0];
 
-            for (unsigned int k = 0; k <= FF_KERNEL_LEN; ++k) {
+            for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
 #ifdef FF_KERNEL_SYMMETRIC
                 sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
 #else
@@ -324,11 +313,12 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
 // right border
 #if defined(FF_BOUNDARY_MIRROR_RIGHT) || defined(FF_BOUNDARY_PTR_RIGHT)
-        for (unsigned int j = 0; j <= FF_KERNEL_LEN; ++j, ++x) {
+        for (; x < n_pixels; ++x) {
             float sum = cur_input[x] * kernel->coefs[0];
 
-            for (unsigned int k = 0; k <= FF_KERNEL_LEN; ++k) {
+            for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
                 float right;
+
                 if (x + k >= n_pixels)
 #ifdef FF_BOUNDARY_MIRROR_RIGHT
                     right = cur_input[n_pixels - ((k + x) % n_pixels) - 2];
@@ -549,15 +539,16 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
 
                 if (pixel + i < n_pixels)
                     pixel_right = _mm256_maskload_ps(inptr + (pixel + i) * pixel_stride + dim, mask);
-                else
+                else {
 #ifdef FF_BOUNDARY_PTR_RIGHT
                     pixel_right = _mm256_maskload_ps(
                         in_border_right + ((i + pixel) % n_pixels) * borderptr_outer_stride + dim, mask);
 #endif
 #ifdef FF_BOUNDARY_MIRROR_RIGHT
-                pixel_right =
-                    _mm256_maskload_ps(inptr + (n_pixels - ((i + pixel) % n_pixels) - 2) * pixel_stride + dim, mask);
+                    pixel_right = _mm256_maskload_ps(
+                        inptr + (n_pixels - ((i + pixel) % n_pixels) - 2) * pixel_stride + dim, mask);
 #endif
+                }
 
                 pixels =
                     kernel_addsub_ps(pixel_right, _mm256_maskload_ps(inptr + (pixel - i) * pixel_stride + dim, mask));
