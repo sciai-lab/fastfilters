@@ -337,7 +337,7 @@ static bool FNAME(const float *inptr, const float *in_border_left, const float *
 
             for (unsigned int k = 1; k <= KERNEL_LEN; ++k) {
                 float left;
-                if (-(int)k + (int)i_pixel < 0)
+                if ((int)i_pixel - (int)k < 0)
                     left = in_border_left[i_outer * outer_stride +
                                           (KERNEL_LEN - (int)k + (int)i_pixel) * borderptr_outer_stride];
                 else
