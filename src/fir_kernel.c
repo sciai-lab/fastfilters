@@ -102,10 +102,39 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
             break;
         case 1:
             kernel->coefs[x] = x * g;
+            break;
         case 2:
             kernel->coefs[x] = (1.0 - (x / sigma) * (x / sigma)) * g;
+            break;
         }
     }
+
+    double sum = 0.0;
+    if (order == 0) {
+        sum = kernel->coefs[0];
+        for (unsigned int x = 1; x <= kernel->len; ++x)
+            sum += 2 * kernel->coefs[x];
+    } else {
+        unsigned int faculty = 1;
+        int sign;
+
+        if (kernel->is_symmetric)
+            sign = 1;
+        else
+            sign = -1;
+
+        for (unsigned int i = 2; i <= order; ++i)
+            faculty *= i;
+
+        sum = kernel->coefs[0] / (double)faculty;
+        for (unsigned int x = 1; x <= kernel->len; ++x) {
+            sum += kernel->coefs[x] * pow(-(double)x, (int)order) / (double)faculty;
+            sum += sign * kernel->coefs[x] * pow((double)x, (int)order) / (double)faculty;
+        }
+    }
+
+    for (unsigned int x = 0; x < kernel->len; ++x)
+        kernel->coefs[x] /= sum;
 
     kernel->fn_inner_mirror = NULL;
     kernel->fn_inner_ptr = NULL;
