@@ -26,6 +26,39 @@ def check_builtin_expect(cfg):
 		}
 		''')
 
+
+@conf
+def check_clang_hotfix(self):
+	res = self.check(msg='Checking if we can compile without the __extern_always_inline clang hotfix', mandatory=False, features='cxx', cxxflags=['-Ofast'], fragment='''
+#include <stdio.h>
+#include <sys/cdefs.h>
+
+extern void foo_alias (void) __asm ("foo");
+
+__extern_always_inline void
+foo (void)
+{
+  puts ("hi oh world!");
+  return foo_alias ();
+}
+
+
+void
+foo_alias (void)
+{
+  puts ("hell oh world");
+}
+
+int
+main ()
+{
+  foo ();
+}
+''')
+	if not res:
+		self.env.append_value('CXXFLAGS', '-D__extern_always_inline=extern inline')
+		self.env.append_value('CFLAGS', '-D__extern_always_inline=extern inline')
+
 def options(opt):
 	opt.load('python')
 	opt.load('compiler_c')
@@ -44,6 +77,7 @@ def configure(cfg):
 
 	#cfg.check_library(mode='c')
 
+	cfg.check_clang_hotfix()
 	cfg.check_builtin_expect()
 	cfg.check_cpufeatures(['avx', 'fma'])
 	cfg.check_cpuid()
