@@ -404,16 +404,17 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
                 kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
                 __m256 pixel_left;
 
-                if (i > pixel)
-                    pixel_left = _mm256_loadu_ps(inptr + (i - pixel) * pixel_stride + dim);
-                else
-#ifdef FF_BOUNDARY_MIRROR_LEFT
+                if (i <= pixel)
                     pixel_left = _mm256_loadu_ps(inptr + (pixel - i) * pixel_stride + dim);
+                else {
+#ifdef FF_BOUNDARY_MIRROR_LEFT
+                    pixel_left = _mm256_loadu_ps(inptr + ((int)(i - pixel)) * pixel_stride + dim);
 #else
-                    pixel_left =
-                        _mm256_loadu_ps(in_border_left + (FF_KERNEL_LEN + pixel - i) * borderptr_outer_stride + dim);
+                    pixel_left = _mm256_loadu_ps(in_border_left +
+                                                 (FF_KERNEL_LEN + (int)(pixel - i)) * borderptr_outer_stride + dim);
 #endif
-                pixels = kernel_addsub_ps(_mm256_loadu_ps(inptr + (pixel + i) * pixel_stride + dim), pixel_left);
+                }
+                pixels = kernel_addsub_ps(_mm256_loadu_ps(inptr + (pixel + i) + dim), pixel_left);
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
             }
 
@@ -429,14 +430,14 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
                 kernel_val = _mm256_broadcast_ss(kernel->coefs + i);
                 __m256 pixel_left;
 
-                if (i > pixel)
-                    pixel_left = _mm256_maskload_ps(inptr + (i - pixel) * pixel_stride + dim, mask);
+                if (i < pixel)
+                    pixel_left = _mm256_maskload_ps(inptr + (pixel - i) * pixel_stride + dim, mask);
                 else
 #ifdef FF_BOUNDARY_MIRROR_LEFT
-                    pixel_left = _mm256_maskload_ps(inptr + (pixel - i) * pixel_stride + dim, mask);
+                    pixel_left = _mm256_maskload_ps(inptr + ((int)(i - pixel)) * pixel_stride + dim, mask);
 #else
                     pixel_left = _mm256_maskload_ps(
-                        in_border_left + (FF_KERNEL_LEN + pixel - i) * borderptr_outer_stride + dim, mask);
+                        in_border_left + (FF_KERNEL_LEN + (int)(pixel - i)) * borderptr_outer_stride + dim, mask);
 #endif
 
                 pixels =
@@ -519,9 +520,16 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
 
                 if (pixel + i < n_pixels)
                     pixel_right = _mm256_loadu_ps(inptr + (pixel + i) * pixel_stride + dim);
-                else
+                else {
+#ifdef FF_BOUNDARY_PTR_RIGHT
+                    pixel_right =
+                        _mm256_loadu_ps(in_border_right + ((i + pixel) % n_pixels) * borderptr_outer_stride + dim);
+#endif
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
                     pixel_right =
                         _mm256_loadu_ps(inptr + (n_pixels - ((i + pixel) % n_pixels) - 2) * pixel_stride + dim);
+#endif
+                }
 
                 pixels = kernel_addsub_ps(pixel_right, _mm256_loadu_ps(inptr + (pixel - i) * pixel_stride + dim));
                 result = _mm256_fmadd_ps(pixels, kernel_val, result);
