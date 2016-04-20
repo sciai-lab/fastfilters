@@ -234,7 +234,6 @@ convolve_fir_roi3d(py::array_t<float> &input, std::vector<FIRKernel *> k,
 
 PYBIND11_PLUGIN(fastfilters)
 {
-
     py::module m_fastfilters("fastfilters", "fast gaussian kernel and derivative filters");
 
     fastfilters_init(PyMem_Malloc, PyMem_Free);
