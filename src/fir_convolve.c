@@ -76,12 +76,10 @@ bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray,
                                            size_t y1)
 {
     if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
-        for (unsigned int c = 0; c < inarray->n_channels; ++c) {
-            if (!g_convolve_inner(inarray->ptr + c, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y,
-                                  outarray->ptr + c, outarray->stride_y, kernelx, FASTFILTERS_BORDER_MIRROR,
-                                  FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0))
-                return false;
-        }
+        if (!g_convolve_inner(inarray->ptr, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y,
+                              outarray->ptr, outarray->stride_y, kernelx, FASTFILTERS_BORDER_MIRROR,
+                              FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0))
+            return false;
 
         return g_convolve_outer(outarray->ptr, inarray->n_y, outarray->stride_y, inarray->n_x * inarray->n_channels,
                                 inarray->stride_x / inarray->n_channels, outarray->ptr, outarray->stride_y, kernely,
@@ -110,7 +108,6 @@ bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray,
     // top halo
     // enough distance from top to avoid mirroring?
     if (y0 >= kernely->len) {
-        // enough distance from left and right to avoid mirroring?
         result = g_convolve_inner_roi(inarray->ptr + (y0 - kernely->len) * inarray->stride_y, inarray->n_x,
                                       inarray->stride_x, kernely->len, inarray->stride_y, border_top,
                                       n_x * inarray->n_channels, kernelx, x0, x1);

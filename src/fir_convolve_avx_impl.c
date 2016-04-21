@@ -117,6 +117,26 @@
 #define kernel_addsub_ps(a, b) _mm256_sub_ps((a), (b))
 #endif
 
+static bool
+    BOOST_PP_CAT(fname(0, param_boundary_left, param_boundary_right, param_symm, param_avxfma, FF_KERNEL_LEN_FNAME),
+                 _rgb)(const float *inptr, const float *in_border_left, const float *in_border_right, size_t n_pixels,
+                       size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
+                       size_t outptr_outer_stride, size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
+{
+    (void)inptr;
+    (void)in_border_left;
+    (void)in_border_right;
+    (void)n_pixels;
+    (void)pixel_stride;
+    (void)n_outer;
+    (void)outer_stride;
+    (void)outptr;
+    (void)outptr_outer_stride;
+    (void)borderptr_outer_stride;
+    (void)kernel;
+    return false;
+}
+
 bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, param_avxfma,
                      FF_KERNEL_LEN_FNAME)(const float *inptr, const float *in_border_left, const float *in_border_right,
                                           size_t n_pixels, size_t pixel_stride, size_t n_outer, size_t outer_stride,
@@ -141,8 +161,11 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
     const unsigned int avx_end_single = (n_pixels - FF_KERNEL_LEN) & ~7;
 #endif
 
-    if (unlikely(pixel_stride != 1))
-        return false;
+    if (pixel_stride != 1)
+        return BOOST_PP_CAT(
+            fname(0, param_boundary_left, param_boundary_right, param_symm, param_avxfma, FF_KERNEL_LEN_FNAME),
+            _rgb)(inptr, in_border_left, in_border_right, n_pixels, pixel_stride, n_outer, outer_stride, outptr,
+                  outptr_outer_stride, borderptr_outer_stride, kernel);
 
     for (unsigned int y = 0; y < n_outer; ++y) {
         // take next line of pixels
