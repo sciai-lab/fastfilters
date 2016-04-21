@@ -218,102 +218,105 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
         }
 #endif
 
-        // align to 8 pixel boundary
-        const unsigned int x_align = (x + 7) & ~7;
-        for (; x < x_align; ++x) {
-            float sum = kernel->coefs[0] * cur_input[x];
+        if (likely(avx_end_single > 32)) {
+            // align to 8 pixel boundary
+            const unsigned int x_align = (x + 7) & ~7;
+            for (; x < x_align; ++x) {
+                float sum = kernel->coefs[0] * cur_input[x];
 
-            for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+                for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
+                    sum += kernel->coefs[k] * (cur_input[x + k] + *(cur_input + x - k));
 #else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
+                    sum += kernel->coefs[k] * (cur_input[x + k] - *(cur_input + x - k));
 #endif
+                }
+
+                cur_output[x] = sum;
             }
 
-            cur_output[x] = sum;
-        }
+            // align to 32 pixel boundary
+            for (; x < 32; x += 8) {
+                __m256 result = _mm256_loadu_ps(cur_input + x);
+                __m256 kernel_val = _mm256_broadcast_ss(&kernel->coefs[0]);
 
-        // align to 32 pixel boundary
-        for (; x < 32; x += 8) {
-            __m256 result = _mm256_loadu_ps(cur_input + x);
-            __m256 kernel_val = _mm256_broadcast_ss(&kernel->coefs[0]);
+                result = _mm256_mul_ps(result, kernel_val);
 
-            result = _mm256_mul_ps(result, kernel_val);
+                for (unsigned j = 1; j <= FF_KERNEL_LEN; ++j) {
+                    __m256 pixels;
 
-            for (unsigned j = 1; j <= FF_KERNEL_LEN; ++j) {
-                __m256 pixels;
+                    kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
+                    pixels = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
+                    result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                }
 
-                kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
-                pixels = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                _mm256_storeu_ps(cur_output + x, result);
             }
 
-            _mm256_storeu_ps(cur_output + x, result);
-        }
+            // main loop - 32 pixels at once
+            for (; x < avx_end; x += 32) {
+                // load next 32 pixels
+                __m256 result0 = _mm256_loadu_ps(cur_input + x);
+                __m256 result1 = _mm256_loadu_ps(cur_input + x + 8);
+                __m256 result2 = _mm256_loadu_ps(cur_input + x + 16);
+                __m256 result3 = _mm256_loadu_ps(cur_input + x + 24);
 
-        // main loop - 32 pixels at once
-        for (; x < avx_end; x += 32) {
-            // load next 32 pixels
-            __m256 result0 = _mm256_loadu_ps(cur_input + x);
-            __m256 result1 = _mm256_loadu_ps(cur_input + x + 8);
-            __m256 result2 = _mm256_loadu_ps(cur_input + x + 16);
-            __m256 result3 = _mm256_loadu_ps(cur_input + x + 24);
+                // multiply current pixels with center value of kernel
+                __m256 kernel_val = _mm256_broadcast_ss(&kernel->coefs[0]);
+                result0 = _mm256_mul_ps(result0, kernel_val);
+                result1 = _mm256_mul_ps(result1, kernel_val);
+                result2 = _mm256_mul_ps(result2, kernel_val);
+                result3 = _mm256_mul_ps(result3, kernel_val);
 
-            // multiply current pixels with center value of kernel
-            __m256 kernel_val = _mm256_broadcast_ss(&kernel->coefs[0]);
-            result0 = _mm256_mul_ps(result0, kernel_val);
-            result1 = _mm256_mul_ps(result1, kernel_val);
-            result2 = _mm256_mul_ps(result2, kernel_val);
-            result3 = _mm256_mul_ps(result3, kernel_val);
+                // work on both sides of symmetric kernel simultaneously
+                for (unsigned int j = 1; j <= FF_KERNEL_LEN; ++j) {
+                    kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
 
-            // work on both sides of symmetric kernel simultaneously
-            for (unsigned int j = 1; j <= FF_KERNEL_LEN; ++j) {
-                kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
+                    // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] =
+                    // (image[i-j] +
+                    // image[i+j]) * kernel[j])
+                    // since kernel[-j] = kernel[j] or kernel[-j] = -kernel[j]
+                    __m256 pixels0, pixels1, pixels2, pixels3;
 
-                // sum pixels for both sides of kernel (kernel[-j] * image[i-j] + kernel[j] * image[i+j] = (image[i-j] +
-                // image[i+j]) * kernel[j])
-                // since kernel[-j] = kernel[j] or kernel[-j] = -kernel[j]
-                __m256 pixels0, pixels1, pixels2, pixels3;
+                    pixels0 =
+                        kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + (x - j)));
+                    pixels1 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 8),
+                                               _mm256_loadu_ps(cur_input + (x - j) + 8));
+                    pixels2 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 16),
+                                               _mm256_loadu_ps(cur_input + (x - j) + 16));
+                    pixels3 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 24),
+                                               _mm256_loadu_ps(cur_input + (x - j) + 24));
 
-                pixels0 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + (x - j)));
-                pixels1 =
-                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 8), _mm256_loadu_ps(cur_input + (x - j) + 8));
-                pixels2 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 16),
-                                           _mm256_loadu_ps(cur_input + (x - j) + 16));
-                pixels3 = kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j + 24),
-                                           _mm256_loadu_ps(cur_input + (x - j) + 24));
+                    // multiply with kernel value and add to result
+                    result0 = _mm256_fmadd_ps(pixels0, kernel_val, result0);
+                    result1 = _mm256_fmadd_ps(pixels1, kernel_val, result1);
+                    result2 = _mm256_fmadd_ps(pixels2, kernel_val, result2);
+                    result3 = _mm256_fmadd_ps(pixels3, kernel_val, result3);
+                }
 
-                // multiply with kernel value and add to result
-                result0 = _mm256_fmadd_ps(pixels0, kernel_val, result0);
-                result1 = _mm256_fmadd_ps(pixels1, kernel_val, result1);
-                result2 = _mm256_fmadd_ps(pixels2, kernel_val, result2);
-                result3 = _mm256_fmadd_ps(pixels3, kernel_val, result3);
+                _mm256_storeu_ps(cur_output + x, result0);
+                _mm256_storeu_ps(cur_output + x + 8, result1);
+                _mm256_storeu_ps(cur_output + x + 16, result2);
+                _mm256_storeu_ps(cur_output + x + 24, result3);
             }
 
-            _mm256_storeu_ps(cur_output + x, result0);
-            _mm256_storeu_ps(cur_output + x + 8, result1);
-            _mm256_storeu_ps(cur_output + x + 16, result2);
-            _mm256_storeu_ps(cur_output + x + 24, result3);
-        }
+            // align until we have to switch to non-SIMD
+            for (; x < avx_end_single; x += 8) {
+                __m256 result = _mm256_loadu_ps(cur_input + x);
+                __m256 kernel_val = _mm256_broadcast_ss(&kernel->coefs[0]);
 
-        // align until we have to switch to non-SIMD
-        for (; x < avx_end_single; x += 8) {
-            __m256 result = _mm256_loadu_ps(cur_input + x);
-            __m256 kernel_val = _mm256_broadcast_ss(&kernel->coefs[0]);
+                result = _mm256_mul_ps(result, kernel_val);
 
-            result = _mm256_mul_ps(result, kernel_val);
+                for (unsigned j = 1; j <= FF_KERNEL_LEN; ++j) {
+                    kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
+                    __m256 pixels =
+                        kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
+                    result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                }
 
-            for (unsigned j = 1; j <= FF_KERNEL_LEN; ++j) {
-                kernel_val = _mm256_broadcast_ss(&kernel->coefs[j]);
-                __m256 pixels =
-                    kernel_addsub_ps(_mm256_loadu_ps(cur_input + x + j), _mm256_loadu_ps(cur_input + x - j));
-                result = _mm256_fmadd_ps(pixels, kernel_val, result);
+                _mm256_storeu_ps(cur_output + x, result);
             }
-
-            _mm256_storeu_ps(cur_output + x, result);
         }
-
 // finish pixels until boundary
 #ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
         const size_t n_pixels_end = n_pixels;
@@ -325,9 +328,9 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
 
             for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[x - k]);
+                sum += kernel->coefs[k] * (cur_input[x + k] + *(cur_input + x - k));
 #else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[x - k]);
+                sum += kernel->coefs[k] * (cur_input[x + k] - *(cur_input + x - k));
 #endif
             }
 
@@ -352,9 +355,9 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                     right = cur_input[x + k];
 
 #ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (right + cur_input[x - k]);
+                sum += kernel->coefs[k] * (right + *(cur_input + x - k));
 #else
-                sum += kernel->coefs[k] * (right - cur_input[x - k]);
+                sum += kernel->coefs[k] * (right - *(cur_input + x - k));
 #endif
             }
 
