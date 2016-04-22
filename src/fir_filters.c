@@ -144,3 +144,10 @@ bool DLL_PUBLIC fastfilters_fir_laplacian2d(const fastfilters_array2d_t *inarray
 {
     return fastfilters_fir_deriv2d(inarray, sigma, 2, outarray, false);
 }
+
+bool DLL_PUBLIC fastfilters_fir_structure_tensor(const fastfilters_array2d_t *inarray, double sigma_outer,
+                                                 double sigma_inner, fastfilters_array2d_t *out_xx,
+                                                 fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy)
+{
+    return false;
+}

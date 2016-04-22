@@ -27,6 +27,7 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
 
 void DLL_LOCAL _combine_add_avx(const float *a, const float *b, float *c, size_t len);
 void DLL_LOCAL _combine_addsqrt_avx(const float *a, const float *b, float *c, size_t len);
+void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t len);
 
 static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                           const size_t len)
@@ -63,6 +64,12 @@ static void _combine_add_default(const float *a, const float *b, float *c, size_
         c[i] = a[i] + b[i];
 }
 
+static void _combine_mul_default(const float *a, const float *b, float *c, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+        c[i] = a[i] * b[i];
+}
+
 static void _combine_addsqrt_default(const float *a, const float *b, float *c, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
@@ -71,6 +78,7 @@ static void _combine_addsqrt_default(const float *a, const float *b, float *c, s
 
 static ev2d_fn_t g_ev2d_fn = NULL;
 static combine_add_fn_t g_combine_add = NULL;
+static combine_add_fn_t g_combine_mul = NULL;
 static combine_add_fn_t g_combine_addsqrt = NULL;
 
 void fastfilters_linalg_init()
@@ -84,6 +92,11 @@ void fastfilters_linalg_init()
         g_combine_add = _combine_add_avx;
     else
         g_combine_add = _combine_add_default;
+
+    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
+        g_combine_mul = _combine_mul_avx;
+    else
+        g_combine_mul = _combine_mul_default;
 
     if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
         g_combine_addsqrt = _combine_addsqrt_avx;
@@ -107,4 +120,10 @@ void DLL_PUBLIC fastfilters_combine_addsqrt2d(const fastfilters_array2d_t *a, co
                                               fastfilters_array2d_t *out)
 {
     g_combine_addsqrt(a->ptr, b->ptr, out->ptr, a->n_y * a->stride_y);
+}
+
+void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
+                                          fastfilters_array2d_t *out)
+{
+    g_combine_mul(a->ptr, b->ptr, out->ptr, a->n_y * a->stride_y);
 }

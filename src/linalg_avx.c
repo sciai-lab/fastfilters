@@ -104,9 +104,25 @@ void DLL_LOCAL _combine_addsqrt_avx(const float *a, const float *b, float *c, si
         va = _mm256_loadu_ps(a + i);
         vb = _mm256_loadu_ps(b + i);
 
-        _mm256_storeu_ps(c + i, _mm256_add_ps(va, vb));
+        _mm256_storeu_ps(c + i, _mm256_sqrt_ps(_mm256_add_ps(va, vb)));
     }
 
     for (size_t i = avx_end; i < len; i++)
         c[i] = sqrt(a[i] + b[i]);
+}
+
+void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t len)
+{
+    const size_t avx_end = len & ~7;
+
+    for (size_t i = 0; i < avx_end; i += 8) {
+        __m256 va, vb;
+        va = _mm256_loadu_ps(a + i);
+        vb = _mm256_loadu_ps(b + i);
+
+        _mm256_storeu_ps(c + i, _mm256_mul_ps(va, vb));
+    }
+
+    for (size_t i = avx_end; i < len; i++)
+        c[i] = a[i] * b[i];
 }
