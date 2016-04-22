@@ -23,10 +23,6 @@
 #include "fastfilters.h"
 #include "common.h"
 
-fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
-unsigned int DLL_PUBLIC fastfilters_kernel_fir_get_length(fastfilters_kernel_fir_t kernel);
-void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
-
 bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray, unsigned order, double sigma,
                                            fastfilters_array2d_t *outarray)
 {
@@ -94,15 +90,6 @@ out:
     return result;
 }
 
-DLL_PUBLIC fastfilters_array2d_t *fastfilters_array2d_alloc(size_t n_x, size_t n_y, size_t channels)
-{
-    return NULL;
-}
-
-DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v)
-{
-    (void)v;
-}
 static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double sigma, unsigned order,
                                     fastfilters_array2d_t *outarray, bool sqrt)
 {

@@ -107,6 +107,21 @@ void DLL_PUBLIC fastfilters_combine_add2d(const fastfilters_array2d_t *a, const 
 void DLL_PUBLIC fastfilters_combine_addsqrt2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
                                               fastfilters_array2d_t *out);
 
+DLL_PUBLIC fastfilters_array2d_t *fastfilters_array2d_alloc(size_t n_x, size_t n_y, size_t channels);
+DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v);
+
+bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray, unsigned order, double sigma,
+                                           fastfilters_array2d_t *outarray);
+
+bool DLL_PUBLIC fastfilters_fir_hog2d(const fastfilters_array2d_t *inarray, double sigma, fastfilters_array2d_t *out_xx,
+                                      fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy);
+
+bool DLL_PUBLIC fastfilters_fir_gradmag2d(const fastfilters_array2d_t *inarray, double sigma,
+                                          fastfilters_array2d_t *outarray);
+
+bool DLL_PUBLIC fastfilters_fir_laplacian2d(const fastfilters_array2d_t *inarray, double sigma,
+                                            fastfilters_array2d_t *outarray);
+
 #ifdef __cplusplus
 }
 #endif
