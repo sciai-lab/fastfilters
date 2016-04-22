@@ -110,8 +110,8 @@ def configure(cfg):
 	cfg.write_config_header('include/config.h')
 
 def build(bld):
-	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c", "src/fir_kernel.c", "src/linalg.c", "src/fir_convolve_nosimd.c", "src/fir_convolve.c"]
-	sources_avx = ["src/linalg_avx.c" ,"src/fir_convolve_avx.c"]
+	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c", "src/fir_kernel.c", "src/linalg.c", "src/fir_convolve_nosimd.c", "src/fir_convolve.c", "src/fir_filters.c"]
+	sources_avx = ["src/fir_convolve_avx.c"]
 	sources_avx_fma = ["src/fir_convolve_avx.c"]
 	sources_python = ["src/bindings_python.cxx"]
 

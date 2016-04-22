@@ -19,10 +19,15 @@
 #include "fastfilters.h"
 #include "common.h"
 
-typedef void (*ev2d_fn_t)(const float *, const float *, const float *, float *, float *, const size_t);
+#include <immintrin.h>
 
+typedef void (*ev2d_fn_t)(const float *, const float *, const float *, float *, float *, const size_t);
+typedef void (*combine_add_fn_t)(const float *, const float *, float *, size_t);
+
+#if 0
 void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                          const size_t len);
+#endif
 
 static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                           const size_t len)
@@ -53,7 +58,88 @@ static void _ev2d_default(const float *xx, const float *xy, const float *yy, flo
     }
 }
 
+static void __attribute__((__target__("avx")))
+_ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big, const size_t len)
+{
+    const size_t avx_end = len & ~7;
+
+    for (size_t i = 0; i < avx_end; i += 8) {
+        __m256 v_xx, v_xy, v_yy;
+
+        v_xx = _mm256_loadu_ps(xx + i);
+        v_xy = _mm256_loadu_ps(xy + i);
+        v_yy = _mm256_loadu_ps(yy + i);
+
+        __m256 thalf, thalfsq;
+        thalf = _mm256_mul_ps(_mm256_add_ps(v_xx, v_yy), _mm256_set1_ps(0.5));
+        thalfsq = _mm256_mul_ps(thalf, thalf);
+
+        __m256 d = _mm256_sub_ps(_mm256_mul_ps(v_xx, v_yy), _mm256_mul_ps(v_xy, v_xy));
+
+        __m256 det = _mm256_sqrt_ps(_mm256_add_ps(thalfsq, d));
+
+        __m256 ev0 = _mm256_add_ps(thalf, det);
+        __m256 ev1 = _mm256_sub_ps(thalf, det);
+
+        __m256 mask = _mm256_cmp_ps(ev0, ev1, _CMP_LE_OQ);
+
+        __m256 v_ev_big = _mm256_or_ps(_mm256_and_ps(mask, ev1), _mm256_andnot_ps(mask, ev0));
+        __m256 v_ev_small = _mm256_or_ps(_mm256_andnot_ps(mask, ev1), _mm256_and_ps(mask, ev0));
+
+        _mm256_storeu_ps(ev_small + i, v_ev_small);
+        _mm256_storeu_ps(ev_big + i, v_ev_big);
+    }
+
+    for (size_t i = avx_end; i < len; i++) {
+        float v_xx = xx[i];
+        float v_xy = xy[i];
+        float v_yy = yy[i];
+
+        float T = v_xx + v_yy;
+        float Thalf = T / 2;
+        float Thalfsq = Thalf * Thalf;
+
+        float D = v_xx * v_yy + v_xy * v_xy;
+
+        float Dsqrt = sqrt(Thalfsq - D);
+
+        float ev0 = Thalf + Dsqrt;
+        float ev1 = Thalf - Dsqrt;
+
+        if (ev0 > ev1) {
+            ev_small[i] = ev1;
+            ev_big[i] = ev0;
+        } else {
+            ev_small[i] = ev0;
+            ev_big[i] = ev1;
+        }
+    }
+}
+
+static void _combine_add_default(const float *a, const float *b, float *c, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+        c[i] = a[i] + b[i];
+}
+
+void __attribute__((__target__("avx"))) _combine_add_avx(const float *a, const float *b, float *c, size_t len)
+{
+    const size_t avx_end = len & ~7;
+
+    for (size_t i = 0; i < avx_end; i += 8) {
+        __m256 va, vb;
+        va = _mm256_loadu_ps(a + i);
+        vb = _mm256_loadu_ps(b + i);
+
+        _mm256_storeu_ps(c + i, _mm256_add_ps(va, vb));
+    }
+
+    for (size_t i = avx_end; i < len; i++)
+        c[i] = a[i] + b[i];
+}
+
 static ev2d_fn_t g_ev2d_fn = NULL;
+static combine_add_fn_t g_combine_add = NULL;
 
 void fastfilters_linalg_init()
 {
@@ -61,10 +147,21 @@ void fastfilters_linalg_init()
         g_ev2d_fn = _ev2d_avx;
     else
         g_ev2d_fn = _ev2d_default;
+
+    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
+        g_combine_add = _combine_add_avx;
+    else
+        g_combine_add = _combine_add_default;
 }
 
 void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small,
                                         float *ev_big, const size_t len)
 {
     g_ev2d_fn(xx, xy, yy, ev_small, ev_big, len);
+}
+
+void DLL_PUBLIC fastfilters_combine_add2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
+                                          fastfilters_array2d_t *out)
+{
+    g_combine_add(a->ptr, b->ptr, out->ptr, a->n_y * a->stride_y);
 }

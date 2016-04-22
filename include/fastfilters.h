@@ -102,6 +102,9 @@ bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray,
 void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small,
                                         float *ev_big, const size_t len);
 
+void DLL_PUBLIC fastfilters_combine_add2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
+                                          fastfilters_array2d_t *out);
+
 #ifdef __cplusplus
 }
 #endif
