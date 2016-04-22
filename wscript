@@ -2,6 +2,7 @@ from waflib import Task, Options, Configure, TaskGen, Logs, Build, Utils, Errors
 from waflib.TaskGen import feature, before_method
 from waflib.Configure import conf
 from waflib.Tools import waf_unit_test
+from waflib.Build import BuildContext
 
 VERSION='0.0.1'
 APPNAME='libfastfilters'
@@ -74,6 +75,7 @@ def configure(cfg):
 
 	cfg.load('waf_unit_test')
 	cfg.load('cpufeatures', tooldir='waftools')
+	cfg.load('run_py_script', tooldir='waftools')
 
 	#cfg.check_library(mode='c')
 
@@ -163,6 +165,32 @@ def build(bld):
 	avx_use_sh = ' '.join(avx_use_sh)
 	avx_use_st = ' '.join(avx_use_st)
 
-	bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma " + avx_use_sh, name="fastfilters_shared")
+	shlib = bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma " + avx_use_sh, name="fastfilters_shared")
 	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma " + avx_use_st, name="fastfilters_static")
-	bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
+	pyext = bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
+
+
+	pyext.post()
+	shlib.post()
+
+	global pyext_target, shlib_target
+	pyext_target = pyext.tasks[-1].outputs[0]
+	shlib_target = shlib.tasks[-1].outputs[0]
+
+class debug(BuildContext):
+        cmd = 'testimpl'
+        fun = 'testimpl'
+
+def testimpl(bld):
+	global pyext_target, shlib_target
+
+	if 'pyext_target' not in globals() or 'shlib_target' not in globals(): raise Errors.WafError("Don't run testimpl directly.")
+
+	bdir = bld.path.find_dir('build').abspath()
+	tests = bld.path.ant_glob('tests/*.py')
+
+	for test in tests:
+		bld(features='run_py_script', source=test.relpath(), target=['%s.b' % test.relpath()], add_to_pythonpath=bdir, add_to_ldpath=bdir, deps=[pyext_target.relpath(), test.relpath()])
+
+def test(ctx):
+	Options.commands = ['build', 'testimpl'] + Options.commands
