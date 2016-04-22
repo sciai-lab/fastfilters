@@ -90,13 +90,12 @@ out:
     return result;
 }
 
-static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double sigma, unsigned order,
-                                    fastfilters_array2d_t *outarray, bool sqrt)
+static bool fastfilters_fir_deriv2d_inner(const fastfilters_array2d_t *inarray, double sigma, unsigned order,
+                                          fastfilters_array2d_t *out0, fastfilters_array2d_t *out1)
 {
     bool result = false;
     fastfilters_kernel_fir_t k_smooth = NULL;
     fastfilters_kernel_fir_t k_deriv = NULL;
-    fastfilters_array2d_t *tmparray = NULL;
 
     k_smooth = fastfilters_kernel_fir_gaussian(0, sigma);
     if (!k_smooth)
@@ -106,15 +105,33 @@ static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double
     if (!k_deriv)
         goto out;
 
+    result = fastfilters_fir_convolve2d(inarray, k_deriv, k_smooth, out0, 0, 0, 0, 0);
+    if (!result)
+        goto out;
+
+    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_deriv, out1, 0, 0, 0, 0);
+    if (!result)
+        goto out;
+
+out:
+    if (k_smooth)
+        fastfilters_kernel_fir_free(k_smooth);
+    if (k_deriv)
+        fastfilters_kernel_fir_free(k_deriv);
+    return result;
+}
+
+static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double sigma, unsigned order,
+                                    fastfilters_array2d_t *outarray, bool sqrt)
+{
+    bool result = false;
+    fastfilters_array2d_t *tmparray = NULL;
+
     tmparray = fastfilters_array2d_alloc(inarray->n_x, inarray->n_y, inarray->n_channels);
     if (!tmparray)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_deriv, k_smooth, outarray, 0, 0, 0, 0);
-    if (!result)
-        goto out;
-
-    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_deriv, tmparray, 0, 0, 0, 0);
+    result = fastfilters_fir_deriv2d_inner(inarray, sigma, order, tmparray, outarray);
     if (!result)
         goto out;
 
@@ -124,10 +141,6 @@ static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double
         fastfilters_combine_add2d(outarray, tmparray, outarray);
 
 out:
-    if (k_smooth)
-        fastfilters_kernel_fir_free(k_smooth);
-    if (k_deriv)
-        fastfilters_kernel_fir_free(k_deriv);
     if (tmparray)
         fastfilters_array2d_free(tmparray);
     return result;
@@ -149,5 +162,48 @@ bool DLL_PUBLIC fastfilters_fir_structure_tensor(const fastfilters_array2d_t *in
                                                  double sigma_inner, fastfilters_array2d_t *out_xx,
                                                  fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy)
 {
-    return false;
+    bool result = false;
+    fastfilters_array2d_t *tmp = NULL;
+    fastfilters_array2d_t *tmpx = NULL;
+    fastfilters_array2d_t *tmpy = NULL;
+
+    tmp = fastfilters_array2d_alloc(inarray->n_x, inarray->n_y, inarray->n_channels);
+    if (!tmp)
+        goto out;
+
+    tmpx = fastfilters_array2d_alloc(inarray->n_x, inarray->n_y, inarray->n_channels);
+    if (!tmpx)
+        goto out;
+
+    tmpy = fastfilters_array2d_alloc(inarray->n_x, inarray->n_y, inarray->n_channels);
+    if (!tmpy)
+        goto out;
+
+    result = fastfilters_fir_deriv2d_inner(inarray, sigma_inner, 1, tmpx, tmpy);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul2d(tmpx, tmpx, tmp);
+    result = fastfilters_fir_gaussian2d(tmp, 0, sigma_outer, out_xx);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul2d(tmpy, tmpy, tmp);
+    result = fastfilters_fir_gaussian2d(tmp, 0, sigma_outer, out_yy);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul2d(tmpx, tmpy, tmp);
+    result = fastfilters_fir_gaussian2d(tmp, 0, sigma_outer, out_xy);
+    if (!result)
+        goto out;
+
+out:
+    if (tmp)
+        fastfilters_array2d_free(tmp);
+    if (tmpx)
+        fastfilters_array2d_free(tmpx);
+    if (tmpy)
+        fastfilters_array2d_free(tmpy);
+    return result;
 }
