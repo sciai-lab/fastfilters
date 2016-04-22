@@ -49,6 +49,11 @@ struct FIRKernel {
         kernel = NULL;
     }
 
+    unsigned int len()
+    {
+        return fastfilters_kernel_fir_get_length(kernel);
+    }
+
     std::string __repr__()
     {
         std::stringstream oss;
@@ -238,6 +243,7 @@ PYBIND11_PLUGIN(fastfilters)
 
     py::class_<FIRKernel>(m_fastfilters, "FIRKernel")
         .def(py::init<unsigned, double>())
+        .def("len", &FIRKernel::len)
         .def_readonly("sigma", &FIRKernel::sigma)
         .def_readonly("order", &FIRKernel::order);
 

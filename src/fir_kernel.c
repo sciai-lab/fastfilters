@@ -151,3 +151,8 @@ void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel)
     fastfilters_memory_free(kernel->coefs);
     fastfilters_memory_free(kernel);
 }
+
+unsigned int DLL_PUBLIC fastfilters_kernel_fir_get_length(fastfilters_kernel_fir_t kernel)
+{
+    return kernel->len;
+}
