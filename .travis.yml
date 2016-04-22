@@ -25,6 +25,7 @@ script:
   - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
   - ./waf configure -j1
   - ./waf -j1
+  - ./waf test
 
 after_failure:
   - cat build/config.log
