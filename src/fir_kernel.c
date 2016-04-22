@@ -70,7 +70,8 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
     if (!kernel)
         return NULL;
 
-    kernel->len = ceil((3.0 + 0.5 * order) * sigma);
+    // kernel->len = ceil((3.0 + 0.5 * (double)order) * sigma);
+    kernel->len = floor(3.0 * sigma + 0.5 * order + 0.5);
     kernel->coefs = fastfilters_memory_alloc(sizeof(float) * (kernel->len + 1));
     if (!kernel->coefs) {
         fastfilters_memory_free(kernel);
