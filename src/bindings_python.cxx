@@ -233,6 +233,156 @@ convolve_fir_roi3d(py::array_t<float> &input, std::vector<FIRKernel *> k,
                            std::get<2>(roi.first), std::get<0>(roi.second), std::get<1>(roi.second),
                            std::get<2>(roi.second));
 }
+
+struct ConvolveGaussian {
+    unsigned order;
+    double sigma;
+
+    ConvolveGaussian(unsigned order, double sigma) : order(order), sigma(sigma)
+    {
+    }
+
+    bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &out)
+    {
+        return fastfilters_fir_gaussian2d(&in, order, sigma, &out);
+    }
+};
+
+template <typename ConvolveFunctor> py::array_t<float> filter2d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+{
+    fastfilters_array2d_t ff;
+    fastfilters_array2d_t ff_out;
+
+    auto result = array_like(input);
+    convert_py2ff(input, ff);
+    convert_py2ff(result, ff_out);
+
+    if (!fn(ff, ff_out))
+        throw std::logic_error("convolution failed.");
+
+    return result;
+}
+
+py::array_t<float> gaussian2d(py::array_t<float> &input, unsigned order, double sigma)
+{
+    ConvolveGaussian fn(order, sigma);
+    return filter2d_binding(input, fn);
+}
+
+struct ConvolveGradMag {
+    double sigma;
+
+    ConvolveGradMag(double sigma) : sigma(sigma)
+    {
+    }
+
+    bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &out)
+    {
+        return fastfilters_fir_gradmag2d(&in, sigma, &out);
+    }
+};
+
+py::array_t<float> gradmag2d(py::array_t<float> &input, double sigma)
+{
+    ConvolveGradMag fn(sigma);
+    return filter2d_binding(input, fn);
+}
+
+struct ConvolveLaPlacian {
+    double sigma;
+
+    ConvolveLaPlacian(double sigma) : sigma(sigma)
+    {
+    }
+
+    bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &out)
+    {
+        return fastfilters_fir_laplacian2d(&in, sigma, &out);
+    }
+};
+
+py::array_t<float> laplacian2d(py::array_t<float> &input, double sigma)
+{
+    ConvolveLaPlacian fn(sigma);
+    return filter2d_binding(input, fn);
+}
+
+template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+{
+    fastfilters_array2d_t ff;
+    fastfilters_array2d_t ff_out_xx, ff_out_yy, ff_out_xy;
+
+    auto out_xx = array_like(input);
+    auto out_yy = array_like(input);
+    auto out_xy = array_like(input);
+
+    convert_py2ff(input, ff);
+
+    convert_py2ff(out_xx, ff_out_xx);
+    convert_py2ff(out_yy, ff_out_yy);
+    convert_py2ff(out_xy, ff_out_xy);
+
+    if (!fn(ff, ff_out_xx, ff_out_xy, ff_out_yy))
+        throw std::logic_error("convolution failed.");
+
+    const size_t n_pixels = ff.n_x * ff.n_y * ff.n_channels;
+
+    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
+                                            {2, n_pixels}, {sizeof(float) * n_pixels, sizeof(float)}));
+    py::buffer_info info_out = result.request();
+
+    float *xx = ff_out_xx.ptr;
+    float *xy = ff_out_xy.ptr;
+    float *yy = ff_out_yy.ptr;
+
+    float *outptr = (float *)info_out.ptr;
+    float *ev_small = outptr;
+    float *ev_big = outptr + info_out.strides[0] / sizeof(float);
+
+    fastfilters_linalg_ev2d(xx, xy, yy, ev_small, ev_big, n_pixels);
+
+    return result;
+}
+
+struct ConvolveHessian {
+    double sigma;
+
+    ConvolveHessian(double sigma) : sigma(sigma)
+    {
+    }
+
+    bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &xx, fastfilters_array2d_t &xy,
+                    fastfilters_array2d_t &yy)
+    {
+        return fastfilters_fir_hog2d(&in, sigma, &xx, &xy, &yy);
+    }
+};
+
+py::array_t<float> hog2d(py::array_t<float> &input, double sigma)
+{
+    ConvolveHessian fn(sigma);
+    return filter_ev_2d_binding(input, fn);
+}
+
+struct ConvolveST {
+    double sigma_inner, sigma_outer;
+
+    ConvolveST(double sigma_inner, double sigma_outer) : sigma_inner(sigma_inner), sigma_outer(sigma_outer)
+    {
+    }
+
+    bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &xx, fastfilters_array2d_t &xy,
+                    fastfilters_array2d_t &yy)
+    {
+        return fastfilters_fir_structure_tensor(&in, sigma_inner, sigma_outer, &xx, &xy, &yy);
+    }
+};
+
+py::array_t<float> st2d(py::array_t<float> &input, double sigma_inner, double sigma_outer)
+{
+    ConvolveST fn(sigma_inner, sigma_outer);
+    return filter_ev_2d_binding(input, fn);
+}
 };
 
 PYBIND11_PLUGIN(fastfilters)
@@ -251,6 +401,12 @@ PYBIND11_PLUGIN(fastfilters)
     m_fastfilters.def("convolve_fir", &convolve_fir, py::arg("input"), py::arg("kernels"));
     m_fastfilters.def("convolve_fir", &convolve_fir_roi2d, py::arg("input"), py::arg("kernels"), py::arg("roi"));
     m_fastfilters.def("convolve_fir", &convolve_fir_roi3d, py::arg("input"), py::arg("kernels"), py::arg("roi"));
+
+    m_fastfilters.def("gaussian2d", &gaussian2d);
+    m_fastfilters.def("gradmag2d", &gradmag2d);
+    m_fastfilters.def("laplacian2d", &laplacian2d);
+    m_fastfilters.def("hog2d", &hog2d);
+    m_fastfilters.def("st2d", &st2d);
 
     return m_fastfilters.ptr();
 }
