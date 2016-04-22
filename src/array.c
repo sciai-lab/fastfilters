@@ -21,10 +21,34 @@
 
 DLL_PUBLIC fastfilters_array2d_t *fastfilters_array2d_alloc(size_t n_x, size_t n_y, size_t channels)
 {
+    fastfilters_array2d_t *result = NULL;
+
+    result = fastfilters_memory_alloc(sizeof(*result));
+    if (!result)
+        goto error_out;
+
+    result->n_x = n_x;
+    result->n_y = n_y;
+    result->stride_x = channels;
+    result->stride_y = channels * n_x;
+    result->n_channels = channels;
+    result->ptr = fastfilters_memory_alloc(channels * n_y * n_x * sizeof(float));
+    if (!result->ptr)
+        goto error_out;
+
+    return result;
+
+error_out:
+    if (result) {
+        if (result->ptr)
+            fastfilters_memory_free(result->ptr);
+        fastfilters_memory_free(result);
+    }
     return NULL;
 }
 
 DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v)
 {
-    (void)v;
+    fastfilters_memory_free(v->ptr);
+    fastfilters_memory_free(v);
 }
