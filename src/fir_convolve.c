@@ -91,6 +91,8 @@ bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray,
     if (unlikely(y1 <= y0))
         return false;
 
+    return false;
+
     const size_t n_x = x1 - x0;
     const size_t n_y = y1 - y0;
     bool result = false;
