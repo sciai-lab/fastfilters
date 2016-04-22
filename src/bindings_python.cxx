@@ -169,8 +169,6 @@ py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIR
         size_t n_x = x1 - x0;
         size_t n_y = y1 - y0;
 
-        std::cout << x1 << " " << x0 << "\n";
-
         if (input_info.ndim == 2)
             result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
                                                {n_y, n_x}, {sizeof(float) * n_x, sizeof(float)}));
