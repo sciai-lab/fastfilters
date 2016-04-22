@@ -104,6 +104,8 @@ void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const 
 
 void DLL_PUBLIC fastfilters_combine_add2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
                                           fastfilters_array2d_t *out);
+void DLL_PUBLIC fastfilters_combine_addsqrt2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
+                                              fastfilters_array2d_t *out);
 
 #ifdef __cplusplus
 }

@@ -94,35 +94,66 @@ out:
     return result;
 }
 
-bool DLL_PUBLIC fastfilters_fir_laplacian2d(const fastfilters_array2d_t *inarray, double sigma,
-                                            fastfilters_array2d_t *tmparray, fastfilters_array2d_t *outarray)
+DLL_PUBLIC fastfilters_array2d_t *fastfilters_array2d_alloc(size_t n_x, size_t n_y, size_t channels)
+{
+    return NULL;
+}
+
+DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v)
+{
+    (void)v;
+}
+static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double sigma, unsigned order,
+                                    fastfilters_array2d_t *outarray, bool sqrt)
 {
     bool result = false;
     fastfilters_kernel_fir_t k_smooth = NULL;
-    fastfilters_kernel_fir_t k_second = NULL;
+    fastfilters_kernel_fir_t k_deriv = NULL;
+    fastfilters_array2d_t *tmparray = NULL;
 
     k_smooth = fastfilters_kernel_fir_gaussian(0, sigma);
     if (!k_smooth)
         goto out;
 
-    k_second = fastfilters_kernel_fir_gaussian(2, sigma);
-    if (!k_second)
+    k_deriv = fastfilters_kernel_fir_gaussian(order, sigma);
+    if (!k_deriv)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_second, k_smooth, outarray, 0, 0, 0, 0);
+    tmparray = fastfilters_array2d_alloc(inarray->n_x, inarray->n_y, inarray->n_channels);
+    if (!tmparray)
+        goto out;
+
+    result = fastfilters_fir_convolve2d(inarray, k_deriv, k_smooth, outarray, 0, 0, 0, 0);
     if (!result)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_second, tmparray, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_deriv, tmparray, 0, 0, 0, 0);
     if (!result)
         goto out;
 
-    fastfilters_combine_add2d(outarray, tmparray, outarray);
+    if (sqrt)
+        fastfilters_combine_addsqrt2d(outarray, tmparray, outarray);
+    else
+        fastfilters_combine_add2d(outarray, tmparray, outarray);
 
 out:
     if (k_smooth)
         fastfilters_kernel_fir_free(k_smooth);
-    if (k_second)
-        fastfilters_kernel_fir_free(k_second);
+    if (k_deriv)
+        fastfilters_kernel_fir_free(k_deriv);
+    if (tmparray)
+        fastfilters_array2d_free(tmparray);
     return result;
+}
+
+bool DLL_PUBLIC fastfilters_fir_gradmag2d(const fastfilters_array2d_t *inarray, double sigma,
+                                          fastfilters_array2d_t *outarray)
+{
+    return fastfilters_fir_deriv2d(inarray, sigma, 1, outarray, true);
+}
+
+bool DLL_PUBLIC fastfilters_fir_laplacian2d(const fastfilters_array2d_t *inarray, double sigma,
+                                            fastfilters_array2d_t *outarray)
+{
+    return fastfilters_fir_deriv2d(inarray, sigma, 2, outarray, false);
 }

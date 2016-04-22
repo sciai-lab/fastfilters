@@ -79,7 +79,7 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
     }
 }
 
-void DLL_LOCAL __attribute__((__target__("avx"))) _combine_add_avx(const float *a, const float *b, float *c, size_t len)
+void DLL_LOCAL _combine_add_avx(const float *a, const float *b, float *c, size_t len)
 {
     const size_t avx_end = len & ~7;
 
@@ -93,4 +93,20 @@ void DLL_LOCAL __attribute__((__target__("avx"))) _combine_add_avx(const float *
 
     for (size_t i = avx_end; i < len; i++)
         c[i] = a[i] + b[i];
+}
+
+void DLL_LOCAL _combine_addsqrt_avx(const float *a, const float *b, float *c, size_t len)
+{
+    const size_t avx_end = len & ~7;
+
+    for (size_t i = 0; i < avx_end; i += 8) {
+        __m256 va, vb;
+        va = _mm256_loadu_ps(a + i);
+        vb = _mm256_loadu_ps(b + i);
+
+        _mm256_storeu_ps(c + i, _mm256_add_ps(va, vb));
+    }
+
+    for (size_t i = avx_end; i < len; i++)
+        c[i] = sqrt(a[i] + b[i]);
 }
