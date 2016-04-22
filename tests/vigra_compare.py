@@ -23,4 +23,5 @@ for order in [0,1,2]:
 			raise Exception()
 
 
-np.unique(ff.hog2d(a, 1.0))
+with open(sys.argv[1], 'w') as f:
+	f.write('')
