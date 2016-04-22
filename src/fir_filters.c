@@ -122,7 +122,7 @@ out:
 }
 
 static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double sigma, unsigned order,
-                                    fastfilters_array2d_t *outarray, bool sqrt)
+                                    fastfilters_array2d_t *outarray, bool do_sqrt)
 {
     bool result = false;
     fastfilters_array2d_t *tmparray = NULL;
@@ -135,7 +135,7 @@ static bool fastfilters_fir_deriv2d(const fastfilters_array2d_t *inarray, double
     if (!result)
         goto out;
 
-    if (sqrt)
+    if (do_sqrt)
         fastfilters_combine_addsqrt2d(outarray, tmparray, outarray);
     else
         fastfilters_combine_add2d(outarray, tmparray, outarray);

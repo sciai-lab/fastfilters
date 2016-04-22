@@ -21,7 +21,7 @@
 
 #include <immintrin.h>
 
-void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_big, float *ev_small,
                          const size_t len)
 {
     const size_t avx_end = len & ~7;
@@ -39,7 +39,7 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
 
         __m256 d = _mm256_sub_ps(_mm256_mul_ps(v_xx, v_yy), _mm256_mul_ps(v_xy, v_xy));
 
-        __m256 det = _mm256_sqrt_ps(_mm256_add_ps(thalfsq, d));
+        __m256 det = _mm256_sqrt_ps(_mm256_sub_ps(thalfsq, d));
 
         __m256 ev0 = _mm256_add_ps(thalf, det);
         __m256 ev1 = _mm256_sub_ps(thalf, det);
@@ -62,7 +62,7 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
         float Thalf = T / 2;
         float Thalfsq = Thalf * Thalf;
 
-        float D = v_xx * v_yy + v_xy * v_xy;
+        float D = v_xx * v_yy - v_xy * v_xy;
 
         float Dsqrt = sqrt(Thalfsq - D);
 
@@ -104,11 +104,14 @@ void DLL_LOCAL _combine_addsqrt_avx(const float *a, const float *b, float *c, si
         va = _mm256_loadu_ps(a + i);
         vb = _mm256_loadu_ps(b + i);
 
+        va = _mm256_mul_ps(va, va);
+        vb = _mm256_mul_ps(vb, vb);
+
         _mm256_storeu_ps(c + i, _mm256_sqrt_ps(_mm256_add_ps(va, vb)));
     }
 
     for (size_t i = avx_end; i < len; i++)
-        c[i] = sqrt(a[i] + b[i]);
+        c[i] = sqrt(a[i] * a[i] + b[i] * b[i]);
 }
 
 void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t len)

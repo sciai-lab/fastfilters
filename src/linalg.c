@@ -29,7 +29,7 @@ void DLL_LOCAL _combine_add_avx(const float *a, const float *b, float *c, size_t
 void DLL_LOCAL _combine_addsqrt_avx(const float *a, const float *b, float *c, size_t len);
 void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t len);
 
-static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
+static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_big, float *ev_small,
                           const size_t len)
 {
     for (size_t i = 0; i < len; i++) {
@@ -41,7 +41,7 @@ static void _ev2d_default(const float *xx, const float *xy, const float *yy, flo
         float Thalf = T / 2;
         float Thalfsq = Thalf * Thalf;
 
-        float D = v_xx * v_yy + v_xy * v_xy;
+        float D = v_xx * v_yy - v_xy * v_xy;
 
         float Dsqrt = sqrt(Thalfsq - D);
 
@@ -73,7 +73,7 @@ static void _combine_mul_default(const float *a, const float *b, float *c, size_
 static void _combine_addsqrt_default(const float *a, const float *b, float *c, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
-        c[i] = sqrt(a[i] + b[i]);
+        c[i] = sqrt(a[i] * a[i] + b[i] * b[i]);
 }
 
 static ev2d_fn_t g_ev2d_fn = NULL;
