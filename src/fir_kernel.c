@@ -110,6 +110,16 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
         }
     }
 
+    if (order == 2) {
+        double dc = kernel->coefs[0];
+        for (unsigned int x = 1; x <= kernel->len; ++x)
+            dc += 2 * kernel->coefs[x];
+        dc /= (2.0 * (double)kernel->len + 1.0);
+
+        for (unsigned int x = 0; x <= kernel->len; ++x)
+            kernel->coefs[x] -= dc;
+    }
+
     double sum = 0.0;
     if (order == 0) {
         sum = kernel->coefs[0];
@@ -117,6 +127,7 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
             sum += 2 * kernel->coefs[x];
     } else {
         unsigned int faculty = 1;
+
         int sign;
 
         if (kernel->is_symmetric)
@@ -127,14 +138,14 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
         for (unsigned int i = 2; i <= order; ++i)
             faculty *= i;
 
-        sum = kernel->coefs[0] / (double)faculty;
+        sum = 0.0;
         for (unsigned int x = 1; x <= kernel->len; ++x) {
             sum += kernel->coefs[x] * pow(-(double)x, (int)order) / (double)faculty;
             sum += sign * kernel->coefs[x] * pow((double)x, (int)order) / (double)faculty;
         }
     }
 
-    for (unsigned int x = 0; x < kernel->len; ++x)
+    for (unsigned int x = 0; x <= kernel->len; ++x)
         kernel->coefs[x] /= sum;
 
     kernel->fn_inner_mirror = NULL;
