@@ -10,7 +10,7 @@ except ImportError:
 		f.write('')
 	exit()
 
-a = np.random.randn(1000000).reshape(1000,1000)
+a = np.random.randn(1000000).reshape(1000,1000).astype(np.float32)
 
 
 for order in [0,1,2]:
@@ -19,9 +19,29 @@ for order in [0,1,2]:
 		res_vigra = vigra.filters.gaussianDerivative(a, sigma, [order,order])
 
 		if not np.allclose(res_ff, res_vigra, atol=1e-6):
-			print(order, sigma, np.max(np.abs(res_ff - res_vigra)))
+			print("FAIL: ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
 			raise Exception()
 
+
+for sigma in [1.0, 5.0, 10.0]:
+	res_ff = ff.hog2d(a, sigma)
+	res_vigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma).reshape((-1,2)).swapaxes(0,1)
+	print("HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
+
+	if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
+		print("FAIL: HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
+		#raise Exception()
+
+
+for sigma in [1.0, 5.0, 10.0]:
+	for sigma2 in [1.0, 5.0, 10.0]:
+		res_ff = ff.st2d(a, sigma2, sigma)
+		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2).reshape((-1,2)).swapaxes(0,1)
+		print("ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
+
+		if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
+			print("FAIL: ST", sigma, np.max(np.abs(res_ff - res_vigra)))
+			#raise Exception()
 
 with open(sys.argv[1], 'w') as f:
 	f.write('')
