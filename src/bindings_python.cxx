@@ -389,7 +389,7 @@ PYBIND11_PLUGIN(fastfilters)
 {
     py::module m_fastfilters("fastfilters", "fast gaussian kernel and derivative filters");
 
-    fastfilters_init(PyMem_Malloc, PyMem_Free);
+    fastfilters_init_ex(PyMem_Malloc, PyMem_Free);
 
     py::class_<FIRKernel>(m_fastfilters, "FIRKernel")
         .def(py::init<unsigned, double>())

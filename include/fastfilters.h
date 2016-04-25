@@ -80,7 +80,8 @@ typedef struct _fastfilters_array3d_t {
 typedef void *(*fastfilters_alloc_fn_t)(size_t size);
 typedef void (*fastfilters_free_fn_t)(void *);
 
-void DLL_PUBLIC fastfilters_init(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
+void DLL_PUBLIC fastfilters_init(void);
+void DLL_PUBLIC fastfilters_init_ex(fastfilters_alloc_fn_t alloc_fn, fastfilters_free_fn_t free_fn);
 
 bool DLL_PUBLIC fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
 bool DLL_PUBLIC fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable);
