@@ -113,8 +113,10 @@
 
 #ifdef FF_KERNEL_SYMMETRIC
 #define kernel_addsub_ps(a, b) _mm256_add_ps((a), (b))
+#define kernel_addsub_ss(a, b) ((a) + (b))
 #else
 #define kernel_addsub_ps(a, b) _mm256_sub_ps((a), (b))
+#define kernel_addsub_ss(a, b) ((a) - (b))
 #endif
 
 static bool
@@ -167,13 +169,9 @@ static bool
                         offset_left = -x + k;
                     else
                         offset_left = x - k;
-#ifdef FF_KERNEL_SYMMETRIC
-                    sum +=
-                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] + cur_input[offset_left * pixel_stride]);
-#else
-                    sum +=
-                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] - cur_input[offset_left * pixel_stride]);
-#endif
+
+                    sum += kernel->coefs[k] *
+                           kernel_addsub_ss(cur_input[(x + k) * pixel_stride], cur_input[offset_left * pixel_stride]);
                 }
 
                 cur_output[x * pixel_stride] = sum;
@@ -191,11 +189,7 @@ static bool
                                               (FF_KERNEL_LEN - (int)k + (int)x) * pixel_stride];
                     else
                         left = cur_input[(x - k) * pixel_stride];
-#ifdef FF_KERNEL_SYMMETRIC
-                    sum += kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] + left);
-#else
-                    sum += kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] - left);
-#endif
+                    sum += kernel->coefs[k] * kernel_addsub_ss(cur_input[(x + k) * pixel_stride], left);
                 }
 
                 cur_output[x * pixel_stride] = sum;
@@ -204,7 +198,9 @@ static bool
         }
 #endif
 
-// TODO: valid area
+        // valid area
+        if (likely(avx_end_single > 32)) {
+        }
 
 // finish pixels until boundary
 #ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
@@ -221,15 +217,9 @@ static bool
             for (x = xstart_noavx; x < n_pixels_end; ++x) {
                 float sum = cur_input[x * pixel_stride] * kernel->coefs[0];
 
-                for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
-#ifdef FF_KERNEL_SYMMETRIC
-                    sum +=
-                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] + *(cur_input + (x - k) * pixel_stride));
-#else
-                    sum +=
-                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] - *(cur_input + (x - k) * pixel_stride));
-#endif
-                }
+                for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k)
+                    sum += kernel->coefs[k] *
+                           kernel_addsub_ss(cur_input[(x + k) * pixel_stride], *(cur_input + (x - k) * pixel_stride));
 
                 cur_output[x * pixel_stride] = sum;
             }
@@ -258,11 +248,7 @@ static bool
                     else
                         right = cur_input[(x + k) * pixel_stride];
 
-#ifdef FF_KERNEL_SYMMETRIC
-                    sum += kernel->coefs[k] * (right + *(cur_input + (x - k) * pixel_stride));
-#else
-                    sum += kernel->coefs[k] * (right - *(cur_input + (x - k) * pixel_stride));
-#endif
+                    sum += kernel->coefs[k] * kernel_addsub_ss(right, *(cur_input + (x - k) * pixel_stride));
                 }
 
                 cur_output[x * pixel_stride] = sum;
@@ -322,11 +308,8 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                     offset_left = -x + k;
                 else
                     offset_left = x - k;
-#ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + cur_input[offset_left]);
-#else
-                sum += kernel->coefs[k] * (cur_input[x + k] - cur_input[offset_left]);
-#endif
+
+                sum += kernel->coefs[k] * kernel_addsub_ss(cur_input[x + k], cur_input[offset_left]);
             }
 
             cur_output[x] = sum;
@@ -343,11 +326,8 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                     left = in_border_left[y * borderptr_outer_stride + (FF_KERNEL_LEN - (int)k + (int)x)];
                 else
                     left = cur_input[x - k];
-#ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + left);
-#else
-                sum += kernel->coefs[k] * (cur_input[x + k] - left);
-#endif
+
+                sum += kernel->coefs[k] * kernel_addsub_ss(cur_input[x + k], left);
             }
 
             cur_output[x] = sum;
@@ -361,11 +341,7 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                 float sum = kernel->coefs[0] * cur_input[x];
 
                 for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
-#ifdef FF_KERNEL_SYMMETRIC
-                    sum += kernel->coefs[k] * (cur_input[x + k] + *(cur_input + x - k));
-#else
-                    sum += kernel->coefs[k] * (cur_input[x + k] - *(cur_input + x - k));
-#endif
+                    sum += kernel->coefs[k] * kernel_addsub_ss(cur_input[x + k], *(cur_input + x - k));
                 }
 
                 cur_output[x] = sum;
@@ -463,11 +439,7 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             float sum = cur_input[x] * kernel->coefs[0];
 
             for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
-#ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (cur_input[x + k] + *(cur_input + x - k));
-#else
-                sum += kernel->coefs[k] * (cur_input[x + k] - *(cur_input + x - k));
-#endif
+                sum += kernel->coefs[k] * kernel_addsub_ss(cur_input[x + k], *(cur_input + x - k));
             }
 
             cur_output[x] = sum;
@@ -490,11 +462,7 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
                 else
                     right = cur_input[x + k];
 
-#ifdef FF_KERNEL_SYMMETRIC
-                sum += kernel->coefs[k] * (right + *(cur_input + x - k));
-#else
-                sum += kernel->coefs[k] * (right - *(cur_input + x - k));
-#endif
+                sum += kernel->coefs[k] * kernel_addsub_ss(right, *(cur_input + x - k));
             }
 
             cur_output[x] = sum;
@@ -745,5 +713,6 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
 #undef param_boundary_right
 #undef FF_KERNEL_LEN_FNAME
 #undef kernel_addsub_ps
+#undef kernel_addsub_ss
 
 #endif
