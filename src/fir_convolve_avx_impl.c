@@ -125,8 +125,8 @@ static bool
                        size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
                        size_t outptr_outer_stride, size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 {
-    static const unsigned int lcmtbl[8] = {0, 8, 8, 24, 8, 40, 24, 56};
-    static const unsigned int lcmtbl_v[8] = {0, 1, 1, 3, 1, 5, 3, 7};
+    static const unsigned int tbl_inner[6] = {1, 3, 1, 5, 3, 7}; // LCM(stride, 8)
+    static const unsigned int tbl_outer[6] = {4, 8, 2, 8, 4, 8}; // number of pixels for each inner pass
 
     if (unlikely(pixel_stride >= 8))
         return false;
@@ -218,13 +218,13 @@ static bool
                 }
             }
 
-            const unsigned int step = lcmtbl[pixel_stride];
+            const unsigned int step = tbl_outer[pixel_stride];
             const unsigned int avx_end_step = avx_end_single - avx_end_single % step;
 
             cur_input = inptr + y * outer_stride;
             cur_output = outptr + y * outptr_outer_stride;
             for (; x < avx_end_step; x += step) {
-                for (unsigned int subx = 0; subx < lcmtbl_v[pixel_stride]; ++subx) {
+                for (unsigned int subx = 0; subx < tbl_inner[pixel_stride]; ++subx) {
                     __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
                     __m256 sum = _mm256_mul_ps(kernel_val, _mm256_loadu_ps(cur_input + x * pixel_stride + subx * 8));
 
