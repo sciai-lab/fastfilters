@@ -125,6 +125,9 @@ static bool
                        size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
                        size_t outptr_outer_stride, size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 {
+    static const unsigned int lcmtbl[8] = {0, 8, 8, 24, 8, 40, 24, 56};
+    static const unsigned int lcmtbl_v[8] = {0, 1, 1, 3, 1, 5, 3, 7};
+
     if (unlikely(pixel_stride >= 8))
         return false;
 
@@ -136,14 +139,6 @@ static bool
 #endif
 #if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
     (void)borderptr_outer_stride;
-#endif
-
-#ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
-    const unsigned int avx_end = (n_pixels) & ~31;
-    const unsigned int avx_end_single = (n_pixels) & ~7;
-#else
-    const unsigned int avx_end = (n_pixels - FF_KERNEL_LEN) & ~31;
-    const unsigned int avx_end_single = (n_pixels - FF_KERNEL_LEN) & ~7;
 #endif
 
     for (unsigned int y = 0; y < n_outer; ++y) {
@@ -198,8 +193,53 @@ static bool
         }
 #endif
 
+#ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
+        const unsigned int avx_end_single = (n_pixels) & ~7;
+#else
+        const unsigned int avx_end_single = (n_pixels - FF_KERNEL_LEN) & ~7;
+#endif
         // valid area
         if (likely(avx_end_single > 32)) {
+            // align to 8 pixel boundary
+            const unsigned int x_align = (x + 7) & ~7;
+            const unsigned int x_avx_start = x;
+            for (unsigned int c = 0; c < pixel_stride; ++c) {
+                cur_input = inptr + y * outer_stride + c;
+                cur_output = outptr + y * outptr_outer_stride + c;
+                for (x = x_avx_start; x < x_align; ++x) {
+                    float sum = kernel->coefs[0] * cur_input[x * pixel_stride];
+
+                    for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+                        sum += kernel->coefs[k] * kernel_addsub_ss(cur_input[(x + k) * pixel_stride],
+                                                                   *(cur_input + (x - k) * pixel_stride));
+                    }
+
+                    cur_output[x] = sum;
+                }
+            }
+
+            const unsigned int step = lcmtbl[pixel_stride];
+            const unsigned int avx_end_step = avx_end_single - avx_end_single % step;
+
+            cur_input = inptr + y * outer_stride;
+            cur_output = outptr + y * outptr_outer_stride;
+            for (; x < avx_end_step; x += step) {
+                for (unsigned int subx = 0; subx < lcmtbl_v[pixel_stride]; ++subx) {
+                    __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
+                    __m256 sum = _mm256_mul_ps(kernel_val, _mm256_loadu_ps(cur_input + x * pixel_stride + subx * 8));
+
+                    for (unsigned int k = 0; k <= kernel->len; ++k) {
+                        kernel_val = _mm256_broadcast_ss(kernel->coefs + k);
+
+                        __m256 pixels =
+                            kernel_addsub_ps(_mm256_loadu_ps(cur_input + (x + k) * pixel_stride + subx * 8),
+                                             _mm256_loadu_ps(cur_input + (x - k) * pixel_stride + subx * 8));
+                        sum = _mm256_fmadd_ps(pixels, kernel_val, sum);
+                    }
+
+                    _mm256_storeu_ps(cur_output + x * pixel_stride + subx * 8, sum);
+                }
+            }
         }
 
 // finish pixels until boundary
