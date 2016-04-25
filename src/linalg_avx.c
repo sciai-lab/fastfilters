@@ -18,6 +18,7 @@
 
 #include "fastfilters.h"
 #include "common.h"
+#include "avx_mathfun.h"
 
 #include <immintrin.h>
 
