@@ -19,8 +19,7 @@ for order in [0,1,2]:
 		res_vigra = vigra.filters.gaussianDerivative(a, sigma, [order,order])
 
 		if not np.allclose(res_ff, res_vigra, atol=1e-6):
-			print("FAIL: ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
-			raise Exception()
+			raise Exception("FAIL: ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
 
 
 for sigma in [1.0, 5.0, 10.0]:
@@ -29,8 +28,7 @@ for sigma in [1.0, 5.0, 10.0]:
 	print("HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
 
 	if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
-		print("FAIL: HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
-		#raise Exception()
+		raise Exception("FAIL: HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
 
 
 for sigma in [1.0, 5.0, 10.0]:
@@ -40,8 +38,7 @@ for sigma in [1.0, 5.0, 10.0]:
 		print("ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
 
 		if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
-			print("FAIL: ST", sigma, np.max(np.abs(res_ff - res_vigra)))
-			#raise Exception()
+			raise Exception("FAIL: ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
 
 with open(sys.argv[1], 'w') as f:
 	f.write('')
