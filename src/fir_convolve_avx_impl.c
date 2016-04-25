@@ -123,17 +123,154 @@ static bool
                        size_t pixel_stride, size_t n_outer, size_t outer_stride, float *outptr,
                        size_t outptr_outer_stride, size_t borderptr_outer_stride, const fastfilters_kernel_fir_t kernel)
 {
-    (void)inptr;
-    (void)in_border_left;
+    if (unlikely(pixel_stride >= 8))
+        return false;
+
+#ifndef FF_BOUNDARY_PTR_RIGHT
     (void)in_border_right;
-    (void)n_pixels;
-    (void)pixel_stride;
-    (void)n_outer;
-    (void)outer_stride;
-    (void)outptr;
-    (void)outptr_outer_stride;
+#endif
+#ifndef FF_BOUNDARY_PTR_LEFT
+    (void)in_border_left;
+#endif
+#if !defined(FF_BOUNDARY_PTR_LEFT) && !defined(FF_BOUNDARY_PTR_RIGHT)
     (void)borderptr_outer_stride;
-    (void)kernel;
+#endif
+
+#ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
+    const unsigned int avx_end = (n_pixels) & ~31;
+    const unsigned int avx_end_single = (n_pixels) & ~7;
+#else
+    const unsigned int avx_end = (n_pixels - FF_KERNEL_LEN) & ~31;
+    const unsigned int avx_end_single = (n_pixels - FF_KERNEL_LEN) & ~7;
+#endif
+
+    for (unsigned int y = 0; y < n_outer; ++y) {
+        // take next line of pixels
+        float *cur_output = outptr + y * outptr_outer_stride;
+        const float *cur_input = inptr + y * outer_stride;
+
+        // left border
+        unsigned int x = 0;
+
+#if defined(FF_BOUNDARY_MIRROR_LEFT) || defined(FF_BOUNDARY_PTR_LEFT)
+        for (unsigned int c = 0; c < pixel_stride; ++c) {
+            cur_input = inptr + y * outer_stride + c;
+            cur_output = outptr + y * outptr_outer_stride + c;
+
+#ifdef FF_BOUNDARY_MIRROR_LEFT
+            for (x = 0; x < FF_KERNEL_LEN; ++x) {
+                float sum = kernel->coefs[0] * cur_input[x * pixel_stride];
+
+                for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+                    unsigned int offset_left;
+                    if (-(int)k + (int)x < 0)
+                        offset_left = -x + k;
+                    else
+                        offset_left = x - k;
+#ifdef FF_KERNEL_SYMMETRIC
+                    sum +=
+                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] + cur_input[offset_left * pixel_stride]);
+#else
+                    sum +=
+                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] - cur_input[offset_left * pixel_stride]);
+#endif
+                }
+
+                cur_output[x * pixel_stride] = sum;
+            }
+#endif
+
+#ifdef FF_BOUNDARY_PTR_LEFT
+            for (x = 0; x < FF_KERNEL_LEN; ++x) {
+                float sum = kernel->coefs[0] * cur_input[x * pixel_stride];
+
+                for (unsigned int k = 1; k < x; ++k) {
+                    float left;
+                    if (-(int)k + (int)x < 0)
+                        left = in_border_left[y * borderptr_outer_stride +
+                                              (FF_KERNEL_LEN - (int)k + (int)x) * pixel_stride];
+                    else
+                        left = cur_input[(x - k) * pixel_stride];
+#ifdef FF_KERNEL_SYMMETRIC
+                    sum += kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] + left);
+#else
+                    sum += kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] - left);
+#endif
+                }
+
+                cur_output[x * pixel_stride] = sum;
+            }
+#endif
+        }
+#endif
+
+// TODO: valid area
+
+// finish pixels until boundary
+#ifdef FF_BOUNDARY_OPTIMISTIC_RIGHT
+        const size_t n_pixels_end = n_pixels;
+#else
+        const size_t n_pixels_end = n_pixels - FF_KERNEL_LEN;
+#endif
+
+        const unsigned int xstart_noavx = x;
+        for (unsigned int c = 0; c < pixel_stride; ++c) {
+            cur_input = inptr + y * outer_stride + c;
+            cur_output = outptr + y * outptr_outer_stride + c;
+
+            for (x = xstart_noavx; x < n_pixels_end; ++x) {
+                float sum = cur_input[x * pixel_stride] * kernel->coefs[0];
+
+                for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+#ifdef FF_KERNEL_SYMMETRIC
+                    sum +=
+                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] + *(cur_input + (x - k) * pixel_stride));
+#else
+                    sum +=
+                        kernel->coefs[k] * (cur_input[(x + k) * pixel_stride] - *(cur_input + (x - k) * pixel_stride));
+#endif
+                }
+
+                cur_output[x * pixel_stride] = sum;
+            }
+        }
+
+// right border
+#if defined(FF_BOUNDARY_MIRROR_RIGHT) || defined(FF_BOUNDARY_PTR_RIGHT)
+        const unsigned int xstart_border = x;
+
+        for (unsigned int c = 0; c < pixel_stride; ++c) {
+            cur_input = inptr + y * outer_stride + c;
+            cur_output = outptr + y * outptr_outer_stride + c;
+
+            for (x = xstart_border; x < n_pixels; ++x) {
+                float sum = cur_input[x * pixel_stride] * kernel->coefs[0];
+
+                for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k) {
+                    float right;
+
+                    if (x + k >= n_pixels)
+#ifdef FF_BOUNDARY_MIRROR_RIGHT
+                        right = cur_input[n_pixels - (((k + x) % n_pixels) - 2) * pixel_stride];
+#else
+                        right = in_border_right[y * borderptr_outer_stride + (((k + x) % n_pixels) * pixel_stride)];
+#endif
+                    else
+                        right = cur_input[(x + k) * pixel_stride];
+
+#ifdef FF_KERNEL_SYMMETRIC
+                    sum += kernel->coefs[k] * (right + *(cur_input + (x - k) * pixel_stride));
+#else
+                    sum += kernel->coefs[k] * (right - *(cur_input + (x - k) * pixel_stride));
+#endif
+                }
+
+                cur_output[x * pixel_stride] = sum;
+            }
+        }
+#endif
+    }
+
     return false;
 }
 
@@ -203,8 +340,7 @@ bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, p
             for (unsigned int k = 1; k < x; ++k) {
                 float left;
                 if (-(int)k + (int)x < 0)
-                    left =
-                        in_border_left[y * borderptr_outer_stride + (FF_KERNEL_LEN - (int)k + (int)x) * pixel_stride];
+                    left = in_border_left[y * borderptr_outer_stride + (FF_KERNEL_LEN - (int)k + (int)x)];
                 else
                     left = cur_input[x - k];
 #ifdef FF_KERNEL_SYMMETRIC
