@@ -33,16 +33,14 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
         v_xy = _mm256_loadu_ps(xy + i);
         v_yy = _mm256_loadu_ps(yy + i);
 
-        __m256 thalf, thalfsq;
-        thalf = _mm256_mul_ps(_mm256_add_ps(v_xx, v_yy), _mm256_set1_ps(0.5));
-        thalfsq = _mm256_mul_ps(thalf, thalf);
+        __m256 tmp0 = _mm256_mul_ps(_mm256_add_ps(v_xx, v_yy), _mm256_set1_ps(0.5));
+        __m256 tmp1 = _mm256_mul_ps(_mm256_sub_ps(v_xx, v_yy), _mm256_set1_ps(0.5));
+        tmp1 = _mm256_mul_ps(tmp1, tmp1);
 
-        __m256 d = _mm256_sub_ps(_mm256_mul_ps(v_xx, v_yy), _mm256_mul_ps(v_xy, v_xy));
+        __m256 det = _mm256_sqrt_ps(_mm256_add_ps(tmp1, _mm256_mul_ps(v_xy, v_xy)));
 
-        __m256 det = _mm256_sqrt_ps(_mm256_sub_ps(thalfsq, d));
-
-        __m256 ev0 = _mm256_add_ps(thalf, det);
-        __m256 ev1 = _mm256_sub_ps(thalf, det);
+        __m256 ev0 = _mm256_add_ps(tmp0, det);
+        __m256 ev1 = _mm256_sub_ps(tmp0, det);
 
         __m256 mask = _mm256_cmp_ps(ev0, ev1, _CMP_LE_OQ);
 
@@ -58,16 +56,16 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
         float v_xy = xy[i];
         float v_yy = yy[i];
 
-        float T = v_xx + v_yy;
-        float Thalf = T / 2;
-        float Thalfsq = Thalf * Thalf;
+        float tmp0 = (v_xx + v_yy) / 2.0;
 
-        float D = v_xx * v_yy - v_xy * v_xy;
+        float tmp1 = (v_xx - v_yy) / 2.0;
+        tmp1 = tmp1 * tmp1;
 
-        float Dsqrt = sqrt(Thalfsq - D);
+        float det = (tmp1 + v_xy * v_xy);
+        float det_sqrt = sqrt(det);
 
-        float ev0 = Thalf + Dsqrt;
-        float ev1 = Thalf - Dsqrt;
+        float ev0 = tmp0 + det_sqrt;
+        float ev1 = tmp0 - det_sqrt;
 
         if (ev0 > ev1) {
             ev_small[i] = ev1;

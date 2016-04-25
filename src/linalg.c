@@ -37,16 +37,16 @@ static void _ev2d_default(const float *xx, const float *xy, const float *yy, flo
         float v_xy = xy[i];
         float v_yy = yy[i];
 
-        float T = v_xx + v_yy;
-        float Thalf = T / 2;
-        float Thalfsq = Thalf * Thalf;
+        float tmp0 = (v_xx + v_yy) / 2.0;
 
-        float D = v_xx * v_yy - v_xy * v_xy;
+        float tmp1 = (v_xx - v_yy) / 2.0;
+        tmp1 = tmp1 * tmp1;
 
-        float Dsqrt = sqrt(Thalfsq - D);
+        float det = (tmp1 + v_xy * v_xy);
+        float det_sqrt = sqrt(det);
 
-        float ev0 = Thalf + Dsqrt;
-        float ev1 = Thalf - Dsqrt;
+        float ev0 = tmp0 + det_sqrt;
+        float ev1 = tmp0 - det_sqrt;
 
         if (ev0 > ev1) {
             ev_small[i] = ev1;
