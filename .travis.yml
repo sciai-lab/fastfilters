@@ -36,7 +36,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -c ilastik -q -n test-environment python=$TRAVIS_PYTHON_VERSION vigra
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c ilastik vigra
   - source activate test-environment
 
 script:
