@@ -28,23 +28,16 @@ bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray,
 {
     bool result = false;
     fastfilters_kernel_fir_t kx = NULL;
-    fastfilters_kernel_fir_t ky = NULL;
 
     kx = fastfilters_kernel_fir_gaussian(order, sigma);
     if (!kx)
         goto out;
 
-    ky = fastfilters_kernel_fir_gaussian(order, sigma);
-    if (!ky)
-        goto out;
-
-    result = fastfilters_fir_convolve2d(inarray, kx, ky, outarray, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, kx, kx, outarray, 0, 0, 0, 0);
 
 out:
     if (kx)
         fastfilters_kernel_fir_free(kx);
-    if (ky)
-        fastfilters_kernel_fir_free(ky);
     return result;
 }
 
