@@ -214,7 +214,7 @@ static bool
                                                                    *(cur_input + (x - k) * pixel_stride));
                     }
 
-                    cur_output[x] = sum;
+                    cur_output[x * pixel_stride] = sum;
                 }
             }
 
@@ -228,7 +228,7 @@ static bool
                     __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
                     __m256 sum = _mm256_mul_ps(kernel_val, _mm256_loadu_ps(cur_input + x * pixel_stride + subx * 8));
 
-                    for (unsigned int k = 0; k <= kernel->len; ++k) {
+                    for (unsigned int k = 1; k <= kernel->len; ++k) {
                         kernel_val = _mm256_broadcast_ss(kernel->coefs + k);
 
                         __m256 pixels =
@@ -259,7 +259,7 @@ static bool
 
                 for (unsigned int k = 1; k <= FF_KERNEL_LEN; ++k)
                     sum += kernel->coefs[k] *
-                           kernel_addsub_ss(cur_input[(x + k) * pixel_stride], *(cur_input + (x - k) * pixel_stride));
+                           kernel_addsub_ss(cur_input[(x + k) * pixel_stride], *(cur_input + ((x - k) * pixel_stride)));
 
                 cur_output[x * pixel_stride] = sum;
             }
@@ -281,14 +281,14 @@ static bool
 
                     if (x + k >= n_pixels)
 #ifdef FF_BOUNDARY_MIRROR_RIGHT
-                        right = cur_input[n_pixels - (((k + x) % n_pixels) - 2) * pixel_stride];
+                        right = cur_input[(n_pixels - ((k + x) % n_pixels) - 2) * pixel_stride];
 #else
-                        right = in_border_right[y * borderptr_outer_stride + (((k + x) % n_pixels) * pixel_stride)];
+                        right = in_border_right[y * borderptr_outer_stride + c + (((k + x) % n_pixels) * pixel_stride)];
 #endif
                     else
                         right = cur_input[(x + k) * pixel_stride];
 
-                    sum += kernel->coefs[k] * kernel_addsub_ss(right, *(cur_input + (x - k) * pixel_stride));
+                    sum += kernel->coefs[k] * kernel_addsub_ss(right, *(cur_input + ((x - k) * pixel_stride)));
                 }
 
                 cur_output[x * pixel_stride] = sum;
@@ -297,7 +297,7 @@ static bool
 #endif
     }
 
-    return false;
+    return true;
 }
 
 bool DLL_LOCAL fname(0, param_boundary_left, param_boundary_right, param_symm, param_avxfma,
