@@ -97,8 +97,7 @@ bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray,
 bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
                                            const fastfilters_kernel_fir_t kernelz,
-                                           const fastfilters_array2d_t *outarray, size_t x0, size_t y0, size_t z0,
-                                           size_t x1, size_t y1, size_t z1);
+                                           const fastfilters_array3d_t *outarray);
 
 void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small,
                                         float *ev_big, const size_t len);
