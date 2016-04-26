@@ -117,6 +117,8 @@ DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v);
 
 bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray, unsigned order, double sigma,
                                            fastfilters_array2d_t *outarray);
+bool DLL_PUBLIC fastfilters_fir_gaussian3d(const fastfilters_array3d_t *inarray, unsigned order, double sigma,
+                                           fastfilters_array3d_t *outarray);
 
 bool DLL_PUBLIC fastfilters_fir_hog2d(const fastfilters_array2d_t *inarray, double sigma, fastfilters_array2d_t *out_xx,
                                       fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy);

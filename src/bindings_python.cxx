@@ -246,12 +246,19 @@ struct ConvolveGaussian {
     {
         return fastfilters_fir_gaussian2d(&in, order, sigma, &out);
     }
+
+    bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
+    {
+        return fastfilters_fir_gaussian3d(&in, order, sigma, &out);
+    }
 };
 
-template <typename ConvolveFunctor> py::array_t<float> filter2d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+template <unsigned ndim, typename ConvolveFunctor>
+py::array_t<float> filter_binding(py::array_t<float> &input, ConvolveFunctor &fn)
 {
-    fastfilters_array2d_t ff;
-    fastfilters_array2d_t ff_out;
+    typedef typename std::conditional<ndim == 2, fastfilters_array2d_t, fastfilters_array3d_t>::type ff_array_t;
+    ff_array_t ff;
+    ff_array_t ff_out;
 
     auto result = array_like(input);
     convert_py2ff(input, ff);
@@ -266,7 +273,13 @@ template <typename ConvolveFunctor> py::array_t<float> filter2d_binding(py::arra
 py::array_t<float> gaussian2d(py::array_t<float> &input, unsigned order, double sigma)
 {
     ConvolveGaussian fn(order, sigma);
-    return filter2d_binding(input, fn);
+    return filter_binding<2>(input, fn);
+}
+
+py::array_t<float> gaussian3d(py::array_t<float> &input, unsigned order, double sigma)
+{
+    ConvolveGaussian fn(order, sigma);
+    return filter_binding<3>(input, fn);
 }
 
 struct ConvolveGradMag {
@@ -285,7 +298,7 @@ struct ConvolveGradMag {
 py::array_t<float> gradmag2d(py::array_t<float> &input, double sigma)
 {
     ConvolveGradMag fn(sigma);
-    return filter2d_binding(input, fn);
+    return filter_binding<2>(input, fn);
 }
 
 struct ConvolveLaPlacian {
@@ -304,7 +317,7 @@ struct ConvolveLaPlacian {
 py::array_t<float> laplacian2d(py::array_t<float> &input, double sigma)
 {
     ConvolveLaPlacian fn(sigma);
-    return filter2d_binding(input, fn);
+    return filter_binding<2>(input, fn);
 }
 
 template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
@@ -403,6 +416,8 @@ PYBIND11_PLUGIN(fastfilters)
     m_fastfilters.def("convolve_fir", &convolve_fir_roi3d, py::arg("input"), py::arg("kernels"), py::arg("roi"));
 
     m_fastfilters.def("gaussian2d", &gaussian2d);
+    m_fastfilters.def("gaussian3d", &gaussian3d);
+
     m_fastfilters.def("gradmag2d", &gradmag2d);
     m_fastfilters.def("laplacian2d", &laplacian2d);
     m_fastfilters.def("hog2d", &hog2d);

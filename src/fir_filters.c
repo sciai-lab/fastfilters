@@ -41,6 +41,24 @@ out:
     return result;
 }
 
+bool DLL_PUBLIC fastfilters_fir_gaussian3d(const fastfilters_array3d_t *inarray, unsigned order, double sigma,
+                                           fastfilters_array3d_t *outarray)
+{
+    bool result = false;
+    fastfilters_kernel_fir_t kx = NULL;
+
+    kx = fastfilters_kernel_fir_gaussian(order, sigma);
+    if (!kx)
+        goto out;
+
+    result = fastfilters_fir_convolve3d(inarray, kx, kx, kx, outarray);
+
+out:
+    if (kx)
+        fastfilters_kernel_fir_free(kx);
+    return result;
+}
+
 bool DLL_PUBLIC fastfilters_fir_hog2d(const fastfilters_array2d_t *inarray, double sigma, fastfilters_array2d_t *out_xx,
                                       fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy)
 {
