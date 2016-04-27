@@ -68,7 +68,7 @@ bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray,
                                            const fastfilters_kernel_fir_t kernelz,
                                            const fastfilters_array3d_t *outarray)
 {
-    for (size_t z = 0; z < inarray->n_x; ++z) {
+    for (size_t z = 0; z < inarray->n_z; ++z) {
         const float *planeptr = inarray->ptr + z * inarray->stride_z;
         float *planeptr_out = outarray->ptr + z * outarray->stride_z;
 
