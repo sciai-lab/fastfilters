@@ -700,7 +700,7 @@ bool DLL_LOCAL fname(1, param_boundary_left, param_boundary_right, param_symm, p
         }
 
         if (noavx_left > 0) {
-            __m256 pixels = _mm256_maskload_ps(inptr + dim, mask);
+            __m256 pixels = _mm256_maskload_ps(cur_inptr + dim, mask);
             __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
             __m256 result = _mm256_mul_ps(pixels, kernel_val);
 
