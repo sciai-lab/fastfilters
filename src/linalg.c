@@ -24,6 +24,7 @@ typedef void (*ev3d_fn_t)(const float *, const float *, const float *, const flo
                           float *, float *, float *, const size_t);
 
 typedef void (*combine_add_fn_t)(const float *, const float *, float *, size_t);
+typedef void (*combine_add3_fn_t)(const float *, const float *, const float *, float *, size_t);
 
 void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, float *ev_small, float *ev_big,
                          const size_t len);
@@ -31,6 +32,9 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
 void DLL_LOCAL _combine_add_avx(const float *a, const float *b, float *c, size_t len);
 void DLL_LOCAL _combine_addsqrt_avx(const float *a, const float *b, float *c, size_t len);
 void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t len);
+
+void DLL_LOCAL _combine_add3_avx(const float *a, const float *b, const float *c, float *res, size_t len);
+void DLL_LOCAL _combine_addsqrt3_avx(const float *a, const float *b, const float *c, float *res, size_t len);
 
 static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_big, float *ev_small,
                           const size_t len)
@@ -166,6 +170,12 @@ static void _combine_add_default(const float *a, const float *b, float *c, size_
         c[i] = a[i] + b[i];
 }
 
+static void _combine_add3_default(const float *a, const float *b, const float *c, float *res, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+        res[i] = a[i] + b[i] + c[i];
+}
+
 static void _combine_mul_default(const float *a, const float *b, float *c, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
@@ -178,35 +188,40 @@ static void _combine_addsqrt_default(const float *a, const float *b, float *c, s
         c[i] = sqrt(a[i] * a[i] + b[i] * b[i]);
 }
 
+static void _combine_addsqrt3_default(const float *a, const float *b, const float *c, float *res, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+        res[i] = cbrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
+}
+
 static ev2d_fn_t g_ev2d_fn = NULL;
 static ev3d_fn_t g_ev3d_fn = NULL;
 static combine_add_fn_t g_combine_add = NULL;
 static combine_add_fn_t g_combine_mul = NULL;
 static combine_add_fn_t g_combine_addsqrt = NULL;
+static combine_add3_fn_t g_combine_add3 = NULL;
+static combine_add3_fn_t g_combine_addsqrt3 = NULL;
 
 void fastfilters_linalg_init()
 {
-    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
-        g_ev2d_fn = _ev2d_avx;
-    else
-        g_ev2d_fn = _ev2d_default;
-
     g_ev3d_fn = _ev3d_default;
 
-    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
+    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
         g_combine_add = _combine_add_avx;
-    else
-        g_combine_add = _combine_add_default;
-
-    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
+        g_combine_add3 = _combine_add3_avx;
         g_combine_mul = _combine_mul_avx;
-    else
-        g_combine_mul = _combine_mul_default;
-
-    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX))
         g_combine_addsqrt = _combine_addsqrt_avx;
-    else
+        g_combine_addsqrt3 = _combine_addsqrt3_avx;
+        g_ev2d_fn = _ev2d_avx;
+
+    } else {
+        g_combine_add = _combine_add_default;
+        g_combine_add3 = _combine_add3_default;
+        g_combine_mul = _combine_mul_default;
         g_combine_addsqrt = _combine_addsqrt_default;
+        g_combine_addsqrt3 = _combine_addsqrt3_default;
+        g_ev2d_fn = _ev2d_default;
+    }
 }
 
 void DLL_PUBLIC fastfilters_linalg_ev3d(const float *a00, const float *a01, const float *a02, const float *a11,
@@ -238,4 +253,16 @@ void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const 
                                           fastfilters_array2d_t *out)
 {
     g_combine_mul(a->ptr, b->ptr, out->ptr, a->n_y * a->stride_y);
+}
+
+void DLL_PUBLIC fastfilters_combine_add3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                          const fastfilters_array3d_t *c, fastfilters_array3d_t *out)
+{
+    g_combine_add3(a->ptr, b->ptr, c->ptr, out->ptr, a->n_z * a->stride_z);
+}
+
+void DLL_PUBLIC fastfilters_combine_addsqrt3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                              const fastfilters_array3d_t *c, fastfilters_array3d_t *out)
+{
+    g_combine_addsqrt3(a->ptr, b->ptr, c->ptr, out->ptr, a->n_z * a->stride_z);
 }
