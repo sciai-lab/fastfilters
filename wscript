@@ -81,7 +81,7 @@ def configure(cfg):
 
 	cfg.check_clang_hotfix()
 	cfg.check_builtin_expect()
-	cfg.check_cpufeatures(['avx', 'fma'])
+	cfg.check_cpufeatures(['avx', 'fma', 'avx2'])
 	cfg.check_cpuid()
 	cfg.check_xgetbv()
 
@@ -112,7 +112,8 @@ def configure(cfg):
 def build(bld):
 	sources = ["src/cpu.c", "src/fastfilters.c", "src/memory.c", "src/fir_kernel.c", "src/linalg.c", "src/fir_convolve_nosimd.c", "src/fir_convolve.c", "src/fir_filters.c", "src/array.c"]
 	sources_avx = ["src/fir_convolve_avx.c"]
-	sources_avx_fma = ["src/fir_convolve_avx.c", "src/linalg_avx.c"]
+	sources_avx_fma = ["src/fir_convolve_avx.c", "src/linalg_avx.c", "src/linalg_avx2.c"]
+	sources_avx2 = ["src/linalg_avx2.c"]
 	sources_python = ["src/bindings_python.cxx"]
 
 
@@ -128,6 +129,10 @@ def build(bld):
 		source  = sources_avx_fma,
 		target  = 'objs_shlib_avx_fma',
 		uselib  = 'cshlib cpu_avx cpu_fma')
+	bld.objects(
+		source  = sources_avx2,
+		target  = 'objs_shlib_avx2',
+		uselib  = 'cshlib cpu_avx cpu_avx2 cpu_fma')
 
 	bld.objects(
 		source  = sources,
@@ -140,8 +145,11 @@ def build(bld):
 	bld.objects(
 		source  = sources_avx_fma,
 		target  = 'objs_stlib_avx_fma',
-		uselib  = 'cstlib cpu_avx cpu_fma',
-		msg = 'lol')
+		uselib  = 'cstlib cpu_avx cpu_fma')
+	bld.objects(
+		source  = sources_avx2,
+		target  = 'objs_stlib_avx2',
+		uselib  = 'cstlib cpu_avx cpu_avx2 cpu_fma')
 
 	avx_use_st = []
 	avx_use_sh = []
@@ -165,8 +173,8 @@ def build(bld):
 	avx_use_sh = ' '.join(avx_use_sh)
 	avx_use_st = ' '.join(avx_use_st)
 
-	shlib = bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma " + avx_use_sh, name="fastfilters_shared")
-	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma " + avx_use_st, name="fastfilters_static")
+	shlib = bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma objs_shlib_avx2 " + avx_use_sh, name="fastfilters_shared")
+	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma objs_shlib_avx2 " + avx_use_st, name="fastfilters_static")
 	pyext = bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
 
 

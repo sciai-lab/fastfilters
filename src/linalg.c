@@ -36,6 +36,11 @@ void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t
 void DLL_LOCAL _combine_add3_avx(const float *a, const float *b, const float *c, float *res, size_t len);
 void DLL_LOCAL _combine_addsqrt3_avx(const float *a, const float *b, const float *c, float *res, size_t len);
 
+DLL_LOCAL void _ev3d_avx(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
+                         const float *a22, float *ev0, float *ev1, float *ev2, const size_t len);
+DLL_LOCAL void _ev3d_avx2(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
+                          const float *a22, float *ev0, float *ev1, float *ev2, const size_t len);
+
 static void _ev2d_default(const float *xx, const float *xy, const float *yy, float *ev_big, float *ev_small,
                           const size_t len)
 {
@@ -204,8 +209,6 @@ static combine_add3_fn_t g_combine_addsqrt3 = NULL;
 
 void fastfilters_linalg_init()
 {
-    g_ev3d_fn = _ev3d_default;
-
     if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
         g_combine_add = _combine_add_avx;
         g_combine_add3 = _combine_add3_avx;
@@ -221,6 +224,14 @@ void fastfilters_linalg_init()
         g_combine_addsqrt = _combine_addsqrt_default;
         g_combine_addsqrt3 = _combine_addsqrt3_default;
         g_ev2d_fn = _ev2d_default;
+    }
+
+    if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX2)) {
+        g_ev3d_fn = _ev3d_avx2;
+    } else if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
+        g_ev3d_fn = _ev3d_avx;
+    } else {
+        g_ev3d_fn = _ev3d_default;
     }
 }
 
