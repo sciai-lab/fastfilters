@@ -85,12 +85,14 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 r1 = (c2Div3 - magnitude * (cs + v_root3 * sn));
         __m256 r2 = (c2Div3 - magnitude * (cs - v_root3 * sn));
 
-        __m256 mask = _mm256_cmp_ps(r0, r1, _CMP_LE_OQ);
-        __m256 v_r0 = _mm256_or_ps(_mm256_and_ps(mask, r1), _mm256_andnot_ps(mask, r0));
-        __m256 v_tmp = _mm256_or_ps(_mm256_andnot_ps(mask, r1), _mm256_and_ps(mask, r0));
-        mask = _mm256_cmp_ps(v_tmp, r2, _CMP_LE_OQ);
-        __m256 v_r1 = _mm256_or_ps(_mm256_and_ps(mask, r2), _mm256_andnot_ps(mask, v_tmp));
-        __m256 v_r2 = _mm256_or_ps(_mm256_andnot_ps(mask, r2), _mm256_and_ps(mask, v_tmp));
+        __m256 v_r0_tmp = _mm256_min_ps(r0, r1);
+        __m256 v_r1_tmp = _mm256_max_ps(r0, r1);
+
+        __m256 v_r0 = _mm256_min_ps(v_r0_tmp, r2);
+        __m256 v_r2_tmp = _mm256_max_ps(v_r0_tmp, r2);
+
+        __m256 v_r1 = _mm256_min_ps(v_r1_tmp, v_r2_tmp);
+        __m256 v_r2 = _mm256_max_ps(v_r1_tmp, v_r2_tmp);
 
         _mm256_storeu_ps(ev0 + i, v_r0);
         _mm256_storeu_ps(ev1 + i, v_r1);
