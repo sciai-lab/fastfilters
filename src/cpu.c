@@ -231,7 +231,7 @@ void fastfilters_cpu_init(void)
     g_supports_avx2 = _supports_avx2();
 }
 
-bool fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable)
+bool DLL_PUBLIC fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable)
 {
     switch (feature) {
     case FASTFILTERS_CPU_AVX:
@@ -259,7 +259,7 @@ bool fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable)
     return fastfilters_cpu_check(feature);
 }
 
-bool fastfilters_cpu_check(fastfilters_cpu_feature_t feature)
+bool DLL_PUBLIC fastfilters_cpu_check(fastfilters_cpu_feature_t feature)
 {
     switch (feature) {
     case FASTFILTERS_CPU_AVX:

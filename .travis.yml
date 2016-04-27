@@ -1,0 +1,31 @@
+os: linux
+sudo: false
+language: python
+
+env:
+  - CXX=g++
+  - CXX=clang++
+python:
+  - "2.7"
+  - "3.4"
+
+
+addons:
+ apt:
+   sources:
+   - llvm-toolchain-precise-3.6
+   - ubuntu-toolchain-r-test
+   packages:
+   - gcc-4.9
+   - g++-4.9
+   - clang-3.6
+
+script:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
+  - ./waf configure -j1
+  - ./waf -j1
+  - ./waf test
+
+after_failure:
+  - cat build/config.log

@@ -55,7 +55,7 @@
 #include "fastfilters.h"
 #include "common.h"
 
-fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
+fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
 {
     double norm;
     double sigma2 = -0.5 / sigma / sigma;
@@ -70,7 +70,8 @@ fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, dou
     if (!kernel)
         return NULL;
 
-    kernel->len = ceil((3.0 + 0.5 * order) * sigma);
+    // kernel->len = ceil((3.0 + 0.5 * (double)order) * sigma);
+    kernel->len = floor(3.0 * sigma + 0.5 * order + 0.5);
     kernel->coefs = fastfilters_memory_alloc(sizeof(float) * (kernel->len + 1));
     if (!kernel->coefs) {
         fastfilters_memory_free(kernel);
@@ -88,12 +89,8 @@ fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, dou
         norm = -1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 3));
         break;
 
-    case 3:
-        norm = 1.0 / (sqrt(2.0 * M_PI) * pow(sigma, 5));
-        break;
-
     default:
-        norm = 1.0 / (sqrt(2.0 * M_PI) / sigma);
+        norm = 1.0 / (sqrt(2.0 * M_PI) * sigma);
         break;
     }
 
@@ -106,16 +103,68 @@ fastfilters_kernel_fir_t fastfilters_kernel_fir_gaussian(unsigned int order, dou
             break;
         case 1:
             kernel->coefs[x] = x * g;
+            break;
         case 2:
             kernel->coefs[x] = (1.0 - (x / sigma) * (x / sigma)) * g;
+            break;
         }
     }
+
+    if (order == 2) {
+        double dc = kernel->coefs[0];
+        for (unsigned int x = 1; x <= kernel->len; ++x)
+            dc += 2 * kernel->coefs[x];
+        dc /= (2.0 * (double)kernel->len + 1.0);
+
+        for (unsigned int x = 0; x <= kernel->len; ++x)
+            kernel->coefs[x] -= dc;
+    }
+
+    double sum = 0.0;
+    if (order == 0) {
+        sum = kernel->coefs[0];
+        for (unsigned int x = 1; x <= kernel->len; ++x)
+            sum += 2 * kernel->coefs[x];
+    } else {
+        unsigned int faculty = 1;
+
+        int sign;
+
+        if (kernel->is_symmetric)
+            sign = 1;
+        else
+            sign = -1;
+
+        for (unsigned int i = 2; i <= order; ++i)
+            faculty *= i;
+
+        sum = 0.0;
+        for (unsigned int x = 1; x <= kernel->len; ++x) {
+            sum += kernel->coefs[x] * pow(-(double)x, (int)order) / (double)faculty;
+            sum += sign * kernel->coefs[x] * pow((double)x, (int)order) / (double)faculty;
+        }
+    }
+
+    for (unsigned int x = 0; x <= kernel->len; ++x)
+        kernel->coefs[x] /= sum;
+
+    kernel->fn_inner_mirror = NULL;
+    kernel->fn_inner_ptr = NULL;
+    kernel->fn_inner_optimistic = NULL;
+    kernel->fn_outer_mirror = NULL;
+    kernel->fn_outer_ptr = NULL;
+    kernel->fn_outer_optimistic = NULL;
 
     return kernel;
 }
 
-void fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel)
+void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel)
 {
     fastfilters_memory_free(kernel->coefs);
     fastfilters_memory_free(kernel);
+}
+
+unsigned int DLL_PUBLIC fastfilters_kernel_fir_get_length(fastfilters_kernel_fir_t kernel)
+{
+    return kernel->len;
 }
