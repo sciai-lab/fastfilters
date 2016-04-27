@@ -317,6 +317,53 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::arr
     return result;
 }
 
+template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+{
+    fastfilters_array3d_t ff;
+    fastfilters_array3d_t ff_out_xx, ff_out_yy, ff_out_zz, ff_out_xy, ff_out_xz, ff_out_yz;
+
+    auto out_xx = array_like(input);
+    auto out_yy = array_like(input);
+    auto out_zz = array_like(input);
+    auto out_xy = array_like(input);
+    auto out_xz = array_like(input);
+    auto out_yz = array_like(input);
+
+    convert_py2ff(input, ff);
+
+    convert_py2ff(out_xx, ff_out_xx);
+    convert_py2ff(out_yy, ff_out_yy);
+    convert_py2ff(out_zz, ff_out_zz);
+    convert_py2ff(out_xy, ff_out_xy);
+    convert_py2ff(out_xz, ff_out_xz);
+    convert_py2ff(out_yz, ff_out_yz);
+
+    if (!fn(ff, ff_out_xx, ff_out_yy, ff_out_zz, ff_out_xy, ff_out_xz, ff_out_yz))
+        throw std::logic_error("convolution failed.");
+
+    const size_t n_pixels = ff.n_z * ff.n_x * ff.n_y * ff.n_channels;
+
+    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
+                                            {3, n_pixels}, {sizeof(float) * n_pixels, sizeof(float)}));
+    py::buffer_info info_out = result.request();
+
+    float *xx = ff_out_xx.ptr;
+    float *yy = ff_out_yy.ptr;
+    float *zz = ff_out_zz.ptr;
+    float *xy = ff_out_xy.ptr;
+    float *xz = ff_out_xz.ptr;
+    float *yz = ff_out_yz.ptr;
+
+    float *outptr = (float *)info_out.ptr;
+    float *ev0 = outptr;
+    float *ev1 = outptr + info_out.strides[0] / sizeof(float);
+    float *ev2 = outptr + 2 * info_out.strides[0] / sizeof(float);
+
+    fastfilters_linalg_ev3d(xx, xy, xz, yy, yz, zz, ev0, ev1, ev2, n_pixels);
+
+    return result;
+}
+
 struct ConvolveHessian {
     double sigma;
 
@@ -329,12 +376,25 @@ struct ConvolveHessian {
     {
         return fastfilters_fir_hog2d(&in, sigma, &xx, &xy, &yy);
     }
+
+    bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &xx, fastfilters_array3d_t &yy,
+                    fastfilters_array3d_t &zz, fastfilters_array3d_t &xy, fastfilters_array3d_t &xz,
+                    fastfilters_array3d_t &yz)
+    {
+        return fastfilters_fir_hog3d(&in, sigma, &xx, &yy, &zz, &xy, &xz, &yz);
+    }
 };
 
 py::array_t<float> hog2d(py::array_t<float> &input, double sigma)
 {
     ConvolveHessian fn(sigma);
     return filter_ev_2d_binding(input, fn);
+}
+
+py::array_t<float> hog3d(py::array_t<float> &input, double sigma)
+{
+    ConvolveHessian fn(sigma);
+    return filter_ev_3d_binding(input, fn);
 }
 
 struct ConvolveST {
@@ -378,7 +438,10 @@ PYBIND11_PLUGIN(fastfilters)
 
     m_fastfilters.def("gradmag2d", &gradmag2d);
     m_fastfilters.def("laplacian2d", &laplacian2d);
+
     m_fastfilters.def("hog2d", &hog2d);
+    m_fastfilters.def("hog3d", &hog3d);
+
     m_fastfilters.def("st2d", &st2d);
 
     return m_fastfilters.ptr();

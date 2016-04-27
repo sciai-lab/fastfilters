@@ -124,6 +124,10 @@ bool DLL_PUBLIC fastfilters_fir_gaussian3d(const fastfilters_array3d_t *inarray,
 
 bool DLL_PUBLIC fastfilters_fir_hog2d(const fastfilters_array2d_t *inarray, double sigma, fastfilters_array2d_t *out_xx,
                                       fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy);
+DLL_PUBLIC bool fastfilters_fir_hog3d(const fastfilters_array3d_t *inarray, double sigma, fastfilters_array3d_t *out_xx,
+                                      fastfilters_array3d_t *out_yy, fastfilters_array3d_t *out_zz,
+                                      fastfilters_array3d_t *out_xy, fastfilters_array3d_t *out_xz,
+                                      fastfilters_array3d_t *out_yz);
 
 bool DLL_PUBLIC fastfilters_fir_gradmag2d(const fastfilters_array2d_t *inarray, double sigma,
                                           fastfilters_array2d_t *outarray);
