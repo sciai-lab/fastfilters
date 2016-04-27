@@ -29,6 +29,9 @@
   (this is the zlib license)
 */
 
+#ifndef AVX_MATHFUN_H
+#define AVX_MATHFUN_H
+
 #include <immintrin.h>
 #include <math.h>
 
@@ -788,3 +791,6 @@ static inline __m256 atan2_256_ps(__m256 y, __m256 x)
 }
 
 #undef _avxfun_fmadd
+#undef _PS256_GET_CONST
+
+#endif
