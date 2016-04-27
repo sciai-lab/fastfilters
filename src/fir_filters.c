@@ -274,3 +274,83 @@ out:
         fastfilters_kernel_fir_free(kx);
     return result;
 }
+
+static bool fastfilters_fir_deriv3d_inner(const fastfilters_array3d_t *inarray, double sigma, unsigned order,
+                                          fastfilters_array3d_t *out0, fastfilters_array3d_t *out1,
+                                          fastfilters_array3d_t *out2)
+{
+    bool result = false;
+    fastfilters_kernel_fir_t k_smooth = NULL;
+    fastfilters_kernel_fir_t k_deriv = NULL;
+
+    k_smooth = fastfilters_kernel_fir_gaussian(0, sigma);
+    if (!k_smooth)
+        goto out;
+
+    k_deriv = fastfilters_kernel_fir_gaussian(order, sigma);
+    if (!k_deriv)
+        goto out;
+
+    result = fastfilters_fir_convolve3d(inarray, k_deriv, k_smooth, k_smooth, out0);
+    if (!result)
+        goto out;
+
+    result = fastfilters_fir_convolve3d(inarray, k_smooth, k_deriv, k_smooth, out1);
+    if (!result)
+        goto out;
+
+    result = fastfilters_fir_convolve3d(inarray, k_smooth, k_smooth, k_deriv, out2);
+    if (!result)
+        goto out;
+
+out:
+    if (k_smooth)
+        fastfilters_kernel_fir_free(k_smooth);
+    if (k_deriv)
+        fastfilters_kernel_fir_free(k_deriv);
+    return result;
+}
+
+static bool fastfilters_fir_deriv3d(const fastfilters_array3d_t *inarray, double sigma, unsigned order,
+                                    fastfilters_array3d_t *outarray, bool do_sqrt)
+{
+    bool result = false;
+    fastfilters_array3d_t *tmparray0 = NULL;
+    fastfilters_array3d_t *tmparray1 = NULL;
+
+    tmparray0 = fastfilters_array3d_alloc(inarray->n_x, inarray->n_y, inarray->n_z, inarray->n_channels);
+    if (!tmparray0)
+        goto out;
+
+    tmparray1 = fastfilters_array3d_alloc(inarray->n_x, inarray->n_y, inarray->n_z, inarray->n_channels);
+    if (!tmparray1)
+        goto out;
+
+    result = fastfilters_fir_deriv3d_inner(inarray, sigma, order, outarray, tmparray0, tmparray1);
+    if (!result)
+        goto out;
+
+    if (do_sqrt)
+        fastfilters_combine_addsqrt3d(outarray, tmparray0, tmparray1, outarray);
+    else
+        fastfilters_combine_add3d(outarray, tmparray0, tmparray1, outarray);
+
+out:
+    if (tmparray0)
+        fastfilters_array3d_free(tmparray0);
+    if (tmparray1)
+        fastfilters_array3d_free(tmparray1);
+    return result;
+}
+
+bool DLL_PUBLIC fastfilters_fir_gradmag3d(const fastfilters_array3d_t *inarray, double sigma,
+                                          fastfilters_array3d_t *outarray)
+{
+    return fastfilters_fir_deriv3d(inarray, sigma, 1, outarray, true);
+}
+
+bool DLL_PUBLIC fastfilters_fir_laplacian3d(const fastfilters_array3d_t *inarray, double sigma,
+                                            fastfilters_array3d_t *outarray)
+{
+    return fastfilters_fir_deriv3d(inarray, sigma, 2, outarray, false);
+}

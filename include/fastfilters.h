@@ -106,8 +106,14 @@ void DLL_PUBLIC fastfilters_linalg_ev3d(const float *a00, const float *a01, cons
 
 void DLL_PUBLIC fastfilters_combine_add2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
                                           fastfilters_array2d_t *out);
+void DLL_PUBLIC fastfilters_combine_add3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                          const fastfilters_array3d_t *c, fastfilters_array3d_t *out);
+
 void DLL_PUBLIC fastfilters_combine_addsqrt2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
                                               fastfilters_array2d_t *out);
+void DLL_PUBLIC fastfilters_combine_addsqrt3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                              const fastfilters_array3d_t *c, fastfilters_array3d_t *out);
+
 void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
                                           fastfilters_array2d_t *out);
 
@@ -131,9 +137,14 @@ DLL_PUBLIC bool fastfilters_fir_hog3d(const fastfilters_array3d_t *inarray, doub
 
 bool DLL_PUBLIC fastfilters_fir_gradmag2d(const fastfilters_array2d_t *inarray, double sigma,
                                           fastfilters_array2d_t *outarray);
+bool DLL_PUBLIC fastfilters_fir_gradmag3d(const fastfilters_array3d_t *inarray, double sigma,
+                                          fastfilters_array3d_t *outarray);
 
 bool DLL_PUBLIC fastfilters_fir_laplacian2d(const fastfilters_array2d_t *inarray, double sigma,
                                             fastfilters_array2d_t *outarray);
+bool DLL_PUBLIC fastfilters_fir_laplacian3d(const fastfilters_array3d_t *inarray, double sigma,
+                                            fastfilters_array3d_t *outarray);
+
 bool DLL_PUBLIC fastfilters_fir_structure_tensor(const fastfilters_array2d_t *inarray, double sigma_outer,
                                                  double sigma_inner, fastfilters_array2d_t *out_xx,
                                                  fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy);

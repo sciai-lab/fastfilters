@@ -253,12 +253,23 @@ struct ConvolveGradMag {
     {
         return fastfilters_fir_gradmag2d(&in, sigma, &out);
     }
+
+    bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
+    {
+        return fastfilters_fir_gradmag3d(&in, sigma, &out);
+    }
 };
 
 py::array_t<float> gradmag2d(py::array_t<float> &input, double sigma)
 {
     ConvolveGradMag fn(sigma);
     return filter_binding<2>(input, fn);
+}
+
+py::array_t<float> gradmag3d(py::array_t<float> &input, double sigma)
+{
+    ConvolveGradMag fn(sigma);
+    return filter_binding<3>(input, fn);
 }
 
 struct ConvolveLaPlacian {
@@ -272,12 +283,23 @@ struct ConvolveLaPlacian {
     {
         return fastfilters_fir_laplacian2d(&in, sigma, &out);
     }
+
+    bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
+    {
+        return fastfilters_fir_gradmag3d(&in, sigma, &out);
+    }
 };
 
 py::array_t<float> laplacian2d(py::array_t<float> &input, double sigma)
 {
     ConvolveLaPlacian fn(sigma);
     return filter_binding<2>(input, fn);
+}
+
+py::array_t<float> laplacian3d(py::array_t<float> &input, double sigma)
+{
+    ConvolveLaPlacian fn(sigma);
+    return filter_binding<3>(input, fn);
 }
 
 template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
@@ -437,7 +459,10 @@ PYBIND11_PLUGIN(fastfilters)
     m_fastfilters.def("gaussian3d", &gaussian3d);
 
     m_fastfilters.def("gradmag2d", &gradmag2d);
+    m_fastfilters.def("gradmag3d", &gradmag3d);
+
     m_fastfilters.def("laplacian2d", &laplacian2d);
+    m_fastfilters.def("laplacian3d", &laplacian3d);
 
     m_fastfilters.def("hog2d", &hog2d);
     m_fastfilters.def("hog3d", &hog3d);
