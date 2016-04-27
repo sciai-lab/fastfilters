@@ -21,7 +21,9 @@ for order in [0,1,2]:
 		res_vigra = np.zeros_like(a)
 
 		for c in range(avigra.shape[2]):
-			res_vigra[:,:,c] = vigra.filters.gaussianDerivative(avigra[:,:,c], sigma, [order,order])
+			res_vigra[:,:,c] = vigra.filters.gaussianDerivative(a[:,:,c], sigma, [order,order])
+
+		print("gaussian ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
 
 		if not np.allclose(res_ff, res_vigra, atol=1e-6):
 			raise Exception("FAIL: ", order, sigma, np.max(np.abs(res_ff - res_vigra)))

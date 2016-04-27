@@ -218,13 +218,13 @@ static bool
                 }
             }
 
-            const unsigned int step = tbl_outer[pixel_stride];
+            const unsigned int step = tbl_outer[pixel_stride - 2];
             const unsigned int avx_end_step = avx_end_single - avx_end_single % step;
 
             cur_input = inptr + y * outer_stride;
             cur_output = outptr + y * outptr_outer_stride;
             for (; x < avx_end_step; x += step) {
-                for (unsigned int subx = 0; subx < tbl_inner[pixel_stride]; ++subx) {
+                for (unsigned int subx = 0; subx < tbl_inner[pixel_stride - 2]; ++subx) {
                     __m256 kernel_val = _mm256_broadcast_ss(kernel->coefs);
                     __m256 sum = _mm256_mul_ps(kernel_val, _mm256_loadu_ps(cur_input + x * pixel_stride + subx * 8));
 
