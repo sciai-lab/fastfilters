@@ -36,10 +36,68 @@ static inline void swap(float *a, float *b)
 #else
 #error "linalg_avx2.c needs to be compiled with avx or avx2 support"
 #endif
+
+static inline __m256 atan2_256_ps(__m256 y, __m256 x)
+{
+    return _mm256_setzero_ps();
+}
+
 DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
                      const float *a22, float *ev0, float *ev1, float *ev2, const size_t len)
 {
-    for (size_t i = 0; i < len; ++i) {
+    const size_t avx_end = len & ~7;
+    __m256 v_inv3 = _mm256_set1_ps(1.0 / 3.0);
+    __m256 v_root3 = _mm256_sqrt_ps(_mm256_set1_ps(3.0));
+    __m256 two = _mm256_set1_ps(2.0);
+    __m256 half = _mm256_set1_ps(0.5);
+
+    for (size_t i = 0; i < avx_end; i += 8) {
+        __m256 v_a00 = _mm256_loadu_ps(a00 + i);
+        __m256 v_a01 = _mm256_loadu_ps(a01 + i);
+        __m256 v_a02 = _mm256_loadu_ps(a02 + i);
+        __m256 v_a11 = _mm256_loadu_ps(a11 + i);
+        __m256 v_a12 = _mm256_loadu_ps(a12 + i);
+        __m256 v_a22 = _mm256_loadu_ps(a22 + i);
+
+        __m256 c0 = v_a00 * v_a11 * v_a22 + two * v_a01 * v_a02 * v_a12 - v_a00 * v_a12 * v_a12 -
+                    v_a11 * v_a02 * v_a02 - v_a22 * v_a01 * v_a01;
+        __m256 c1 = v_a00 * v_a11 - v_a01 * v_a01 + v_a00 * v_a22 - v_a02 * v_a02 + v_a11 * v_a22 - v_a12 * v_a12;
+        __m256 c2 = v_a00 + v_a11 + v_a22;
+        __m256 c2Div3 = c2 * v_inv3;
+        __m256 aDiv3 = (c1 - c2 * c2Div3) * v_inv3;
+
+        // if (aDiv3 > 0.0)
+        //    aDiv3 = 0.0;
+
+        __m256 mbDiv2 = half * (c0 + c2Div3 * (two * c2Div3 * c2Div3 - c1));
+        __m256 q = mbDiv2 * mbDiv2 + aDiv3 * aDiv3 * aDiv3;
+
+        // if (q > 0.0)
+        //    q = 0.0;
+
+        __m256 magnitude = _mm256_sqrt_ps(-aDiv3);
+        __m256 angle = atan2_256_ps(_mm256_sqrt_ps(-q), mbDiv2) * v_inv3;
+        __m256 cs, sn;
+
+        sincos256_ps(angle, &sn, &cs);
+
+        __m256 r0 = (c2Div3 + two * magnitude * cs);
+        __m256 r1 = (c2Div3 - magnitude * (cs + v_root3 * sn));
+        __m256 r2 = (c2Div3 - magnitude * (cs - v_root3 * sn));
+
+        __m256 mask = _mm256_cmp_ps(r0, r1, _CMP_LE_OQ);
+        __m256 v_r0 = _mm256_or_ps(_mm256_and_ps(mask, r1), _mm256_andnot_ps(mask, r0));
+        __m256 v_tmp = _mm256_or_ps(_mm256_andnot_ps(mask, r1), _mm256_and_ps(mask, r0));
+        mask = _mm256_cmp_ps(v_tmp, r2, _CMP_LE_OQ);
+        __m256 v_r1 = _mm256_or_ps(_mm256_and_ps(mask, r2), _mm256_andnot_ps(mask, v_tmp));
+        __m256 v_r2 = _mm256_or_ps(_mm256_andnot_ps(mask, r2), _mm256_and_ps(mask, v_tmp));
+
+        _mm256_storeu_ps(ev0 + i, v_r0);
+        _mm256_storeu_ps(ev1 + i, v_r1);
+        _mm256_storeu_ps(ev2 + i, v_r2);
+    }
+
+    for (size_t i = avx_end; i < len; ++i) {
         float inv3 = 1.0 / 3.0;
         float root3 = sqrt(3.0);
 

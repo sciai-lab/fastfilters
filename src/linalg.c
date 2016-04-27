@@ -216,7 +216,6 @@ void fastfilters_linalg_init()
         g_combine_addsqrt = _combine_addsqrt_avx;
         g_combine_addsqrt3 = _combine_addsqrt3_avx;
         g_ev2d_fn = _ev2d_avx;
-
     } else {
         g_combine_add = _combine_add_default;
         g_combine_add3 = _combine_add3_default;
@@ -227,9 +226,9 @@ void fastfilters_linalg_init()
     }
 
     if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX2)) {
-        g_ev3d_fn = _ev3d_avx2;
+        g_ev3d_fn = _ev3d_default;
     } else if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
-        g_ev3d_fn = _ev3d_avx;
+        g_ev3d_fn = _ev3d_default;
     } else {
         g_ev3d_fn = _ev3d_default;
     }
