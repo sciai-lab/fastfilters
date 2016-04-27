@@ -43,8 +43,6 @@ void DLL_LOCAL _ev2d_avx(const float *xx, const float *xy, const float *yy, floa
         __m256 ev0 = _mm256_add_ps(tmp0, det);
         __m256 ev1 = _mm256_sub_ps(tmp0, det);
 
-        __m256 mask = _mm256_cmp_ps(ev0, ev1, _CMP_LE_OQ);
-
         __m256 v_ev_big = _mm256_max_ps(ev0, ev1);
         __m256 v_ev_small = _mm256_min_ps(ev0, ev1);
 

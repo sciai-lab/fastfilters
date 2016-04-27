@@ -30,6 +30,7 @@
 */
 
 #include <immintrin.h>
+#include <math.h>
 
 /* yes I know, the top of this file is quite ugly */
 #define ALIGN32_BEG
@@ -712,3 +713,78 @@ static inline void sincos256_ps(v8sf x, v8sf *s, v8sf *c)
     *s = _mm256_xor_ps(xmm1, sign_bit_sin);
     *c = _mm256_xor_ps(xmm2, sign_bit_cos);
 }
+
+//   x = _mm256_or_ps(x, *(v8sf *)_ps256_0p5);
+_PS256_CONST(minus2, -2.0);
+_PS256_CONST(one, -2.0);
+
+_PS256_CONST(atan2_c0, 0.00282363896258175373077393f);
+_PS256_CONST(atan2_c1, -0.0159569028764963150024414f);
+_PS256_CONST(atan2_c2, 0.0425049886107444763183594f);
+_PS256_CONST(atan2_c3, -0.0748900920152664184570312f);
+_PS256_CONST(atan2_c4, 0.106347933411598205566406f);
+_PS256_CONST(atan2_c5, -0.142027363181114196777344f);
+_PS256_CONST(atan2_c6, 0.199926957488059997558594f);
+_PS256_CONST(atan2_c7, -0.333331018686294555664062f);
+
+_PS256_CONST(atan2_mpi, M_PI);
+_PS256_CONST(atan2_mpi2, M_PI / 2.0);
+
+#define _PS256_GET_CONST(n) (*(v8sf *)_ps256_##n)
+
+#ifdef __FMA__
+#define _avxfun_fmadd(a, b, c) _mm256_fmadd_ps((a), (b), (c))
+#else
+#define _avxfun_fmadd(a, b, c) (_mm256_add_ps(_mm256_mul_ps((a), (b)), (c)))
+#endif
+
+static inline __m256 atan2_256_ps(__m256 y, __m256 x)
+{
+    __m256 sign_bit_x = _mm256_and_ps(x, *(v8sf *)_ps256_sign_mask);
+    __m256 sign_bit_y = _mm256_and_ps(y, *(v8sf *)_ps256_sign_mask);
+
+    x = _mm256_and_ps(x, *(v8sf *)_ps256_inv_sign_mask);
+    y = _mm256_and_ps(y, *(v8sf *)_ps256_inv_sign_mask);
+
+    __m256 q = _mm256_blendv_ps(_mm256_setzero_ps(), _PS256_GET_CONST(minus2), sign_bit_x);
+
+    __m256 x0 = x;
+    __m256 y0 = y;
+
+    __m256 mask = _mm256_cmp_ps(y, x, _CMP_GT_OS);
+    x = _mm256_blendv_ps(x0, y0, mask);
+    y = _mm256_blendv_ps(y0, -x0, mask);
+
+    q += _mm256_blendv_ps(_mm256_setzero_ps(), _PS256_GET_CONST(one), mask);
+
+    __m256 s = y / x;
+    __m256 t = s * s;
+
+    __m256 u = _PS256_GET_CONST(atan2_c0);
+
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c1), t, u);
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c2), t, u);
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c3), t, u);
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c4), t, u);
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c5), t, u);
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c6), t, u);
+    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c7), t, u);
+
+    t = _avxfun_fmadd(t * s, s, u);
+    t = _avxfun_fmadd(t, _PS256_GET_CONST(atan2_mpi2), q);
+
+    t = _mm256_xor_ps(t, sign_bit_x);
+
+    mask = _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_EQ_OS);
+    t = _mm256_blendv_ps(_PS256_GET_CONST(atan2_mpi2), t, mask);
+
+    __m256 xres = _mm256_blendv_ps(_mm256_setzero_ps(), _PS256_GET_CONST(atan2_mpi), sign_bit_x);
+    mask = _mm256_cmp_ps(y, _mm256_setzero_ps(), _CMP_EQ_OS);
+    t = _mm256_blendv_ps(xres, t, mask);
+
+    t = _mm256_xor_ps(t, sign_bit_y);
+
+    return t;
+}
+
+#undef _avxfun_fmadd

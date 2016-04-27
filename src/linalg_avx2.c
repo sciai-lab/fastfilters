@@ -37,11 +37,6 @@ static inline void swap(float *a, float *b)
 #error "linalg_avx2.c needs to be compiled with avx or avx2 support"
 #endif
 
-static inline __m256 atan2_256_ps(__m256 y, __m256 x)
-{
-    return _mm256_setzero_ps();
-}
-
 DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
                      const float *a22, float *ev0, float *ev1, float *ev2, const size_t len)
 {
