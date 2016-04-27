@@ -92,8 +92,7 @@ void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
 bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
-                                           const fastfilters_array2d_t *outarray, size_t x0, size_t y0, size_t x1,
-                                           size_t y1);
+                                           const fastfilters_array2d_t *outarray);
 bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
                                            const fastfilters_kernel_fir_t kernelz,

@@ -33,7 +33,7 @@ bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray,
     if (!kx)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, kx, kx, outarray, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, kx, kx, outarray);
 
 out:
     if (kx)
@@ -79,15 +79,15 @@ bool DLL_PUBLIC fastfilters_fir_hog2d(const fastfilters_array2d_t *inarray, doub
     if (!k_second)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_second, k_smooth, out_xx, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, k_second, k_smooth, out_xx);
     if (!result)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_second, out_yy, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_second, out_yy);
     if (!result)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_first, k_first, out_xy, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, k_first, k_first, out_xy);
     if (!result)
         goto out;
 
@@ -116,11 +116,11 @@ static bool fastfilters_fir_deriv2d_inner(const fastfilters_array2d_t *inarray, 
     if (!k_deriv)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_deriv, k_smooth, out0, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, k_deriv, k_smooth, out0);
     if (!result)
         goto out;
 
-    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_deriv, out1, 0, 0, 0, 0);
+    result = fastfilters_fir_convolve2d(inarray, k_smooth, k_deriv, out1);
     if (!result)
         goto out;
 

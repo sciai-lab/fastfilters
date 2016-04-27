@@ -159,44 +159,25 @@ py::array_t<float> array_like(py::array_t<float> &base)
     return result;
 }
 
-py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, unsigned x0 = 0,
-                                   unsigned y0 = 0, unsigned x1 = 0, unsigned y1 = 0)
+py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1)
 {
     fastfilters_array2d_t ff;
     fastfilters_array2d_t ff_out;
 
     py::array_t<float> result;
 
-    if (x0 == 0 && x1 == 0 && y0 == 0 && y1 == 0)
-        result = array_like(input);
-    else {
-        py::buffer_info input_info = input.request();
-        size_t n_x = x1 - x0;
-        size_t n_y = y1 - y0;
-
-        if (input_info.ndim == 2)
-            result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
-                                               {n_y, n_x}, {sizeof(float) * n_x, sizeof(float)}));
-        else if (input_info.ndim == 3)
-            result = py::array(py::buffer_info(
-                nullptr, sizeof(float), py::format_descriptor<float>::value(), 2, {n_y, n_x, input_info.shape[2]},
-                {sizeof(float) * n_x * input_info.strides[2], input_info.strides[2], input_info.strides[1]}));
-        else
-            throw std::logic_error("Not implemented.");
-    }
+    result = array_like(input);
 
     convert_py2ff(input, ff);
     convert_py2ff(result, ff_out);
 
-    if (!fastfilters_fir_convolve2d(&ff, k0->kernel, k1->kernel, &ff_out, x0, y0, x1, y1))
+    if (!fastfilters_fir_convolve2d(&ff, k0->kernel, k1->kernel, &ff_out))
         throw std::logic_error("fastfilters_fir_convolve2d returned false.");
 
     return result;
 }
 
-py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2,
-                                   unsigned x0 = 0, unsigned y0 = 0, unsigned z0 = 0, unsigned x1 = 0, unsigned y1 = 0,
-                                   unsigned z1 = 0)
+py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2)
 {
     fastfilters_array3d_t ff;
     convert_py2ff(input, ff);
@@ -211,27 +192,6 @@ py::array_t<float> convolve_fir(py::array_t<float> &input, std::vector<FIRKernel
         return convolve_3d_fir(input, k[0], k[1], k[2]);
     else
         throw std::logic_error("Invalid number of dimensions.");
-}
-
-py::array_t<float> convolve_fir_roi2d(py::array_t<float> &input, std::vector<FIRKernel *> k,
-                                      std::pair<std::pair<unsigned, unsigned>, std::pair<unsigned, unsigned>> roi)
-{
-    if (k.size() != 2)
-        throw std::logic_error("Kernel number (2) and ROI shape mismatch.");
-
-    return convolve_2d_fir(input, k[0], k[1], roi.first.first, roi.first.second, roi.second.first, roi.second.second);
-}
-
-py::array_t<float>
-convolve_fir_roi3d(py::array_t<float> &input, std::vector<FIRKernel *> k,
-                   std::pair<std::tuple<unsigned, unsigned, unsigned>, std::tuple<unsigned, unsigned, unsigned>> roi)
-{
-    if (k.size() != 3)
-        throw std::logic_error("Kernel number (3) and ROI shape mismatch.");
-
-    return convolve_3d_fir(input, k[0], k[1], k[2], std::get<0>(roi.first), std::get<1>(roi.first),
-                           std::get<2>(roi.first), std::get<0>(roi.second), std::get<1>(roi.second),
-                           std::get<2>(roi.second));
 }
 
 struct ConvolveGaussian {
@@ -412,8 +372,6 @@ PYBIND11_PLUGIN(fastfilters)
 
     m_fastfilters.def("linalg_ev2d", &linalg_ev2d);
     m_fastfilters.def("convolve_fir", &convolve_fir, py::arg("input"), py::arg("kernels"));
-    m_fastfilters.def("convolve_fir", &convolve_fir_roi2d, py::arg("input"), py::arg("kernels"), py::arg("roi"));
-    m_fastfilters.def("convolve_fir", &convolve_fir_roi3d, py::arg("input"), py::arg("kernels"), py::arg("roi"));
 
     m_fastfilters.def("gaussian2d", &gaussian2d);
     m_fastfilters.def("gaussian3d", &gaussian3d);

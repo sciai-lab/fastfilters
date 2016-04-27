@@ -19,6 +19,8 @@ for order in [0,1,2]:
 		res_ff = ff.gaussian2d(a, order, sigma)
 		res_vigra = vigra.filters.gaussianDerivative(a, sigma, [order,order])
 
+		print("gaussian ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
+
 		if not np.allclose(res_ff, res_vigra, atol=1e-6):
 			raise Exception("FAIL: ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
 
