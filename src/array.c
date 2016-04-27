@@ -52,3 +52,39 @@ DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v)
     fastfilters_memory_free(v->ptr);
     fastfilters_memory_free(v);
 }
+
+DLL_PUBLIC fastfilters_array3d_t *fastfilters_array3d_alloc(size_t n_x, size_t n_y, size_t n_z, size_t channels)
+{
+    fastfilters_array3d_t *result = NULL;
+
+    result = fastfilters_memory_alloc(sizeof(*result));
+    if (!result)
+        goto error_out;
+
+    result->n_x = n_x;
+    result->n_y = n_y;
+    result->n_z = n_z;
+    result->stride_x = channels;
+    result->stride_y = channels * n_x;
+    result->stride_z = channels * n_x * n_y;
+    result->n_channels = channels;
+    result->ptr = fastfilters_memory_alloc(channels * n_y * n_x * n_z * sizeof(float));
+    if (!result->ptr)
+        goto error_out;
+
+    return result;
+
+error_out:
+    if (result) {
+        if (result->ptr)
+            fastfilters_memory_free(result->ptr);
+        fastfilters_memory_free(result);
+    }
+    return NULL;
+}
+
+DLL_PUBLIC void fastfilters_array3d_free(fastfilters_array3d_t *v)
+{
+    fastfilters_memory_free(v->ptr);
+    fastfilters_memory_free(v);
+}

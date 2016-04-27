@@ -114,6 +114,9 @@ void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const 
 DLL_PUBLIC fastfilters_array2d_t *fastfilters_array2d_alloc(size_t n_x, size_t n_y, size_t channels);
 DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v);
 
+DLL_PUBLIC fastfilters_array3d_t *fastfilters_array3d_alloc(size_t n_x, size_t n_y, size_t n_z, size_t channels);
+DLL_PUBLIC void fastfilters_array3d_free(fastfilters_array3d_t *v);
+
 bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray, unsigned order, double sigma,
                                            fastfilters_array2d_t *outarray);
 bool DLL_PUBLIC fastfilters_fir_gaussian3d(const fastfilters_array3d_t *inarray, unsigned order, double sigma,
