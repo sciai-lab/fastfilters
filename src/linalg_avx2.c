@@ -50,6 +50,7 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
     __m256 v_root3 = _mm256_sqrt_ps(_mm256_set1_ps(3.0));
     __m256 two = _mm256_set1_ps(2.0);
     __m256 half = _mm256_set1_ps(0.5);
+    __m256 zero = _mm256_setzero_ps();
 
     for (size_t i = 0; i < avx_end; i += 8) {
         __m256 v_a00 = _mm256_loadu_ps(a00 + i);
@@ -66,14 +67,12 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 c2Div3 = c2 * v_inv3;
         __m256 aDiv3 = (c1 - c2 * c2Div3) * v_inv3;
 
-        // if (aDiv3 > 0.0)
-        //    aDiv3 = 0.0;
+        aDiv3 = _mm256_min_ps(aDiv3, zero);
 
         __m256 mbDiv2 = half * (c0 + c2Div3 * (two * c2Div3 * c2Div3 - c1));
         __m256 q = mbDiv2 * mbDiv2 + aDiv3 * aDiv3 * aDiv3;
 
-        // if (q > 0.0)
-        //    q = 0.0;
+        q = _mm256_max_ps(q, zero);
 
         __m256 magnitude = _mm256_sqrt_ps(-aDiv3);
         __m256 angle = atan2_256_ps(_mm256_sqrt_ps(-q), mbDiv2) * v_inv3;
