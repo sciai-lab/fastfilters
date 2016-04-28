@@ -127,10 +127,10 @@ static inline void swap(float *a, float *b)
 static void _ev3d_default(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
                           const float *a22, float *ev0, float *ev1, float *ev2, const size_t len)
 {
-    for (size_t i = 0; i < len; ++i) {
-        float inv3 = 1.0 / 3.0;
-        float root3 = sqrt(3.0);
+    const float inv3 = 1.0 / 3.0;
+    const float root3 = sqrt(3.0);
 
+    for (size_t i = 0; i < len; ++i) {
         float c0 = a00[i] * a11[i] * a22[i] + 2.0 * a01[i] * a02[i] * a12[i] - a00[i] * a12[i] * a12[i] -
                    a11[i] * a02[i] * a02[i] - a22[i] * a01[i] * a01[i];
         float c1 =
@@ -196,7 +196,7 @@ static void _combine_addsqrt_default(const float *a, const float *b, float *c, s
 static void _combine_addsqrt3_default(const float *a, const float *b, const float *c, float *res, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
-        res[i] = cbrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
+        res[i] = sqrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
 }
 
 static ev2d_fn_t g_ev2d_fn = NULL;
@@ -226,9 +226,9 @@ void fastfilters_linalg_init()
     }
 
     if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX2)) {
-        g_ev3d_fn = _ev3d_default;
+        g_ev3d_fn = _ev3d_avx2;
     } else if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
-        g_ev3d_fn = _ev3d_default;
+        g_ev3d_fn = _ev3d_avx;
     } else {
         g_ev3d_fn = _ev3d_default;
     }
@@ -263,6 +263,12 @@ void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const 
                                           fastfilters_array2d_t *out)
 {
     g_combine_mul(a->ptr, b->ptr, out->ptr, a->n_y * a->stride_y);
+}
+
+void DLL_PUBLIC fastfilters_combine_mul3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                          fastfilters_array3d_t *out)
+{
+    g_combine_mul(a->ptr, b->ptr, out->ptr, a->n_z * a->stride_z);
 }
 
 void DLL_PUBLIC fastfilters_combine_add3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,

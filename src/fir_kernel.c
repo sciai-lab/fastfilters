@@ -55,7 +55,8 @@
 #include "fastfilters.h"
 #include "common.h"
 
-fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma)
+fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma,
+                                                                    float window_ratio)
 {
     double norm;
     double sigma2 = -0.5 / sigma / sigma;
@@ -70,8 +71,12 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
     if (!kernel)
         return NULL;
 
+    if (window_ratio > 0)
+        kernel->len = floor(window_ratio * sigma + 0.5);
+    else
+        kernel->len = floor(3.0 * sigma + 0.5 * order + 0.5); // FIXME: this is the formula currently used by vigra
     // kernel->len = ceil((3.0 + 0.5 * (double)order) * sigma);
-    kernel->len = floor(3.0 * sigma + 0.5 * order + 0.5);
+
     kernel->coefs = fastfilters_memory_alloc(sizeof(float) * (kernel->len + 1));
     if (!kernel->coefs) {
         fastfilters_memory_free(kernel);
@@ -147,6 +152,10 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
 
     for (unsigned int x = 0; x <= kernel->len; ++x)
         kernel->coefs[x] /= sum;
+
+    if (!kernel->is_symmetric)
+        for (unsigned int x = 0; x <= kernel->len; ++x)
+            kernel->coefs[x] *= -1;
 
     kernel->fn_inner_mirror = NULL;
     kernel->fn_inner_ptr = NULL;
