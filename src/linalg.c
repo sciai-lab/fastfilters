@@ -196,7 +196,7 @@ static void _combine_addsqrt_default(const float *a, const float *b, float *c, s
 static void _combine_addsqrt3_default(const float *a, const float *b, const float *c, float *res, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
-        res[i] = cbrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
+        res[i] = sqrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
 }
 
 static ev2d_fn_t g_ev2d_fn = NULL;

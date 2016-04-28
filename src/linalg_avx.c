@@ -168,11 +168,11 @@ void DLL_LOCAL _combine_addsqrt3_avx(const float *a, const float *b, const float
 
         __m256 sum = _mm256_add_ps(_mm256_add_ps(va, vb), vc);
 
-        _mm256_storeu_ps(res + i, mm256_cbrt_ps(sum));
+        _mm256_storeu_ps(res + i, _mm256_sqrt_ps(sum));
     }
 
     for (size_t i = avx_end; i < len; i++)
-        res[i] = cbrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
+        res[i] = sqrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
 }
 
 void DLL_LOCAL _combine_mul_avx(const float *a, const float *b, float *c, size_t len)

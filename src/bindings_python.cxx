@@ -180,8 +180,19 @@ py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIR
 py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2)
 {
     fastfilters_array3d_t ff;
+    fastfilters_array3d_t ff_out;
+
+    py::array_t<float> result;
+
+    result = array_like(input);
+
     convert_py2ff(input, ff);
-    throw std::logic_error("3D unsupported.");
+    convert_py2ff(result, ff_out);
+
+    if (!fastfilters_fir_convolve3d(&ff, k0->kernel, k1->kernel, k2->kernel, &ff_out, NULL))
+        throw std::logic_error("fastfilters_fir_convolve3d returned false.");
+
+    return result;
 }
 
 py::array_t<float> convolve_fir(py::array_t<float> &input, std::vector<FIRKernel *> k)
@@ -259,7 +270,7 @@ struct ConvolveLaPlacian : ConvolveBase {
 
     bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
     {
-        return fastfilters_fir_gradmag3d(&in, sigma, &out, &opt);
+        return fastfilters_fir_laplacian3d(&in, sigma, &out, &opt);
     }
 };
 

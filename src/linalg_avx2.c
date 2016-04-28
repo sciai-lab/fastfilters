@@ -88,9 +88,9 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 v_r1 = _mm256_min_ps(v_r1_tmp, v_r2_tmp);
         __m256 v_r2 = _mm256_max_ps(v_r1_tmp, v_r2_tmp);
 
-        _mm256_storeu_ps(ev0 + i, v_r0);
+        _mm256_storeu_ps(ev2 + i, v_r0);
         _mm256_storeu_ps(ev1 + i, v_r1);
-        _mm256_storeu_ps(ev2 + i, v_r2);
+        _mm256_storeu_ps(ev0 + i, v_r2);
     }
 
     for (size_t i = avx_end; i < len; ++i) {
