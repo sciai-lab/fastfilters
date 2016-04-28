@@ -67,7 +67,7 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 mbDiv2 = half * (c0 + c2Div3 * (two * c2Div3 * c2Div3 - c1));
         __m256 q = mbDiv2 * mbDiv2 + aDiv3 * aDiv3 * aDiv3;
 
-        q = _mm256_max_ps(q, zero);
+        q = _mm256_min_ps(q, zero);
 
         __m256 magnitude = _mm256_sqrt_ps(-aDiv3);
         __m256 angle = atan2_256_ps(_mm256_sqrt_ps(-q), mbDiv2) * v_inv3;
