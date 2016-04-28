@@ -127,10 +127,10 @@ static inline void swap(float *a, float *b)
 static void _ev3d_default(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
                           const float *a22, float *ev0, float *ev1, float *ev2, const size_t len)
 {
-    for (size_t i = 0; i < len; ++i) {
-        float inv3 = 1.0 / 3.0;
-        float root3 = sqrt(3.0);
+    const float inv3 = 1.0 / 3.0;
+    const float root3 = sqrt(3.0);
 
+    for (size_t i = 0; i < len; ++i) {
         float c0 = a00[i] * a11[i] * a22[i] + 2.0 * a01[i] * a02[i] * a12[i] - a00[i] * a12[i] * a12[i] -
                    a11[i] * a02[i] * a02[i] - a22[i] * a01[i] * a01[i];
         float c1 =

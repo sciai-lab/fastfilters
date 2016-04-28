@@ -392,10 +392,12 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::arr
 
     float *outptr = (float *)info_out.ptr;
     float *ev0 = outptr;
-    float *ev1 = outptr + info_out.strides[0] / sizeof(float);
-    float *ev2 = outptr + 2 * info_out.strides[0] / sizeof(float);
+    float *ev1 = outptr + n_pixels;
+    float *ev2 = outptr + 2 * n_pixels;
 
-    fastfilters_linalg_ev3d(xx, xy, xz, yy, yz, zz, ev0, ev1, ev2, n_pixels);
+    fastfilters_linalg_ev3d(zz, yz, xz, yy, xy, xx, ev0, ev1, ev2, n_pixels);
+    // fastfilters_linalg_ev3d(xx, xy, yy, xz, yz, zz, ev0, ev1, ev2, n_pixels);
+    // fastfilters_linalg_ev3d(xx, xy, xz, yy, yz, zz, ev0, ev1, ev2, n_pixels);
 
     return result;
 }
