@@ -44,21 +44,19 @@ for sigma in sigmas:
 for sigma in sigmas:
 	res_ff = ff.hog3d(a, sigma)
 	res_vigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma).reshape((-1,3)).swapaxes(0,1)
-	print("HOG", sigma, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
+	print("HOG", sigma, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
 	if np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra) > 1e-6 or np.any(np.isnan(np.abs(res_ff - res_vigra))):
-		raise Exception("FAIL: HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
+		raise Exception("FAIL: HOG", sigma, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
-'''
 for sigma in sigmas:
 	for sigma2 in sigmas:
 		res_ff = ff.st3d(a, sigma2, sigma)
-		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2).reshape((-1,2)).swapaxes(0,1)
-		print("ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
+		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2).reshape((-1,3)).swapaxes(0,1)
+		print("ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
-		if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
-			raise Exception("FAIL: ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
-'''
+		if np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra) > 1e-5 or np.any(np.isnan(np.abs(res_ff - res_vigra))):
+			raise Exception("FAIL: ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
 with open(sys.argv[1], 'w') as f:
 	f.write('')

@@ -121,6 +121,8 @@ void DLL_PUBLIC fastfilters_combine_addsqrt3d(const fastfilters_array3d_t *a, co
 
 void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const fastfilters_array2d_t *b,
                                           fastfilters_array2d_t *out);
+void DLL_PUBLIC fastfilters_combine_mul3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                          fastfilters_array3d_t *out);
 
 DLL_PUBLIC fastfilters_array2d_t *fastfilters_array2d_alloc(size_t n_x, size_t n_y, size_t channels);
 DLL_PUBLIC void fastfilters_array2d_free(fastfilters_array2d_t *v);
@@ -155,6 +157,11 @@ bool DLL_PUBLIC fastfilters_fir_structure_tensor2d(const fastfilters_array2d_t *
                                                    double sigma_inner, fastfilters_array2d_t *out_xx,
                                                    fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy,
                                                    const fastfilters_options_t *options);
+bool DLL_PUBLIC fastfilters_fir_structure_tensor3d(const fastfilters_array3d_t *inarray, double sigma_outer,
+                                                   double sigma_inner, fastfilters_array3d_t *out_xx,
+                                                   fastfilters_array3d_t *out_yy, fastfilters_array3d_t *out_zz,
+                                                   fastfilters_array3d_t *out_xy, fastfilters_array3d_t *out_xz,
+                                                   fastfilters_array3d_t *out_yz, const fastfilters_options_t *options);
 #ifdef __cplusplus
 }
 #endif

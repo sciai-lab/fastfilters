@@ -357,3 +357,77 @@ bool DLL_PUBLIC fastfilters_fir_laplacian3d(const fastfilters_array3d_t *inarray
 {
     return fastfilters_fir_deriv3d(inarray, sigma, 2, outarray, false, options);
 }
+
+bool DLL_PUBLIC fastfilters_fir_structure_tensor3d(const fastfilters_array3d_t *inarray, double sigma_outer,
+                                                   double sigma_inner, fastfilters_array3d_t *out_xx,
+                                                   fastfilters_array3d_t *out_yy, fastfilters_array3d_t *out_zz,
+                                                   fastfilters_array3d_t *out_xy, fastfilters_array3d_t *out_xz,
+                                                   fastfilters_array3d_t *out_yz, const fastfilters_options_t *options)
+{
+    bool result = false;
+    fastfilters_array3d_t *tmpx = NULL;
+    fastfilters_array3d_t *tmpy = NULL;
+    fastfilters_array3d_t *tmpz = NULL;
+    fastfilters_array3d_t *tmp = NULL;
+
+    tmp = fastfilters_array3d_alloc(inarray->n_x, inarray->n_y, inarray->n_z, inarray->n_channels);
+    if (!tmp)
+        goto out;
+
+    tmpx = fastfilters_array3d_alloc(inarray->n_x, inarray->n_y, inarray->n_z, inarray->n_channels);
+    if (!tmpx)
+        goto out;
+
+    tmpy = fastfilters_array3d_alloc(inarray->n_x, inarray->n_y, inarray->n_z, inarray->n_channels);
+    if (!tmpy)
+        goto out;
+
+    tmpz = fastfilters_array3d_alloc(inarray->n_x, inarray->n_y, inarray->n_z, inarray->n_channels);
+    if (!tmpz)
+        goto out;
+
+    result = fastfilters_fir_deriv3d_inner(inarray, sigma_inner, 1, tmpx, tmpy, tmpz, options);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul3d(tmpx, tmpx, tmp);
+    result = fastfilters_fir_gaussian3d(tmp, 0, sigma_outer, out_xx, options);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul3d(tmpy, tmpy, tmp);
+    result = fastfilters_fir_gaussian3d(tmp, 0, sigma_outer, out_yy, options);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul3d(tmpz, tmpz, tmp);
+    result = fastfilters_fir_gaussian3d(tmp, 0, sigma_outer, out_zz, options);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul3d(tmpx, tmpy, tmp);
+    result = fastfilters_fir_gaussian3d(tmp, 0, sigma_outer, out_xy, options);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul3d(tmpx, tmpz, tmp);
+    result = fastfilters_fir_gaussian3d(tmp, 0, sigma_outer, out_xz, options);
+    if (!result)
+        goto out;
+
+    fastfilters_combine_mul3d(tmpy, tmpz, tmp);
+    result = fastfilters_fir_gaussian3d(tmp, 0, sigma_outer, out_yz, options);
+    if (!result)
+        goto out;
+
+out:
+    if (tmp)
+        fastfilters_array3d_free(tmp);
+    if (tmpx)
+        fastfilters_array3d_free(tmpx);
+    if (tmpy)
+        fastfilters_array3d_free(tmpy);
+    if (tmpz)
+        fastfilters_array3d_free(tmpz);
+    return result;
+}

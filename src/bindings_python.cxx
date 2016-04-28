@@ -312,7 +312,7 @@ struct ConvolveST : ConvolveBase {
                     fastfilters_array3d_t &zz, fastfilters_array3d_t &xy, fastfilters_array3d_t &xz,
                     fastfilters_array3d_t &yz)
     {
-        throw std::logic_error("st3d not implemented.");
+        return fastfilters_fir_structure_tensor3d(&in, sigma_inner, sigma_outer, &xx, &yy, &zz, &xy, &xz, &yz, &opt);
     }
 };
 

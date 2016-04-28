@@ -265,6 +265,12 @@ void DLL_PUBLIC fastfilters_combine_mul2d(const fastfilters_array2d_t *a, const 
     g_combine_mul(a->ptr, b->ptr, out->ptr, a->n_y * a->stride_y);
 }
 
+void DLL_PUBLIC fastfilters_combine_mul3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
+                                          fastfilters_array3d_t *out)
+{
+    g_combine_mul(a->ptr, b->ptr, out->ptr, a->n_z * a->stride_z);
+}
+
 void DLL_PUBLIC fastfilters_combine_add3d(const fastfilters_array3d_t *a, const fastfilters_array3d_t *b,
                                           const fastfilters_array3d_t *c, fastfilters_array3d_t *out)
 {
