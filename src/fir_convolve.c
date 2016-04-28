@@ -46,8 +46,9 @@ void fastfilters_fir_init(void)
 
 bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
-                                           const fastfilters_array2d_t *outarray)
+                                           const fastfilters_array2d_t *outarray, const fastfilters_options_t *options)
 {
+    (void)options;
     if (!g_convolve_inner(inarray->ptr, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y, outarray->ptr,
                           outarray->stride_y, kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL, NULL,
                           0))
@@ -61,8 +62,9 @@ bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray,
 bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
                                            const fastfilters_kernel_fir_t kernelz,
-                                           const fastfilters_array3d_t *outarray)
+                                           const fastfilters_array3d_t *outarray, const fastfilters_options_t *options)
 {
+    (void)options;
     for (size_t z = 0; z < inarray->n_z; ++z) {
         const float *planeptr = inarray->ptr + z * inarray->stride_z;
         float *planeptr_out = outarray->ptr + z * outarray->stride_z;

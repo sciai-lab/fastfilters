@@ -77,6 +77,10 @@ typedef struct _fastfilters_array3d_t {
     size_t n_channels;
 } fastfilters_array3d_t;
 
+typedef struct _fastfilters_options_t {
+    float window_ratio;
+} fastfilters_options_t;
+
 typedef void *(*fastfilters_alloc_fn_t)(size_t size);
 typedef void (*fastfilters_free_fn_t)(void *);
 
@@ -86,17 +90,18 @@ void DLL_PUBLIC fastfilters_init_ex(fastfilters_alloc_fn_t alloc_fn, fastfilters
 bool DLL_PUBLIC fastfilters_cpu_check(fastfilters_cpu_feature_t feature);
 bool DLL_PUBLIC fastfilters_cpu_enable(fastfilters_cpu_feature_t feature, bool enable);
 
-fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma);
+fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int order, double sigma,
+                                                                    float window_ratio);
 unsigned int DLL_PUBLIC fastfilters_kernel_fir_get_length(fastfilters_kernel_fir_t kernel);
 void DLL_PUBLIC fastfilters_kernel_fir_free(fastfilters_kernel_fir_t kernel);
 
 bool DLL_PUBLIC fastfilters_fir_convolve2d(const fastfilters_array2d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
-                                           const fastfilters_array2d_t *outarray);
+                                           const fastfilters_array2d_t *outarray, const fastfilters_options_t *options);
 bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray, const fastfilters_kernel_fir_t kernelx,
                                            const fastfilters_kernel_fir_t kernely,
                                            const fastfilters_kernel_fir_t kernelz,
-                                           const fastfilters_array3d_t *outarray);
+                                           const fastfilters_array3d_t *outarray, const fastfilters_options_t *options);
 
 void DLL_PUBLIC fastfilters_linalg_ev2d(const float *xx, const float *xy, const float *yy, float *ev_small,
                                         float *ev_big, const size_t len);
@@ -124,30 +129,32 @@ DLL_PUBLIC fastfilters_array3d_t *fastfilters_array3d_alloc(size_t n_x, size_t n
 DLL_PUBLIC void fastfilters_array3d_free(fastfilters_array3d_t *v);
 
 bool DLL_PUBLIC fastfilters_fir_gaussian2d(const fastfilters_array2d_t *inarray, unsigned order, double sigma,
-                                           fastfilters_array2d_t *outarray);
+                                           fastfilters_array2d_t *outarray, const fastfilters_options_t *options);
 bool DLL_PUBLIC fastfilters_fir_gaussian3d(const fastfilters_array3d_t *inarray, unsigned order, double sigma,
-                                           fastfilters_array3d_t *outarray);
+                                           fastfilters_array3d_t *outarray, const fastfilters_options_t *options);
 
 bool DLL_PUBLIC fastfilters_fir_hog2d(const fastfilters_array2d_t *inarray, double sigma, fastfilters_array2d_t *out_xx,
-                                      fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy);
+                                      fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy,
+                                      const fastfilters_options_t *options);
 DLL_PUBLIC bool fastfilters_fir_hog3d(const fastfilters_array3d_t *inarray, double sigma, fastfilters_array3d_t *out_xx,
                                       fastfilters_array3d_t *out_yy, fastfilters_array3d_t *out_zz,
                                       fastfilters_array3d_t *out_xy, fastfilters_array3d_t *out_xz,
-                                      fastfilters_array3d_t *out_yz);
+                                      fastfilters_array3d_t *out_yz, const fastfilters_options_t *options);
 
 bool DLL_PUBLIC fastfilters_fir_gradmag2d(const fastfilters_array2d_t *inarray, double sigma,
-                                          fastfilters_array2d_t *outarray);
+                                          fastfilters_array2d_t *outarray, const fastfilters_options_t *options);
 bool DLL_PUBLIC fastfilters_fir_gradmag3d(const fastfilters_array3d_t *inarray, double sigma,
-                                          fastfilters_array3d_t *outarray);
+                                          fastfilters_array3d_t *outarray, const fastfilters_options_t *options);
 
 bool DLL_PUBLIC fastfilters_fir_laplacian2d(const fastfilters_array2d_t *inarray, double sigma,
-                                            fastfilters_array2d_t *outarray);
+                                            fastfilters_array2d_t *outarray, const fastfilters_options_t *options);
 bool DLL_PUBLIC fastfilters_fir_laplacian3d(const fastfilters_array3d_t *inarray, double sigma,
-                                            fastfilters_array3d_t *outarray);
+                                            fastfilters_array3d_t *outarray, const fastfilters_options_t *options);
 
-bool DLL_PUBLIC fastfilters_fir_structure_tensor(const fastfilters_array2d_t *inarray, double sigma_outer,
-                                                 double sigma_inner, fastfilters_array2d_t *out_xx,
-                                                 fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy);
+bool DLL_PUBLIC fastfilters_fir_structure_tensor2d(const fastfilters_array2d_t *inarray, double sigma_outer,
+                                                   double sigma_inner, fastfilters_array2d_t *out_xx,
+                                                   fastfilters_array2d_t *out_xy, fastfilters_array2d_t *out_yy,
+                                                   const fastfilters_options_t *options);
 #ifdef __cplusplus
 }
 #endif

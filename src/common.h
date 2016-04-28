@@ -133,6 +133,14 @@ bool DLL_LOCAL fastfilters_fir_convolve_fir_outer_avxfma(const float *inptr, siz
                                                          fastfilters_border_treatment_t right_border,
                                                          const float *borderptr_left, const float *borderptr_right,
                                                          size_t border_outer_stride);
+
+static inline double opt_window_ratio(const fastfilters_options_t *options)
+{
+    if (!options)
+        return 0.0;
+    return options->window_ratio;
+}
+
 #ifdef __cplusplus
 }
 #endif
