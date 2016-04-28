@@ -719,7 +719,7 @@ static inline void sincos256_ps(v8sf x, v8sf *s, v8sf *c)
 
 //   x = _mm256_or_ps(x, *(v8sf *)_ps256_0p5);
 _PS256_CONST(minus2, -2.0);
-_PS256_CONST(one, -2.0);
+_PS256_CONST(one, 1.0);
 
 _PS256_CONST(atan2_c0, 0.00282363896258175373077393f);
 _PS256_CONST(atan2_c1, -0.0159569028764963150024414f);
@@ -741,6 +741,26 @@ _PS256_CONST(atan2_mpi2, M_PI / 2.0);
 #define _avxfun_fmadd(a, b, c) (_mm256_add_ps(_mm256_mul_ps((a), (b)), (c)))
 #endif
 
+// https://github.com/hfinkel/sleef-bgq/blob/df6154525243b899b81d25962aa337fc9a94b2ba/purec/sleefdp.c#L442
+/*
+In this library, functions for evaluating some elementary functions
+are implemented. The algorithm is intentended for efficient evaluation
+utilizing SIMD instruction sets like SSE or AVX, but it is also fast
+using usual scalar operations.
+
+The package contains a few directories in which implementation in the
+corresponding languages are contained. You can run "make test" in
+order to test the functions in each directory.
+
+The software is in public domain. You can use the software without any
+obligation.
+
+
+Author : Naoki Shibata
+
+Main download page : http://shibatch.sourceforge.net/
+*/
+
 static inline __m256 atan2_256_ps(__m256 y, __m256 x)
 {
     __m256 sign_bit_x = _mm256_and_ps(x, *(v8sf *)_ps256_sign_mask);
@@ -755,6 +775,7 @@ static inline __m256 atan2_256_ps(__m256 y, __m256 x)
     __m256 y0 = y;
 
     __m256 mask = _mm256_cmp_ps(y, x, _CMP_GT_OS);
+
     x = _mm256_blendv_ps(x0, y0, mask);
     y = _mm256_blendv_ps(y0, -x0, mask);
 
@@ -765,25 +786,25 @@ static inline __m256 atan2_256_ps(__m256 y, __m256 x)
 
     __m256 u = _PS256_GET_CONST(atan2_c0);
 
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c1), t, u);
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c2), t, u);
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c3), t, u);
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c4), t, u);
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c5), t, u);
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c6), t, u);
-    u = _avxfun_fmadd(_PS256_GET_CONST(atan2_c7), t, u);
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c1));
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c2));
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c3));
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c4));
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c5));
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c6));
+    u = _avxfun_fmadd(t, u, _PS256_GET_CONST(atan2_c7));
 
-    t = _avxfun_fmadd(t * s, s, u);
-    t = _avxfun_fmadd(t, _PS256_GET_CONST(atan2_mpi2), q);
+    t = _avxfun_fmadd(t * s, u, s);
+    t = _avxfun_fmadd(q, _PS256_GET_CONST(atan2_mpi2), t);
 
     t = _mm256_xor_ps(t, sign_bit_x);
 
     mask = _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_EQ_OS);
-    t = _mm256_blendv_ps(_PS256_GET_CONST(atan2_mpi2), t, mask);
+    t = _mm256_blendv_ps(t, _PS256_GET_CONST(atan2_mpi2), mask);
 
     __m256 xres = _mm256_blendv_ps(_mm256_setzero_ps(), _PS256_GET_CONST(atan2_mpi), sign_bit_x);
     mask = _mm256_cmp_ps(y, _mm256_setzero_ps(), _CMP_EQ_OS);
-    t = _mm256_blendv_ps(xres, t, mask);
+    t = _mm256_blendv_ps(t, xres, mask);
 
     t = _mm256_xor_ps(t, sign_bit_y);
 

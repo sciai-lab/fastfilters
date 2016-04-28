@@ -226,9 +226,9 @@ void fastfilters_linalg_init()
     }
 
     if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX2)) {
-        g_ev3d_fn = _ev3d_default;
+        g_ev3d_fn = _ev3d_avx2;
     } else if (fastfilters_cpu_check(FASTFILTERS_CPU_AVX)) {
-        g_ev3d_fn = _ev3d_default;
+        g_ev3d_fn = _ev3d_avx;
     } else {
         g_ev3d_fn = _ev3d_default;
     }
