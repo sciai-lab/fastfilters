@@ -459,6 +459,8 @@ PYBIND11_PLUGIN(fastfilters)
 
     fastfilters_init_ex(PyMem_Malloc, PyMem_Free);
 
+    m_fastfilters.attr("__version__") = pybind11::str("0.1");
+
     py::class_<FIRKernel>(m_fastfilters, "FIRKernel")
         .def(py::init<unsigned, double>())
         .def("len", &FIRKernel::len)
