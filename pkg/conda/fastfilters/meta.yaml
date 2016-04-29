@@ -1,10 +1,10 @@
 package:
   name: fastfilters
-  version: "0.0"
+  version: "0.1"
 
 source:
   git_url: https://github.com/svenpeter42/fastfilters
-  git_tag: ac3486c9a559c016a5c2146eb40f9f1ac0e0ff97
+  git_tag: v0.1
 
 build:
   {% set build_num = 1 %}
