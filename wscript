@@ -4,9 +4,6 @@ from waflib.Configure import conf
 from waflib.Tools import waf_unit_test
 from waflib.Build import BuildContext
 
-from waflib.Tools.c import cstlib
-cstlib.inst_to = '${LIBDIR}'
-
 VERSION='0.0.1'
 APPNAME='libfastfilters'
 
@@ -137,7 +134,7 @@ def build(bld):
 		target  = 'objs_shlib_avx2',
 		uselib  = 'cshlib cpu_avx cpu_avx2 cpu_fma')
 
-	bld.objects(
+	'''bld.objects(
 		source  = sources,
 		target  = 'objs_stlib',
 		uselib  = 'cstlib')
@@ -152,32 +149,32 @@ def build(bld):
 	bld.objects(
 		source  = sources_avx2,
 		target  = 'objs_stlib_avx2',
-		uselib  = 'cstlib cpu_avx cpu_avx2 cpu_fma')
+		uselib  = 'cstlib cpu_avx cpu_avx2 cpu_fma')'''
 
 	avx_use_st = []
 	avx_use_sh = []
 	for i in range(1,FF_UNROLL):
-		tname = 'objs_avx_st_%d' % i
+		'''tname = 'objs_avx_st_%d' % i
 		bld.objects(source="src/fir_convolve_avx_impl.c", target=tname, uselib='cstlib cpu_avx', cflags='-DFF_KERNEL_LEN=%d' % i)
-		avx_use_st.append(tname)
+		avx_use_st.append(tname)'''
 
 		tname = 'objs_avx_sh_%d' % i
 		bld.objects(source="src/fir_convolve_avx_impl.c", target=tname, uselib='cshlib cpu_avx', cflags='-DFF_KERNEL_LEN=%d' % i)
 		avx_use_sh.append(tname)
 
-		tname = 'objs_avxfma_st_%d' % i
+		'''tname = 'objs_avxfma_st_%d' % i
 		bld.objects(source="src/fir_convolve_avx_impl.c", target=tname, uselib='cstlib cpu_avx cpu_fma', cflags='-DFF_KERNEL_LEN=%d' % i)
-		avx_use_st.append(tname)
+		avx_use_st.append(tname)'''
 
 		tname = 'objs_avxfma_sh_%d' % i
 		bld.objects(source="src/fir_convolve_avx_impl.c", target=tname, uselib='cshlib cpu_avx cpu_fma', cflags='-DFF_KERNEL_LEN=%d' % i)
 		avx_use_sh.append(tname)
 
 	avx_use_sh = ' '.join(avx_use_sh)
-	avx_use_st = ' '.join(avx_use_st)
+	#avx_use_st = ' '.join(avx_use_st)
 
 	shlib = bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma objs_shlib_avx2 " + avx_use_sh, name="fastfilters_shared")
-	bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma objs_shlib_avx2 " + avx_use_st, name="fastfilters_static")
+	#bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma objs_shlib_avx2 " + avx_use_st, name="fastfilters_static")
 	pyext = bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
 
 
