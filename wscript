@@ -4,6 +4,9 @@ from waflib.Configure import conf
 from waflib.Tools import waf_unit_test
 from waflib.Build import BuildContext
 
+from waflib.Tools.c import cstlib
+cstlib.inst_to = '${LIBDIR}'
+
 VERSION='0.0.1'
 APPNAME='libfastfilters'
 
@@ -184,6 +187,8 @@ def build(bld):
 	global pyext_target, shlib_target
 	pyext_target = pyext.tasks[-1].outputs[0]
 	shlib_target = shlib.tasks[-1].outputs[0]
+
+	bld.install_files('${PREFIX}/include', ['include/fastfilters.h'])
 
 class debug(BuildContext):
         cmd = 'testimpl'
