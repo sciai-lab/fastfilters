@@ -159,9 +159,14 @@ bool DLL_PUBLIC fastfilters_fir_structure_tensor2d(const fastfilters_array2d_t *
                                                    const fastfilters_options_t *options)
 {
     bool result = false;
+    fastfilters_kernel_fir_t k_smooth = NULL;
     fastfilters_array2d_t *tmp = NULL;
     fastfilters_array2d_t *tmpx = NULL;
     fastfilters_array2d_t *tmpy = NULL;
+
+    k_smooth = fastfilters_kernel_fir_gaussian(0, sigma_outer, opt_window_ratio(options));
+    if (!k_smooth)
+        goto out;
 
     tmp = fastfilters_array2d_alloc(inarray->n_x, inarray->n_y, inarray->n_channels);
     if (!tmp)
@@ -180,21 +185,23 @@ bool DLL_PUBLIC fastfilters_fir_structure_tensor2d(const fastfilters_array2d_t *
         goto out;
 
     fastfilters_combine_mul2d(tmpx, tmpx, tmp);
-    result = fastfilters_fir_gaussian2d(tmp, 0, sigma_outer, out_xx, options);
+    result = fastfilters_fir_convolve2d(tmp, k_smooth, k_smooth, out_xx, options);
     if (!result)
         goto out;
 
     fastfilters_combine_mul2d(tmpy, tmpy, tmp);
-    result = fastfilters_fir_gaussian2d(tmp, 0, sigma_outer, out_yy, options);
+    result = fastfilters_fir_convolve2d(tmp, k_smooth, k_smooth, out_yy, options);
     if (!result)
         goto out;
 
     fastfilters_combine_mul2d(tmpx, tmpy, tmp);
-    result = fastfilters_fir_gaussian2d(tmp, 0, sigma_outer, out_xy, options);
+    result = fastfilters_fir_convolve2d(tmp, k_smooth, k_smooth, out_xy, options);
     if (!result)
         goto out;
 
 out:
+    if (k_smooth)
+        fastfilters_kernel_fir_free(k_smooth);
     if (tmp)
         fastfilters_array2d_free(tmp);
     if (tmpx)
