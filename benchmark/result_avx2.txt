@@ -1,0 +1,142 @@
+Timing gaussian 2D with order = 0 and sigma = 1:  vigra = 0.669947, ff = 0.058488 --> speedup: 11.454435
+Timing gaussian 2D with order = 0 and sigma = 2:  vigra = 0.893767, ff = 0.079654 --> speedup: 11.220617
+Timing gaussian 2D with order = 0 and sigma = 3:  vigra = 1.117861, ff = 0.102961 --> speedup: 10.857130
+Timing gaussian 2D with order = 0 and sigma = 4:  vigra = 1.337184, ff = 0.146013 --> speedup: 9.157979
+Timing gaussian 2D with order = 0 and sigma = 5:  vigra = 1.728267, ff = 0.174051 --> speedup: 9.929659
+Timing gaussian 2D with order = 0 and sigma = 6:  vigra = 2.131161, ff = 0.217369 --> speedup: 9.804347
+Timing gaussian 2D with order = 0 and sigma = 7:  vigra = 2.315393, ff = 0.249682 --> speedup: 9.273368
+Timing gaussian 2D with order = 0 and sigma = 8:  vigra = 2.641589, ff = 0.301614 --> speedup: 8.758178
+Timing gaussian 2D with order = 0 and sigma = 9:  vigra = 3.192751, ff = 0.352482 --> speedup: 9.057912
+Timing gaussian 2D with order = 0 and sigma = 10:  vigra = 3.525350, ff = 0.390741 --> speedup: 9.022217
+Timing gaussian 2D with order = 1 and sigma = 1:  vigra = 0.747718, ff = 0.068914 --> speedup: 10.850016
+Timing gaussian 2D with order = 1 and sigma = 2:  vigra = 0.968740, ff = 0.086857 --> speedup: 11.153275
+Timing gaussian 2D with order = 1 and sigma = 3:  vigra = 1.195654, ff = 0.127646 --> speedup: 9.366952
+Timing gaussian 2D with order = 1 and sigma = 4:  vigra = 1.442770, ff = 0.154143 --> speedup: 9.359945
+Timing gaussian 2D with order = 1 and sigma = 5:  vigra = 1.807355, ff = 0.188183 --> speedup: 9.604242
+Timing gaussian 2D with order = 1 and sigma = 6:  vigra = 2.233185, ff = 0.223595 --> speedup: 9.987634
+Timing gaussian 2D with order = 1 and sigma = 7:  vigra = 2.410018, ff = 0.257665 --> speedup: 9.353300
+Timing gaussian 2D with order = 1 and sigma = 8:  vigra = 2.738627, ff = 0.312811 --> speedup: 8.754894
+Timing gaussian 2D with order = 1 and sigma = 9:  vigra = 3.228419, ff = 0.353191 --> speedup: 9.140717
+Timing gaussian 2D with order = 1 and sigma = 10:  vigra = 3.539825, ff = 0.410840 --> speedup: 8.616067
+Timing gaussian 2D with order = 2 and sigma = 1:  vigra = 0.746496, ff = 0.069054 --> speedup: 10.810322
+Timing gaussian 2D with order = 2 and sigma = 2:  vigra = 0.963369, ff = 0.088169 --> speedup: 10.926391
+Timing gaussian 2D with order = 2 and sigma = 3:  vigra = 1.196829, ff = 0.127308 --> speedup: 9.401051
+Timing gaussian 2D with order = 2 and sigma = 4:  vigra = 1.436034, ff = 0.155882 --> speedup: 9.212314
+Timing gaussian 2D with order = 2 and sigma = 5:  vigra = 1.804936, ff = 0.192570 --> speedup: 9.372883
+Timing gaussian 2D with order = 2 and sigma = 6:  vigra = 2.227624, ff = 0.224955 --> speedup: 9.902532
+Timing gaussian 2D with order = 2 and sigma = 7:  vigra = 2.419625, ff = 0.262553 --> speedup: 9.215758
+Timing gaussian 2D with order = 2 and sigma = 8:  vigra = 2.740619, ff = 0.313565 --> speedup: 8.740194
+Timing gaussian 2D with order = 2 and sigma = 9:  vigra = 3.225384, ff = 0.357524 --> speedup: 9.021448
+Timing gaussian 2D with order = 2 and sigma = 10:  vigra = 3.537067, ff = 0.419245 --> speedup: 8.436754
+Timing gradient magnitude 2D with sigma = 1.000000:  vigra = 2.120027, ff = 0.145974 --> speedup: 14.523319
+Timing gradient magnitude 2D with sigma = 2.000000:  vigra = 2.451145, ff = 0.179267 --> speedup: 13.673152
+Timing gradient magnitude 2D with sigma = 3.000000:  vigra = 2.958889, ff = 0.244650 --> speedup: 12.094376
+Timing gradient magnitude 2D with sigma = 4.000000:  vigra = 3.487935, ff = 0.313043 --> speedup: 11.142032
+Timing gradient magnitude 2D with sigma = 5.000000:  vigra = 4.315480, ff = 0.392467 --> speedup: 10.995778
+Timing gradient magnitude 2D with sigma = 6.000000:  vigra = 5.476056, ff = 0.469510 --> speedup: 11.663343
+Timing gradient magnitude 2D with sigma = 7.000000:  vigra = 5.736009, ff = 0.542416 --> speedup: 10.574926
+Timing gradient magnitude 2D with sigma = 8.000000:  vigra = 6.347034, ff = 0.642642 --> speedup: 9.876469
+Timing gradient magnitude 2D with sigma = 9.000000:  vigra = 6.950630, ff = 0.740014 --> speedup: 9.392566
+Timing gradient magnitude 2D with sigma = 10.000000:  vigra = 7.756946, ff = 0.842762 --> speedup: 9.204195
+Timing laplacian 2D with sigma = 1.000000:  vigra = 1.530763, ff = 0.150260 --> speedup: 10.187428
+Timing laplacian 2D with sigma = 2.000000:  vigra = 1.879097, ff = 0.186753 --> speedup: 10.061937
+Timing laplacian 2D with sigma = 3.000000:  vigra = 2.403468, ff = 0.251287 --> speedup: 9.564633
+Timing laplacian 2D with sigma = 4.000000:  vigra = 2.924043, ff = 0.323730 --> speedup: 9.032351
+Timing laplacian 2D with sigma = 5.000000:  vigra = 3.783858, ff = 0.401023 --> speedup: 9.435514
+Timing laplacian 2D with sigma = 6.000000:  vigra = 4.814292, ff = 0.508903 --> speedup: 9.460137
+Timing laplacian 2D with sigma = 7.000000:  vigra = 5.068020, ff = 0.528470 --> speedup: 9.589986
+Timing laplacian 2D with sigma = 8.000000:  vigra = 5.507213, ff = 0.635536 --> speedup: 8.665462
+Timing laplacian 2D with sigma = 9.000000:  vigra = 6.100155, ff = 0.721439 --> speedup: 8.455538
+Timing laplacian 2D with sigma = 10.000000:  vigra = 6.779497, ff = 0.827806 --> speedup: 8.189717
+Timing HOG 2D with sigma = 1.000000:  vigra = 3.662007, ff = 0.275329 --> speedup: 13.300477
+Timing HOG 2D with sigma = 2.000000:  vigra = 4.272723, ff = 0.335060 --> speedup: 12.752113
+Timing HOG 2D with sigma = 3.000000:  vigra = 4.965095, ff = 0.445374 --> speedup: 11.148147
+Timing HOG 2D with sigma = 4.000000:  vigra = 5.630501, ff = 0.541776 --> speedup: 10.392673
+Timing HOG 2D with sigma = 5.000000:  vigra = 6.494915, ff = 0.638434 --> speedup: 10.173197
+Timing HOG 2D with sigma = 6.000000:  vigra = 7.862130, ff = 0.748585 --> speedup: 10.502655
+Timing HOG 2D with sigma = 7.000000:  vigra = 8.344223, ff = 0.856242 --> speedup: 9.745169
+Timing HOG 2D with sigma = 8.000000:  vigra = 9.269301, ff = 1.020397 --> speedup: 9.084014
+Timing HOG 2D with sigma = 9.000000:  vigra = 10.681606, ff = 1.144448 --> speedup: 9.333413
+Timing HOG 2D with sigma = 10.000000:  vigra = 11.570827, ff = 1.321632 --> speedup: 8.754954
+Timing ST 2D with sigma = 1.000000:  vigra = 5.191345, ff = 0.520809 --> speedup: 9.967848
+Timing ST 2D with sigma = 2.000000:  vigra = 7.247721, ff = 0.757956 --> speedup: 9.562192
+Timing ST 2D with sigma = 3.000000:  vigra = 10.074716, ff = 1.069244 --> speedup: 9.422280
+Timing ST 2D with sigma = 4.000000:  vigra = 11.268508, ff = 1.335388 --> speedup: 8.438377
+Timing ST 2D with sigma = 5.000000:  vigra = 13.562474, ff = 1.791673 --> speedup: 7.569726
+Timing ST 2D with sigma = 6.000000:  vigra = 15.936837, ff = 2.302542 --> speedup: 6.921410
+Timing ST 2D with sigma = 7.000000:  vigra = 17.274400, ff = 3.014882 --> speedup: 5.729710
+Timing ST 2D with sigma = 8.000000:  vigra = 19.367226, ff = 5.356487 --> speedup: 3.615658
+Timing ST 2D with sigma = 9.000000:  vigra = 23.305892, ff = 5.461842 --> speedup: 4.267039
+Timing ST 2D with sigma = 10.000000:  vigra = 25.396149, ff = 6.055050 --> speedup: 4.194210
+
+
+Timing gaussian 3D with order = 0 and sigma = 1:  vigra = 0.039731, ff = 0.004136 --> speedup: 9.606141
+Timing gaussian 3D with order = 0 and sigma = 2:  vigra = 0.053831, ff = 0.006798 --> speedup: 7.918653
+Timing gaussian 3D with order = 0 and sigma = 3:  vigra = 0.067829, ff = 0.011894 --> speedup: 5.702791
+Timing gaussian 3D with order = 0 and sigma = 4:  vigra = 0.083122, ff = 0.021761 --> speedup: 3.819769
+Timing gaussian 3D with order = 0 and sigma = 5:  vigra = 0.107805, ff = 0.031721 --> speedup: 3.398537
+Timing gaussian 3D with order = 0 and sigma = 6:  vigra = 0.133448, ff = 0.044644 --> speedup: 2.989159
+Timing gaussian 3D with order = 0 and sigma = 7:  vigra = 0.152507, ff = 0.057827 --> speedup: 2.637297
+Timing gaussian 3D with order = 0 and sigma = 8:  vigra = 0.172734, ff = 0.073702 --> speedup: 2.343681
+Timing gaussian 3D with order = 0 and sigma = 9:  vigra = 0.197112, ff = 0.088862 --> speedup: 2.218181
+Timing gaussian 3D with order = 0 and sigma = 10:  vigra = 0.219451, ff = 0.107820 --> speedup: 2.035346
+Timing gaussian 3D with order = 1 and sigma = 1:  vigra = 0.043818, ff = 0.004025 --> speedup: 10.886460
+Timing gaussian 3D with order = 1 and sigma = 2:  vigra = 0.058045, ff = 0.008178 --> speedup: 7.097701
+Timing gaussian 3D with order = 1 and sigma = 3:  vigra = 0.074640, ff = 0.017070 --> speedup: 4.372583
+Timing gaussian 3D with order = 1 and sigma = 4:  vigra = 0.090848, ff = 0.026196 --> speedup: 3.468010
+Timing gaussian 3D with order = 1 and sigma = 5:  vigra = 0.115730, ff = 0.036549 --> speedup: 3.166434
+Timing gaussian 3D with order = 1 and sigma = 6:  vigra = 0.144173, ff = 0.046243 --> speedup: 3.117726
+Timing gaussian 3D with order = 1 and sigma = 7:  vigra = 0.159067, ff = 0.061953 --> speedup: 2.567543
+Timing gaussian 3D with order = 1 and sigma = 8:  vigra = 0.180897, ff = 0.079372 --> speedup: 2.279103
+Timing gaussian 3D with order = 1 and sigma = 9:  vigra = 0.206836, ff = 0.093721 --> speedup: 2.206933
+Timing gaussian 3D with order = 1 and sigma = 10:  vigra = 0.229260, ff = 0.114724 --> speedup: 1.998361
+Timing gaussian 3D with order = 2 and sigma = 1:  vigra = 0.044014, ff = 0.004115 --> speedup: 10.695990
+Timing gaussian 3D with order = 2 and sigma = 2:  vigra = 0.059037, ff = 0.008143 --> speedup: 7.250031
+Timing gaussian 3D with order = 2 and sigma = 3:  vigra = 0.073450, ff = 0.017493 --> speedup: 4.198822
+Timing gaussian 3D with order = 2 and sigma = 4:  vigra = 0.090699, ff = 0.026113 --> speedup: 3.473327
+Timing gaussian 3D with order = 2 and sigma = 5:  vigra = 0.115528, ff = 0.034008 --> speedup: 3.397083
+Timing gaussian 3D with order = 2 and sigma = 6:  vigra = 0.143506, ff = 0.047905 --> speedup: 2.995637
+Timing gaussian 3D with order = 2 and sigma = 7:  vigra = 0.159257, ff = 0.062113 --> speedup: 2.563988
+Timing gaussian 3D with order = 2 and sigma = 8:  vigra = 0.184918, ff = 0.078428 --> speedup: 2.357806
+Timing gaussian 3D with order = 2 and sigma = 9:  vigra = 0.205340, ff = 0.096513 --> speedup: 2.127589
+Timing gaussian 3D with order = 2 and sigma = 10:  vigra = 0.228959, ff = 0.116834 --> speedup: 1.959695
+Timing gradient magnitude 3D with sigma = 1.000000:  vigra = 0.109183, ff = 0.013547 --> speedup: 8.059570
+Timing gradient magnitude 3D with sigma = 2.000000:  vigra = 0.142925, ff = 0.022510 --> speedup: 6.349400
+Timing gradient magnitude 3D with sigma = 3.000000:  vigra = 0.187042, ff = 0.041303 --> speedup: 4.528533
+Timing gradient magnitude 3D with sigma = 4.000000:  vigra = 0.235062, ff = 0.071862 --> speedup: 3.271019
+Timing gradient magnitude 3D with sigma = 5.000000:  vigra = 0.306407, ff = 0.097960 --> speedup: 3.127879
+Timing gradient magnitude 3D with sigma = 6.000000:  vigra = 0.394791, ff = 0.133075 --> speedup: 2.966680
+Timing gradient magnitude 3D with sigma = 7.000000:  vigra = 0.433095, ff = 0.180910 --> speedup: 2.393980
+Timing gradient magnitude 3D with sigma = 8.000000:  vigra = 0.488249, ff = 0.222842 --> speedup: 2.191010
+Timing gradient magnitude 3D with sigma = 9.000000:  vigra = 0.552939, ff = 0.270845 --> speedup: 2.041533
+Timing gradient magnitude 3D with sigma = 10.000000:  vigra = 0.615224, ff = 0.331610 --> speedup: 1.855264
+Timing laplacian 3D with sigma = 1.000000:  vigra = 0.098156, ff = 0.013092 --> speedup: 7.497403
+Timing laplacian 3D with sigma = 2.000000:  vigra = 0.129191, ff = 0.023859 --> speedup: 5.414770
+Timing laplacian 3D with sigma = 3.000000:  vigra = 0.179699, ff = 0.041248 --> speedup: 4.356551
+Timing laplacian 3D with sigma = 4.000000:  vigra = 0.225580, ff = 0.071710 --> speedup: 3.145726
+Timing laplacian 3D with sigma = 5.000000:  vigra = 0.296421, ff = 0.096894 --> speedup: 3.059230
+Timing laplacian 3D with sigma = 6.000000:  vigra = 0.388480, ff = 0.132345 --> speedup: 2.935358
+Timing laplacian 3D with sigma = 7.000000:  vigra = 0.423235, ff = 0.177602 --> speedup: 2.383053
+Timing laplacian 3D with sigma = 8.000000:  vigra = 0.479279, ff = 0.222504 --> speedup: 2.154024
+Timing laplacian 3D with sigma = 9.000000:  vigra = 0.546903, ff = 0.270424 --> speedup: 2.022391
+Timing laplacian 3D with sigma = 10.000000:  vigra = 0.612013, ff = 0.330911 --> speedup: 1.849479
+Timing HOG 3D with sigma = 1.000000:  vigra = 0.373887, ff = 0.037333 --> speedup: 10.014920
+Timing HOG 3D with sigma = 2.000000:  vigra = 0.431528, ff = 0.054949 --> speedup: 7.853246
+Timing HOG 3D with sigma = 3.000000:  vigra = 0.532677, ff = 0.096863 --> speedup: 5.499282
+Timing HOG 3D with sigma = 4.000000:  vigra = 0.625412, ff = 0.150557 --> speedup: 4.153988
+Timing HOG 3D with sigma = 5.000000:  vigra = 0.777552, ff = 0.212722 --> speedup: 3.655250
+Timing HOG 3D with sigma = 6.000000:  vigra = 0.949518, ff = 0.278153 --> speedup: 3.413654
+Timing HOG 3D with sigma = 7.000000:  vigra = 1.033782, ff = 0.371023 --> speedup: 2.786302
+Timing HOG 3D with sigma = 8.000000:  vigra = 1.146407, ff = 0.458707 --> speedup: 2.499214
+Timing HOG 3D with sigma = 9.000000:  vigra = 1.322429, ff = 0.572009 --> speedup: 2.311902
+Timing HOG 3D with sigma = 10.000000:  vigra = 1.457953, ff = 0.678813 --> speedup: 2.147798
+Timing ST 3D with sigma = 1.000000:  vigra = 1.131501, ff = 0.064436 --> speedup: 17.560075
+Timing ST 3D with sigma = 2.000000:  vigra = 1.874077, ff = 0.169667 --> speedup: 11.045619
+Timing ST 3D with sigma = 3.000000:  vigra = 2.547111, ff = 0.309411 --> speedup: 8.232128
+Timing ST 3D with sigma = 4.000000:  vigra = 3.259875, ff = 0.520273 --> speedup: 6.265701
+Timing ST 3D with sigma = 5.000000:  vigra = 4.035050, ff = 0.764130 --> speedup: 5.280581
+Timing ST 3D with sigma = 6.000000:  vigra = 4.813189, ff = 1.055444 --> speedup: 4.560345
+Timing ST 3D with sigma = 7.000000:  vigra = 5.547513, ff = 1.462760 --> speedup: 3.792497
+Timing ST 3D with sigma = 8.000000:  vigra = 6.359448, ff = 1.801579 --> speedup: 3.529930
+Timing ST 3D with sigma = 9.000000:  vigra = 7.146074, ff = 2.152932 --> speedup: 3.319229
+Timing ST 3D with sigma = 10.000000:  vigra = 7.837498, ff = 2.419178 --> speedup: 3.239736
