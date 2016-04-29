@@ -65,14 +65,14 @@ bool DLL_PUBLIC fastfilters_fir_convolve3d(const fastfilters_array3d_t *inarray,
                                            const fastfilters_array3d_t *outarray, const fastfilters_options_t *options)
 {
     (void)options;
-    for (size_t z = 0; z < inarray->n_z; ++z) {
-        const float *planeptr = inarray->ptr + z * inarray->stride_z;
-        float *planeptr_out = outarray->ptr + z * outarray->stride_z;
 
-        if (!g_convolve_inner(planeptr, inarray->n_x, inarray->stride_x, inarray->n_y, inarray->stride_y, planeptr_out,
-                              outarray->stride_y, kernelx, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR, NULL,
-                              NULL, 0))
-            return false;
+    if (!g_convolve_inner(inarray->ptr, inarray->n_x, inarray->stride_x, inarray->n_y * inarray->n_z, inarray->stride_y,
+                          outarray->ptr, outarray->stride_y, kernelx, FASTFILTERS_BORDER_MIRROR,
+                          FASTFILTERS_BORDER_MIRROR, NULL, NULL, 0))
+        return false;
+
+    for (size_t z = 0; z < inarray->n_z; ++z) {
+        float *planeptr_out = outarray->ptr + z * outarray->stride_z;
 
         if (!g_convolve_outer(planeptr_out, inarray->n_y, outarray->stride_y, inarray->n_x * inarray->n_channels,
                               inarray->stride_x / inarray->n_channels, planeptr_out, outarray->stride_y, kernely,
