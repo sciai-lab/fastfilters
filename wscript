@@ -4,7 +4,7 @@ from waflib.Configure import conf
 from waflib.Tools import waf_unit_test
 from waflib.Build import BuildContext
 
-VERSION='0.0.1'
+VERSION='0.1.1'
 APPNAME='libfastfilters'
 
 srcdir = 'src'
@@ -173,7 +173,7 @@ def build(bld):
 	avx_use_sh = ' '.join(avx_use_sh)
 	#avx_use_st = ' '.join(avx_use_st)
 
-	shlib = bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma objs_shlib_avx2 " + avx_use_sh, name="fastfilters_shared")
+	shlib = bld.shlib(features='c', source=["src/dummy.c"], target='fastfilters', use="objs_shlib objs_shlib_avx objs_shlib_avx_fma objs_shlib_avx2 " + avx_use_sh, name="fastfilters_shared", vnum=VERSION)
 	#bld(features='c cstlib', source=["src/dummy.c"], target='fastfilters', use="objs_stlib objs_stlib_avx objs_stlib_avx_fma objs_shlib_avx2 " + avx_use_st, name="fastfilters_static")
 	pyext = bld.shlib(features='pyext', source=sources_python, target='fastfilters', use="fastfilters_shared", name="fastfilters_pyext")
 
