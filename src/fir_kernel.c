@@ -77,6 +77,9 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
         kernel->len = floor(3.0 * sigma + 0.5 * order + 0.5); // FIXME: this is the formula currently used by vigra
     // kernel->len = ceil((3.0 + 0.5 * (double)order) * sigma);
 
+    if (fabs(sigma) < 1e-6)
+        kernel->len = 0;
+
     kernel->coefs = fastfilters_memory_alloc(sizeof(float) * (kernel->len + 1));
     if (!kernel->coefs) {
         fastfilters_memory_free(kernel);
