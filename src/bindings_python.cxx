@@ -336,8 +336,37 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::arr
 
     const size_t n_pixels = ff.n_x * ff.n_y * ff.n_channels;
 
-    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), 2,
-                                            {2, n_pixels}, {sizeof(float) * n_pixels, sizeof(float)}));
+    std::vector<size_t> shape;
+    std::vector<size_t> strides;
+
+    unsigned int n_dim = 3;
+
+    if (ff.n_channels == 1) {
+        n_dim = 3;
+
+        shape.push_back(2);
+        shape.push_back(ff.n_x);
+        shape.push_back(ff.n_y);
+
+        strides.push_back(sizeof(float) * ff.n_y * ff.n_x);
+        strides.push_back(sizeof(float) * ff.n_y);
+        strides.push_back(sizeof(float));
+    } else {
+        n_dim = 4;
+
+        shape.push_back(2);
+        shape.push_back(ff.n_x);
+        shape.push_back(ff.n_y);
+        shape.push_back(ff.n_channels);
+
+        strides.push_back(sizeof(float) * ff.n_channels * ff.n_y * ff.n_x);
+        strides.push_back(sizeof(float) * ff.n_channels * ff.n_y);
+        strides.push_back(sizeof(float) * ff.n_channels);
+        strides.push_back(sizeof(float));
+    }
+
+    auto result = py::array(
+        py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value(), n_dim, shape, strides));
     py::buffer_info info_out = result.request();
 
     float *xx = ff_out_xx.ptr;
@@ -346,7 +375,7 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::arr
 
     float *outptr = (float *)info_out.ptr;
     float *ev_small = outptr;
-    float *ev_big = outptr + info_out.strides[0] / sizeof(float);
+    float *ev_big = outptr + n_pixels;
 
     fastfilters_linalg_ev2d(xx, xy, yy, ev_small, ev_big, n_pixels);
 
