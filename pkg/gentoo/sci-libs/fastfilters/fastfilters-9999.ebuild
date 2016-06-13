@@ -5,7 +5,7 @@
 EAPI=6
 PYTHON_COMPAT=( python2_7 python3_4 )
 PYTHON_REQ_USE="threads,xml"
-inherit python-r1 git-r3 waf-utils
+inherit python-r1 python-utils-r1 git-r3 waf-utils
 
 DESCRIPTION="fast gaussian and derivative convolutional filters"
 HOMEPAGE="https://github.com/svenpeter42/fastfilters"
@@ -33,7 +33,9 @@ pkg_setup() {
 
 src_configure() {
 	fastfilters_configure() {
-		CFLAGS="" CXXFLAGS="" ./waf configure --prefix=${D} --python=${PYTHON} -o ${BUILD_DIR} --pythondir=${D}/${PORTAGE_PYTHONPATH} --pythonarchdir=${D}/${PORTAGE_PYTHONPATH}
+		local PYTHON_SITEDIR
+		python_export PYTHON_SITEDIR
+		CFLAGS="" CXXFLAGS="" ./waf configure --prefix=${D} --python=${PYTHON} -o ${BUILD_DIR} --pythondir=${D}/${PYTHON_SITEDIR} --pythonarchdir=${D}/${PYTHON_SITEDIR}
 	}
 	python_setup
 	python_foreach_impl fastfilters_configure

@@ -65,10 +65,10 @@ static inline int get_cpuid(unsigned int level, cpuid_t *id)
     int cpuid[4];
     __cpuidex(cpuid, level, 0);
 
-    id->eax = id[0];
-    id->ebx = id[1];
-    id->ecx = id[2];
-    id->edx = id[3];
+    id->eax = cpuid[0];
+    id->ebx = cpuid[1];
+    id->ecx = cpuid[2];
+    id->edx = cpuid[3];
 
     return 1;
 

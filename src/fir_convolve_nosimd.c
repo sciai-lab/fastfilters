@@ -152,6 +152,20 @@ bool fastfilters_fir_convolve_fir_inner(const float *inptr, size_t n_pixels, siz
 {
     impl_fn_t fn = NULL;
 
+    if (unlikely(kernel->len == 0)) {
+        if (fabs(kernel->coefs[0] - 1.0) > 1e-6)
+            return false;
+
+        if (inptr == outptr)
+            return true;
+
+        if (outer_stride != n_pixels * pixel_stride)
+            return false;
+
+        memcpy(outptr, inptr, outer_stride * n_outer * sizeof(float));
+        return true;
+    }
+
     if (unlikely(kernel->fn_inner_mirror == NULL)) {
         kernel->fn_inner_mirror = find_fn(kernel, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR,
                                           impl_fn_tbls_inner, ARRAY_LENGTH(impl_fn_tbls_inner));
@@ -195,6 +209,17 @@ bool fastfilters_fir_convolve_fir_outer(const float *inptr, size_t n_pixels, siz
                                         const float *borderptr_right, size_t border_outer_stride)
 {
     impl_fn_t fn = NULL;
+
+    if (unlikely(kernel->len == 0)) {
+        if (fabs(kernel->coefs[0] - 1.0) > 1e-6)
+            return false;
+
+        if (inptr == outptr)
+            return true;
+
+        // FIXME: memcpy here
+        return false;
+    }
 
     if (unlikely(kernel->fn_outer_mirror == NULL)) {
         kernel->fn_outer_mirror = find_fn(kernel, FASTFILTERS_BORDER_MIRROR, FASTFILTERS_BORDER_MIRROR,

@@ -27,7 +27,7 @@ for order in [0,1,2]:
 
 for sigma in sigmas:
 	res_ff = ff.hog2d(a, sigma)
-	res_vigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma).reshape((-1,2)).swapaxes(0,1)
+	res_vigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma).swapaxes(0,2).swapaxes(1,2)
 	print("HOG", sigma, np.max(np.abs(res_ff - res_vigra)))
 
 	if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
@@ -55,7 +55,7 @@ for sigma in sigmas:
 for sigma in sigmas:
 	for sigma2 in sigmas:
 		res_ff = ff.st2d(a, sigma2, sigma)
-		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2).reshape((-1,2)).swapaxes(0,1)
+		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2).swapaxes(0,2).swapaxes(1,2)
 		print("ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
 
 		if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):

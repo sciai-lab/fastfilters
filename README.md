@@ -8,8 +8,6 @@ Installation (stable)
 
 	% git clone https://github.com/svenpeter42/fastfilters.git
 	% cd fastfilters
-	% git submodule init
-	% git submodule update --recursive
 	% ./waf configure
 	% ./waf
 
