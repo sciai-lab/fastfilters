@@ -1,8 +1,7 @@
 #!/bin/bash
 
-./waf configure --prefix=${PREFIX} --python=${PYTHON}
-./waf
-./waf install
-
-mkdir -p ${PREFIX}/lib
-mv ${PREFIX}/lib64/libfastfilters.so ${PREFIX}/lib/
+mkdir build_conda
+cd build_conda
+cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ..
+make
+make install
