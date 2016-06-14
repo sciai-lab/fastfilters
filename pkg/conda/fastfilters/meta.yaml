@@ -12,10 +12,10 @@ package:
 
 source:
   git_url: https://github.com/svenpeter42/fastfilters
-  git_tag: v0.2
+  git_tag: v0.2.1
 
 build:
-  number: 1
+  number: 0
   string: py{{CONDA_PY}}_{{PKG_BUILDNUM}}_g{{GIT_FULL_HASH[:7]}}
 
 requirements:
@@ -31,7 +31,7 @@ requirements:
 
 test:
   requires:
-    - vigra
+    - vigra >=1.11.0
 
   imports:
     - fastfilters
