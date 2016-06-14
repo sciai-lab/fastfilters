@@ -37,8 +37,9 @@ addons:
    - g++-4.9
 
 script:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9"; export CC="gcc-4.9"; fi
   - if [ "$CXX" = "clang++" ]; then export CXX=$HOME/llvm-$LLVM_VERSION/bin/clang++; export CC=$HOME/llvm-$LLVM_VERSION/bin/clang; fi
+  - ls -lah $HOME/llvm-$LLVM_VERSION/bin
   - mkdir build
   - cd build
   - cmake ..
