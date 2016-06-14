@@ -5,7 +5,7 @@
 EAPI=6
 PYTHON_COMPAT=( python2_7 python3_4 )
 PYTHON_REQ_USE="threads,xml"
-inherit python-r1 python-utils-r1 git-r3 waf-utils
+inherit python-r1 python-utils-r1 git-r3 cmake-utils
 
 DESCRIPTION="fast gaussian and derivative convolutional filters"
 HOMEPAGE="https://github.com/svenpeter42/fastfilters"
@@ -33,9 +33,7 @@ pkg_setup() {
 
 src_configure() {
 	fastfilters_configure() {
-		local PYTHON_SITEDIR
-		python_export PYTHON_SITEDIR
-		CFLAGS="" CXXFLAGS="" ./waf configure --prefix=${D} --python=${PYTHON} -o ${BUILD_DIR} --pythondir=${D}/${PYTHON_SITEDIR} --pythonarchdir=${D}/${PYTHON_SITEDIR}
+		cmake-utils_src_configure
 	}
 	python_setup
 	python_foreach_impl fastfilters_configure
@@ -43,14 +41,14 @@ src_configure() {
 
 src_compile() {
 	fastfilters_compile() {
-		./waf -v
+		cmake-utils_src_compile
 	}
 	python_foreach_impl fastfilters_compile
 }
 
 src_install() {
 	fastfilters_install() {
-		./waf install
+		cmake-utils_src_install
 	}
 	python_foreach_impl fastfilters_install
 }
