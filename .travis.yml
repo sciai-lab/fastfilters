@@ -16,7 +16,7 @@ cache:
 before_install:
   -
     if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
-      export LLVM_VERSION=3.8.0
+      export LLVM_VERSION=3.8.0;
       if [ -z "$(ls -A llvm-$LLVM_VERSION)" ]; then
         wget -O llvm-$LLVM_VERSION.tar.xz http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz;
         mkdir llvm-$LLVM_VERSION;
