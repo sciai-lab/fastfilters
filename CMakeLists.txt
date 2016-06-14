@@ -14,10 +14,12 @@ include(CheckCCompilerFlag)
 check_c_compiler_flag("-std=c99" HAS_C99_FLAG)
 
 if (HAS_C99_FLAG)
-  set(CMAKE_C_FLAGS -std=c99)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 else()
   message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
 endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
 
 add_definitions(-DFF_VERSION=${FF_VERSION})
 
