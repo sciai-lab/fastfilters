@@ -1,0 +1,14 @@
+#ifndef FASTFILTERS_CONFIG_H
+#define FASTFILTERS_CONFIG_H
+
+#cmakedefine HAVE_BUILTIN_EXPECT
+#cmakedefine HAVE_GNU_CPU_SUPPORTS_AVX
+#cmakedefine HAVE_GNU_CPU_SUPPORTS_AVX2
+#cmakedefine HAVE_GNU_CPU_SUPPORTS_FMA
+#cmakedefine HAVE_CPUID_H
+#cmakedefine HAVE_ASM_CPUID
+#cmakedefine HAVE_ASM_XGETBV
+
+#define FF_UNROLL 10
+
+#endif
