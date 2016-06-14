@@ -10,7 +10,7 @@ inherit python-r1 python-utils-r1 git-r3 cmake-utils
 DESCRIPTION="fast gaussian and derivative convolutional filters"
 HOMEPAGE="https://github.com/svenpeter42/fastfilters"
 EGIT_REPO_URI="https://github.com/svenpeter42/fastfilters.git"
-EGIT_BRANCH="devel"
+EGIT_TAG="v0.2"
 
 LICENSE="MIT"
 SLOT="0"

@@ -482,13 +482,14 @@ template <typename ConvolveFunctor, typename... args> void bind2d3d_ev(py::modul
 }
 };
 
+#define macro_str(s) #s
 PYBIND11_PLUGIN(fastfilters)
 {
     py::module m_fastfilters("fastfilters", "fast gaussian kernel and derivative filters");
 
     fastfilters_init_ex(PyMem_Malloc, PyMem_Free);
 
-    m_fastfilters.attr("__version__") = pybind11::str("0.1.1");
+    m_fastfilters.attr("__version__") = pybind11::str(macro_str(FF_VERSION));
 
     py::class_<FIRKernel>(m_fastfilters, "FIRKernel")
         .def(py::init<unsigned, double>())

@@ -9,23 +9,45 @@ python:
   - "2.7"
   - "3.4"
 
+cache:
+  directories:
+    - llvm-3.8.0
 
 addons:
  apt:
    sources:
-   - llvm-toolchain-precise-3.6
    - ubuntu-toolchain-r-test
    packages:
    - gcc-4.9
    - g++-4.9
-   - clang-3.6
 
 script:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
-  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
-  - ./waf configure -j1
-  - ./waf -j1
-  - ./waf test
+  - export BASEDIR=`pwd`
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-rc2-Linux-x86_64.tar.gz";
+      mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake;
+      export PATH=${BASEDIR}/cmake/bin:${PATH};
+    else
+      brew install cmake;
+    fi;
+  -
+    if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
+      export LLVM_VERSION=3.8.0;
+      if [ -z "$(ls -A llvm-$LLVM_VERSION)" ]; then
+        wget -O llvm-$LLVM_VERSION.tar.xz http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz;
+        mkdir llvm-$LLVM_VERSION;
+        xzcat llvm-$LLVM_VERSION.tar.xz | tar -xvf - --strip 1 -C llvm-$LLVM_VERSION;
+      fi;
+      llvm-$LLVM_VERSION/bin/llvm-config --version;
+      export LLVM_CONFIG="llvm-$LLVM_VERSION/bin/llvm-config";
+    fi;
+    export LD_LIBRARY_PATH=$BASEDIR/llvm-$LLVM_VERSION/lib:$LD_LIBRARY_PATH
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9"; export CC="gcc-4.9"; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX=$BASEDIR/llvm-$LLVM_VERSION/bin/clang++; export CC=$BASEDIR/llvm-$LLVM_VERSION/bin/clang; fi
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make VERBOSE=1
 
 after_failure:
   - cat build/config.log

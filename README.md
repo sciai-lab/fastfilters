@@ -8,8 +8,10 @@ Installation (stable)
 
 	% git clone https://github.com/svenpeter42/fastfilters.git
 	% cd fastfilters
-	% ./waf configure
-	% ./waf
+	% mkdir build
+	% cmake ..
+	% make
+	% make install
 
 
 Conda Installation (stable)
