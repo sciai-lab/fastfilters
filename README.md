@@ -8,10 +8,10 @@ Installation (stable)
 
 	% git clone https://github.com/svenpeter42/fastfilters.git
 	% cd fastfilters
-        % mkdir build
-        % cmake ..
-        % make
-        % make install
+	% mkdir build
+	% cmake ..
+	% make
+	% make install
 
 
 Conda Installation (stable)
