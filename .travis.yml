@@ -25,7 +25,7 @@ before_install:
       llvm-$LLVM_VERSION/bin/llvm-config --version;
       export LLVM_CONFIG="llvm-$LLVM_VERSION/bin/llvm-config";
     fi;
-    export LD_LIBRARY_PATH=$HOME/clang-$LLVM_VERSION/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$HOME/llvm-$LLVM_VERSION/lib:$LD_LIBRARY_PATH
 
 
 addons:
@@ -38,7 +38,7 @@ addons:
 
 script:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
-  - if [ "$CXX" = "clang++" ]; then export CXX=$HOME/clang-$LLVM_VERSION/bin/clang++; export CC=$HOME/clang-$LLVM_VERSION/bin/clang; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX=$HOME/llvm-$LLVM_VERSION/bin/clang++; export CC=$HOME/llvm-$LLVM_VERSION/bin/clang; fi
   - mkdir build
   - cd build
   - cmake ..
