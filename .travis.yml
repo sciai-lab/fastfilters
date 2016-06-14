@@ -13,7 +13,15 @@ cache:
   directories:
     - llvm-3.8.0
 
-before_install:
+addons:
+ apt:
+   sources:
+   - ubuntu-toolchain-r-test
+   packages:
+   - gcc-4.9
+   - g++-4.9
+
+script:
   -
     if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
       export LLVM_VERSION=3.8.0;
@@ -26,19 +34,10 @@ before_install:
       export LLVM_CONFIG="llvm-$LLVM_VERSION/bin/llvm-config";
     fi;
     export LD_LIBRARY_PATH=$HOME/llvm-$LLVM_VERSION/lib:$LD_LIBRARY_PATH
-
-
-addons:
- apt:
-   sources:
-   - ubuntu-toolchain-r-test
-   packages:
-   - gcc-4.9
-   - g++-4.9
-
-script:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9"; export CC="gcc-4.9"; fi
   - if [ "$CXX" = "clang++" ]; then export CXX=$HOME/llvm-$LLVM_VERSION/bin/clang++; export CC=$HOME/llvm-$LLVM_VERSION/bin/clang; fi
+  - ls -lah $HOME
+  - ls -lah $HOME/llvm-$LLVM_VERSION
   - ls -lah $HOME/llvm-$LLVM_VERSION/bin
   - mkdir build
   - cd build
