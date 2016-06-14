@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 2.6)
 project (fastfilters)
 
+include(GetGitRevisionDescription.cmake)
+
+git_describe(FF_VERSION --tags)
+string(SUBSTRING ${FF_VERSION} 1 -1 FF_VERSION)
+
 set(FF_UNROLL 10)
 
 include("pybind11/tools/FindPythonLibsNew.cmake")
@@ -13,6 +18,8 @@ if (HAS_C99_FLAG)
 else()
   message(FATAL_ERROR "Unsupported compiler - fastfilers required C99 support!")
 endif()
+
+add_definitions(-DFF_VERSION=${FF_VERSION})
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++14" HAS_CPP14_FLAG)
@@ -301,7 +308,7 @@ ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c
 ${copied_files})
 
-set_target_properties(fastfilters_lib PROPERTIES OUTPUT_NAME fastfilters)
+set_target_properties(fastfilters_lib PROPERTIES OUTPUT_NAME fastfilters SOVERSION ${FF_VERSION})
 
 pybind11_add_module(fastfilters src/bindings_python.cxx)
 target_link_libraries(fastfilters PUBLIC fastfilters_lib)
