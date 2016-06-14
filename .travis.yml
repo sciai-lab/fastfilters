@@ -22,6 +22,7 @@ addons:
    - g++-4.9
 
 script:
+  - export BASEDIR=`pwd`
   -
     if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
       export LLVM_VERSION=3.8.0;
@@ -33,12 +34,12 @@ script:
       llvm-$LLVM_VERSION/bin/llvm-config --version;
       export LLVM_CONFIG="llvm-$LLVM_VERSION/bin/llvm-config";
     fi;
-    export LD_LIBRARY_PATH=$HOME/llvm-$LLVM_VERSION/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$BASEDIR/llvm-$LLVM_VERSION/lib:$LD_LIBRARY_PATH
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9"; export CC="gcc-4.9"; fi
-  - if [ "$CXX" = "clang++" ]; then export CXX=$HOME/llvm-$LLVM_VERSION/bin/clang++; export CC=$HOME/llvm-$LLVM_VERSION/bin/clang; fi
-  - ls -lah $HOME
-  - ls -lah $HOME/llvm-$LLVM_VERSION
-  - ls -lah $HOME/llvm-$LLVM_VERSION/bin
+  - if [ "$CXX" = "clang++" ]; then export CXX=$BASEDIR/llvm-$LLVM_VERSION/bin/clang++; export CC=$BASEDIR/llvm-$LLVM_VERSION/bin/clang; fi
+  - ls -lah $BASEDIR
+  - ls -lah $BASEDIR/llvm-$LLVM_VERSION
+  - ls -lah $BASEDIR/llvm-$LLVM_VERSION/bin
   - mkdir build
   - cd build
   - cmake ..
