@@ -31,6 +31,24 @@ check_cxx_compiler_flag("-mavx" HAS_AVX_FLAG)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2_FLAG)
 check_cxx_compiler_flag("-mfma" HAS_FMA_FLAG)
 
+if (HAS_AVX_FLAG)
+  set(AVX_FLAG "-mavx")
+else()
+  set(AVX_FLAG "")
+endif()
+
+if (HAS_AVX2_FLAG)
+  set(AVX2_FLAG "-mavx2")
+else()
+  set(AVX2_FLAG "")
+endif()
+
+if (HAS_FMA_FLAG)
+  set(FMA_FLAG "-mfma")
+else()
+  set(FMA_FLAG "")
+endif()
+
 if (HAS_CPP14_FLAG)
   set(PYBIND11_CPP_STANDARD -std=c++14)
 elseif (HAS_CPP11_FLAG)
@@ -146,7 +164,7 @@ endfunction()
 include(CheckCXXSourceCompiles)
 
 set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX_FLAG}")
 
 check_cxx_source_compiles( "#include <immintrin.h>
 #include <stdlib.h>
@@ -164,7 +182,7 @@ int main()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_OLD}")
 
 set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX_FLAG} ${FMA_FLAG}")
 
 check_cxx_source_compiles( "#include <immintrin.h>
 #include <stdlib.h>
@@ -182,7 +200,7 @@ int main()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_OLD}")
 
 set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_FLAG}")
 
 check_cxx_source_compiles( "
 #include <immintrin.h>
@@ -269,24 +287,24 @@ include_directories("${PROJECT_BINARY_DIR}")
 configure_file(${PROJECT_SOURCE_DIR}/src/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c COPYONLY)
 
-set_source_files_properties(${PROJECT_SOURCE_DIR}/src/linalg_avx.c PROPERTIES COMPILE_FLAGS -mavx)
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS -mavx)
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS -mavx2)
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/linalg_avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS ${AVX2_FLAG})
 
 configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c COPYONLY)
 
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS -mavx)
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "-mavx -mfma")
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG}")
 
 set(number ${FF_UNROLL})
 set(copied_files "")
 while( number GREATER 0 )
   configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "-mavx -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} -DFF_KERNEL_LEN=${number}")
 
   configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "-mavx -mfma -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
 
   set(copied_files ${copied_files} ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c)
 
