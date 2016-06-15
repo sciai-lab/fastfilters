@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.8)
 project (fastfilters)
 
 include(GetGitRevisionDescription.cmake)
@@ -316,33 +316,13 @@ pybind11_add_module(fastfilters src/bindings_python.cxx)
 target_link_libraries(fastfilters PUBLIC fastfilters_lib)
 
 
-    ######################################################################
-    #
-    #      find default install directory for Python modules
-    #      (usually PYTHONDIR/Lib/site-packages)
-    #
-    ######################################################################
-    IF(NOT DEFINED VIGRANUMPY_INSTALL_DIR OR VIGRANUMPY_INSTALL_DIR MATCHES "^$")
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-                         "from distutils.sysconfig import *; print(get_python_lib(1))"
-                          OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
-        FILE(TO_CMAKE_PATH ${PYTHON_SITE_PACKAGES} VIGRANUMPY_INSTALL_DIR)
-    ENDIF()
-    SET(VIGRANUMPY_INSTALL_DIR ${VIGRANUMPY_INSTALL_DIR}
-        CACHE PATH "where to install the VIGRA Python package" FORCE)
-    # this is the install path relative to CMAKE_INSTALL_PREFIX,
-    # use this in INSTALL() commands to get packaging right
-    FILE(RELATIVE_PATH VIGRANUMPY_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${VIGRANUMPY_INSTALL_DIR})
-
-
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
   execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
   FILE(TO_CMAKE_PATH ${PYTHON_SITE_PACKAGES} FF_INSTALL_DIR)
 endif()
 
 set(FF_INSTALL_DIR ${FF_INSTALL_DIR} CACHE PATH "install directory for ff python extension." FORCE)
-
-FILE(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
+file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
 install(TARGETS fastfilters_lib LIBRARY DESTINATION lib)
 install(TARGETS fastfilters LIBRARY DESTINATION ${FF_INSTALL_DIR})
