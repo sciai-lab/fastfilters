@@ -10,6 +10,7 @@
 #cmakedefine HAVE_ASM_CPUID
 #cmakedefine HAVE_ASM_XGETBV
 #cmakedefine HAVE_INTRIN_XGETBV
+#cmakedefine HAVE_BUILTIN_EXPECT
 
 #define FF_UNROLL 10
 

@@ -294,8 +294,6 @@ check_cxx_source_compiles( "
 			return __builtin_expect(argc > 2, false);
 		}" HAVE_BUILTIN_EXPECT)
 
-
-
 include(CheckIncludeFiles)
 check_include_files(cpuid.h HAVE_CPUID_H)
 
