@@ -239,6 +239,27 @@ check_cxx_source_compiles( "
         return a;
     }" HAVE_ASM_CPUID)
 
+check_cxx_source_compiles("
+    #include <stdio.h>
+    #include <intrin.h>
+    int main()
+    {
+        int cpuid[4];
+        __cpuidex(cpuid, 7, 0);
+        return cpuid[0];
+    }" HAVE_CPUIDEX)
+
+check_cxx_source_compiles("
+    #include <stdio.h>
+    #include <intrin.h>
+    int main()
+    {
+        unsigned int xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+        return xcr0;
+    }" HAVE_INTRIN_XGETBV)
+
+
+
 check_cxx_source_compiles( "
     #include <stdio.h>
     int main()
