@@ -19,11 +19,17 @@ else()
   message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag("-Ofast" HAS_OFAST_FLAG)
+
+if(HAS_OFAST_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
+endif()
 
 add_definitions(-DFF_VERSION=${FF_VERSION})
 
-include(CheckCXXCompilerFlag)
+
 check_cxx_compiler_flag("-std=c++14" HAS_CPP14_FLAG)
 check_cxx_compiler_flag("-std=c++11" HAS_CPP11_FLAG)
 
@@ -31,20 +37,29 @@ check_cxx_compiler_flag("-mavx" HAS_AVX_FLAG)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2_FLAG)
 check_cxx_compiler_flag("-mfma" HAS_FMA_FLAG)
 
+check_cxx_compiler_flag("/arch:AVX" HAS_ARCH_AVX_FLAG)
+check_cxx_compiler_flag("/arch:AVX2" HAS_ARCH_AVX2_FLAG)
+
 if (HAS_AVX_FLAG)
   set(AVX_FLAG "-mavx")
+elseif(HAS_ARCH_AVX_FLAG)
+  set(AVX_FLAG "/arch:AVX -D__AVX__=1")
 else()
   set(AVX_FLAG "")
 endif()
 
 if (HAS_AVX2_FLAG)
   set(AVX2_FLAG "-mavx2")
+elseif(HAS_ARCH_AVX2_FLAG)
+  set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
 else()
   set(AVX2_FLAG "")
 endif()
 
 if (HAS_FMA_FLAG)
   set(FMA_FLAG "-mfma")
+elseif(HAS_ARCH_AVX2_FLAG)
+  set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
 else()
   set(FMA_FLAG "")
 endif()
