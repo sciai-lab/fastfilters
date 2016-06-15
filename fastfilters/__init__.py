@@ -3,15 +3,23 @@ import numpy as np
 
 __version__ = core.__version__
 
-def __reorder_array(array):
-	if array.flags['C_CONTIGUOUS']: return array
-
-	array = array.transpose(np.argsort(array.strides)[::-1])
-	return np.ascontiguousarray(array)
-
 def __p_fix_array(func):
 	def func_wrapper(array, *args, **kwargs):
-		return func(__reorder_array(array), *args, **kwargs)
+		permutation = []
+		if array.dtype == np.float32 and not array.flags['C_CONTIGUOUS']:
+			permutation = np.argsort(array.strides)[::-1]
+			array = array.transpose(permutation)
+
+			if array.strides[-1] != array.dtype.itemsize:
+				array = np.ascontiguousarray(array)
+
+		res = func(array, *args, **kwargs)
+
+		if len(permutation) > 0:
+			res = res.transpose(permutation[::-1])
+
+		return res
+
 	return func_wrapper
 
 def __get_fn(array, fn_2d, fn_3d):
