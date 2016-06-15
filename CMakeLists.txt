@@ -10,6 +10,7 @@ add_definitions(-DFF_VERSION_STR=\"${FF_VERSION}\")
 
 set(FF_UNROLL 10)
 
+add_definitions(-DFF_UNROLL=${FF_UNROLL})
 include("pybind11/tools/FindPythonLibsNew.cmake")
 
 include(CheckCCompilerFlag)
