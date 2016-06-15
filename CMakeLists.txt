@@ -6,6 +6,8 @@ include(GetGitRevisionDescription.cmake)
 git_describe(FF_VERSION --tags)
 string(SUBSTRING ${FF_VERSION} 1 -1 FF_VERSION)
 
+add_definitions(-DFF_VERSION_STR=\"${FF_VERSION}\")
+
 set(FF_UNROLL 10)
 
 include("pybind11/tools/FindPythonLibsNew.cmake")
@@ -358,7 +360,7 @@ while( number GREATER 0 )
   math( EXPR number "${number} - 1" ) # decrement number
 endwhile( number GREATER 0 )
 
-add_library(fastfilters_lib SHARED src/array.c
+add_library(fastfilters SHARED src/array.c
 src/cpu.c
 src/dummy.c
 src/fastfilters.c
@@ -375,10 +377,10 @@ ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c
 ${copied_files})
 
-set_target_properties(fastfilters_lib PROPERTIES OUTPUT_NAME fastfilters SOVERSION ${FF_VERSION})
+set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
-pybind11_add_module(fastfilters src/bindings_python.cxx)
-target_link_libraries(fastfilters PUBLIC fastfilters_lib)
+pybind11_add_module(core src/bindings_python.cxx)
+target_link_libraries(core PUBLIC fastfilters)
 
 
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
@@ -389,5 +391,6 @@ endif()
 set(FF_INSTALL_DIR ${FF_INSTALL_DIR} CACHE PATH "install directory for ff python extension." FORCE)
 file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
-install(TARGETS fastfilters_lib LIBRARY DESTINATION lib)
-install(TARGETS fastfilters LIBRARY DESTINATION ${FF_INSTALL_DIR})
+install(TARGETS fastfilters LIBRARY DESTINATION lib)
+install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/fastfilters/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
