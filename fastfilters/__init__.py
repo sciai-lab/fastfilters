@@ -50,12 +50,14 @@ def gaussianGradientMagnitude(array, sigma, window_size=0.0):
 
 @__p_fix_array
 def hessianOfGaussianEigenvalues(image, scale, window_size=0.0):
-	return __get_fn(image, hog2d, hog3d)(image, scale, window_size)
+	res = __get_fn(image, hog2d, hog3d)(image, scale, window_size)
+	return np.rollaxis(res, 0, len(res.shape))
 
 @__p_fix_array
 def laplacianOfGaussian(array, scale=1.0, window_size=0.0):
-	return __get_fn(image, laplacian2d, laplacian3d)(array, scale, window_size)
+	return __get_fn(array, laplacian2d, laplacian3d)(array, scale, window_size)
 
 @__p_fix_array
 def structureTensorEigenvalues(image, innerScale, outerScale, window_size=0.0):
-	return __get_fn(image, st2d, st3d)(image, innerScale, outerScale, window_size)
+	res = __get_fn(image, st2d, st3d)(image, innerScale, outerScale, window_size)
+	return np.rollaxis(res, 0, len(res.shape))
