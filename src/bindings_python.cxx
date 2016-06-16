@@ -406,10 +406,43 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::arr
     if (!fn(ff, ff_out_xx, ff_out_yy, ff_out_zz, ff_out_xy, ff_out_xz, ff_out_yz))
         throw std::logic_error("convolution failed.");
 
+    std::vector<size_t> shape;
+    std::vector<size_t> strides;
+
     const size_t n_pixels = ff.n_z * ff.n_x * ff.n_y * ff.n_channels;
 
-    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value, 2,
-                                            {3, n_pixels}, {sizeof(float) * n_pixels, sizeof(float)}));
+    unsigned int n_dim = 4;
+
+    if (ff.n_channels == 1) {
+        n_dim = 4;
+
+        shape.push_back(3);
+        shape.push_back(ff.n_z);
+        shape.push_back(ff.n_y);
+        shape.push_back(ff.n_x);
+
+        strides.push_back(sizeof(float) * ff.n_z * ff.n_y * ff.n_x);
+        strides.push_back(sizeof(float) * ff.n_y * ff.n_x);
+        strides.push_back(sizeof(float) * ff.n_x);
+        strides.push_back(sizeof(float));
+    } else {
+        n_dim = 5;
+
+        shape.push_back(3);
+        shape.push_back(ff.n_z);
+        shape.push_back(ff.n_y);
+        shape.push_back(ff.n_x);
+        shape.push_back(ff.n_channels);
+
+        strides.push_back(sizeof(float) * ff.n_channels * ff.n_x * ff.n_y * ff.n_z);
+        strides.push_back(sizeof(float) * ff.n_channels * ff.n_x * ff.n_y);
+        strides.push_back(sizeof(float) * ff.n_channels * ff.n_x);
+        strides.push_back(sizeof(float) * ff.n_channels);
+        strides.push_back(sizeof(float));
+    }
+
+    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value, n_dim,
+                                            shape, strides));
     py::buffer_info info_out = result.request();
 
     float *xx = ff_out_xx.ptr;
