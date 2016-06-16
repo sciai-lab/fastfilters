@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.8)
 project (fastfilters)
 
 include(GetGitRevisionDescription.cmake)
@@ -6,8 +6,11 @@ include(GetGitRevisionDescription.cmake)
 git_describe(FF_VERSION --tags)
 string(SUBSTRING ${FF_VERSION} 1 -1 FF_VERSION)
 
+add_definitions(-DFF_VERSION_STR=\"${FF_VERSION}\")
+
 set(FF_UNROLL 10)
 
+add_definitions(-DFF_UNROLL=${FF_UNROLL})
 include("pybind11/tools/FindPythonLibsNew.cmake")
 
 include(CheckCCompilerFlag)
@@ -19,17 +22,63 @@ else()
   message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag("-Ofast" HAS_OFAST_FLAG)
+
+if(HAS_OFAST_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
+endif()
+
+check_cxx_compiler_flag("-Wall" HAS_WALL_FLAG)
+check_cxx_compiler_flag("-Wextra" HAS_WEXTRA_FLAG)
+
+if(HAS_WALL_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+
+if(HAS_WEXTRA_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+endif()
 
 add_definitions(-DFF_VERSION=${FF_VERSION})
 
-include(CheckCXXCompilerFlag)
+
 check_cxx_compiler_flag("-std=c++14" HAS_CPP14_FLAG)
 check_cxx_compiler_flag("-std=c++11" HAS_CPP11_FLAG)
 
 check_cxx_compiler_flag("-mavx" HAS_AVX_FLAG)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2_FLAG)
 check_cxx_compiler_flag("-mfma" HAS_FMA_FLAG)
+
+check_cxx_compiler_flag("/arch:AVX" HAS_ARCH_AVX_FLAG)
+check_cxx_compiler_flag("/arch:AVX2" HAS_ARCH_AVX2_FLAG)
+
+if (HAS_AVX_FLAG)
+  set(AVX_FLAG "-mavx")
+elseif(HAS_ARCH_AVX_FLAG)
+  set(AVX_FLAG "/arch:AVX -D__AVX__=1")
+else()
+  set(AVX_FLAG "")
+endif()
+
+if (HAS_AVX2_FLAG)
+  set(AVX2_FLAG "-mavx2")
+elseif(HAS_ARCH_AVX2_FLAG)
+  set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
+else()
+  set(AVX2_FLAG "")
+endif()
+
+if (HAS_FMA_FLAG)
+  set(FMA_FLAG "-mfma")
+elseif(HAS_ARCH_AVX2_FLAG)
+  set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
+else()
+  set(FMA_FLAG "")
+endif()
 
 if (HAS_CPP14_FLAG)
   set(PYBIND11_CPP_STANDARD -std=c++14)
@@ -146,7 +195,7 @@ endfunction()
 include(CheckCXXSourceCompiles)
 
 set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX_FLAG}")
 
 check_cxx_source_compiles( "#include <immintrin.h>
 #include <stdlib.h>
@@ -164,7 +213,7 @@ int main()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_OLD}")
 
 set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX_FLAG} ${FMA_FLAG}")
 
 check_cxx_source_compiles( "#include <immintrin.h>
 #include <stdlib.h>
@@ -182,7 +231,7 @@ int main()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_OLD}")
 
 set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_FLAG}")
 
 check_cxx_source_compiles( "
 #include <immintrin.h>
@@ -221,6 +270,27 @@ check_cxx_source_compiles( "
         return a;
     }" HAVE_ASM_CPUID)
 
+check_cxx_source_compiles("
+    #include <stdio.h>
+    #include <intrin.h>
+    int main()
+    {
+        int cpuid[4];
+        __cpuidex(cpuid, 7, 0);
+        return cpuid[0];
+    }" HAVE_CPUIDEX)
+
+check_cxx_source_compiles("
+    #include <stdio.h>
+    #include <intrin.h>
+    int main()
+    {
+        unsigned int xcr0 = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+        return xcr0;
+    }" HAVE_INTRIN_XGETBV)
+
+
+
 check_cxx_source_compiles( "
     #include <stdio.h>
     int main()
@@ -239,8 +309,6 @@ check_cxx_source_compiles( "
 			(void)argv;
 			return __builtin_expect(argc > 2, false);
 		}" HAVE_BUILTIN_EXPECT)
-
-
 
 include(CheckIncludeFiles)
 check_include_files(cpuid.h HAVE_CPUID_H)
@@ -269,31 +337,31 @@ include_directories("${PROJECT_BINARY_DIR}")
 configure_file(${PROJECT_SOURCE_DIR}/src/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c COPYONLY)
 
-set_source_files_properties(${PROJECT_SOURCE_DIR}/src/linalg_avx.c PROPERTIES COMPILE_FLAGS -mavx)
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS -mavx)
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS -mavx2)
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/linalg_avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS ${AVX2_FLAG})
 
 configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c COPYONLY)
 
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS -mavx)
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "-mavx -mfma")
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG}")
 
 set(number ${FF_UNROLL})
 set(copied_files "")
 while( number GREATER 0 )
   configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "-mavx -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} -DFF_KERNEL_LEN=${number}")
 
   configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "-mavx -mfma -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
 
   set(copied_files ${copied_files} ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c)
 
   math( EXPR number "${number} - 1" ) # decrement number
 endwhile( number GREATER 0 )
 
-add_library(fastfilters_lib SHARED src/array.c
+add_library(fastfilters SHARED src/array.c
 src/cpu.c
 src/dummy.c
 src/fastfilters.c
@@ -310,29 +378,10 @@ ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c
 ${copied_files})
 
-set_target_properties(fastfilters_lib PROPERTIES OUTPUT_NAME fastfilters SOVERSION ${FF_VERSION})
+set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
-pybind11_add_module(fastfilters src/bindings_python.cxx)
-target_link_libraries(fastfilters PUBLIC fastfilters_lib)
-
-
-    ######################################################################
-    #
-    #      find default install directory for Python modules
-    #      (usually PYTHONDIR/Lib/site-packages)
-    #
-    ######################################################################
-    IF(NOT DEFINED VIGRANUMPY_INSTALL_DIR OR VIGRANUMPY_INSTALL_DIR MATCHES "^$")
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-                         "from distutils.sysconfig import *; print(get_python_lib(1))"
-                          OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
-        FILE(TO_CMAKE_PATH ${PYTHON_SITE_PACKAGES} VIGRANUMPY_INSTALL_DIR)
-    ENDIF()
-    SET(VIGRANUMPY_INSTALL_DIR ${VIGRANUMPY_INSTALL_DIR}
-        CACHE PATH "where to install the VIGRA Python package" FORCE)
-    # this is the install path relative to CMAKE_INSTALL_PREFIX,
-    # use this in INSTALL() commands to get packaging right
-    FILE(RELATIVE_PATH VIGRANUMPY_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${VIGRANUMPY_INSTALL_DIR})
+pybind11_add_module(core src/bindings_python.cxx)
+target_link_libraries(core PUBLIC fastfilters)
 
 
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
@@ -341,8 +390,8 @@ if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
 endif()
 
 set(FF_INSTALL_DIR ${FF_INSTALL_DIR} CACHE PATH "install directory for ff python extension." FORCE)
+file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
-FILE(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
-
-install(TARGETS fastfilters_lib LIBRARY DESTINATION lib)
-install(TARGETS fastfilters LIBRARY DESTINATION ${FF_INSTALL_DIR})
+install(TARGETS fastfilters LIBRARY DESTINATION lib)
+install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/fastfilters/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)

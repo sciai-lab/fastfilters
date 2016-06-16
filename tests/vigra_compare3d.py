@@ -10,7 +10,8 @@ except ImportError:
 		f.write('')
 	exit()
 
-a = np.random.randn(1000000).reshape(100,100,100).astype(np.float32)
+a = np.random.randn(1000000).reshape(100,100,100).astype(np.float32)[:,:90,:80]
+a = np.ascontiguousarray(a)
 
 sigmas = [1.0, 5.0, 10.0]
 
@@ -26,7 +27,7 @@ for order in [0,1,2]:
 
 
 for sigma in sigmas:
-	res_ff = ff.gradmag3d(a, sigma)
+	res_ff = ff.gaussianGradientMagnitude(a, sigma)
 	res_vigra = vigra.filters.gaussianGradientMagnitude(a, sigma)
 	print("gradmag3d ", order, sigma, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
@@ -34,7 +35,7 @@ for sigma in sigmas:
 		raise Exception("FAIL: gradmag3d ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
 
 for sigma in sigmas:
-	res_ff = ff.laplacian3d(a, sigma)
+	res_ff = ff.laplacianOfGaussian(a, sigma)
 	res_vigra = vigra.filters.laplacianOfGaussian(a, sigma)
 	print("laplacian3d ", order, sigma, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
@@ -42,8 +43,8 @@ for sigma in sigmas:
 		raise Exception("FAIL: laplacian3d ", order, sigma, np.max(np.abs(res_ff - res_vigra)))
 
 for sigma in sigmas:
-	res_ff = ff.hog3d(a, sigma)
-	res_vigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma).reshape((-1,3)).swapaxes(0,1)
+	res_ff = ff.hessianOfGaussianEigenvalues(a, sigma)
+	res_vigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma)
 	print("HOG", sigma, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
 	if np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra) > 1e-6 or np.any(np.isnan(np.abs(res_ff - res_vigra))):
@@ -51,8 +52,8 @@ for sigma in sigmas:
 
 for sigma in sigmas:
 	for sigma2 in sigmas:
-		res_ff = ff.st3d(a, sigma2, sigma)
-		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2).reshape((-1,3)).swapaxes(0,1)
+		res_ff = ff.structureTensorEigenvalues(a, sigma2, sigma)
+		res_vigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2)
 		print("ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)), np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra))
 
 		if np.sum(np.abs(res_ff-res_vigra))/np.size(res_vigra) > 1e-5 or np.any(np.isnan(np.abs(res_ff - res_vigra))):
