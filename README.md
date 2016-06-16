@@ -17,7 +17,7 @@ Installation (stable)
 Conda Installation (stable)
 ------------
 
-	% conda install -c svenpeter fastfilters
+	% conda install -c ilastik fastfilters
 
 
 Gentoo Installation (development)
