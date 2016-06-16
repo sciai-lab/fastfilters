@@ -10,7 +10,8 @@ except ImportError:
 		f.write('')
 	exit()
 
-a = np.random.randn(1000000).reshape(1000,1000).astype(np.float32)
+a = np.random.randn(1000000).reshape(1000,1000).astype(np.float32)[:,:900]
+a = np.ascontiguousarray(a)
 
 sigmas = [1.0, 5.0, 10.0]
 

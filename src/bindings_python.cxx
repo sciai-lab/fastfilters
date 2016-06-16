@@ -345,22 +345,22 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::arr
         n_dim = 3;
 
         shape.push_back(2);
-        shape.push_back(ff.n_x);
         shape.push_back(ff.n_y);
+        shape.push_back(ff.n_x);
 
         strides.push_back(sizeof(float) * ff.n_y * ff.n_x);
-        strides.push_back(sizeof(float) * ff.n_y);
+        strides.push_back(sizeof(float) * ff.n_x);
         strides.push_back(sizeof(float));
     } else {
         n_dim = 4;
 
         shape.push_back(2);
-        shape.push_back(ff.n_x);
         shape.push_back(ff.n_y);
+        shape.push_back(ff.n_x);
         shape.push_back(ff.n_channels);
 
         strides.push_back(sizeof(float) * ff.n_channels * ff.n_y * ff.n_x);
-        strides.push_back(sizeof(float) * ff.n_channels * ff.n_y);
+        strides.push_back(sizeof(float) * ff.n_channels * ff.n_x);
         strides.push_back(sizeof(float) * ff.n_channels);
         strides.push_back(sizeof(float));
     }
