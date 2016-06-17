@@ -25,9 +25,19 @@ endif()
 include(CheckCXXCompilerFlag)
 
 check_cxx_compiler_flag("-Ofast" HAS_OFAST_FLAG)
+check_cxx_compiler_flag("-O3" HAS_O2_FLAG)
+check_cxx_compiler_flag("-O2" HAS_O3_FLAG)
+
+if(HAS_O3_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+elseif(HAS_O2_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+endif()
 
 if(HAS_OFAST_FLAG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
+  set(OFAST_FLAG "-Ofast")
+else()
+  set(OFAST_FLAG "")
 endif()
 
 check_cxx_compiler_flag("-Wall" HAS_WALL_FLAG)
@@ -337,24 +347,24 @@ include_directories("${PROJECT_BINARY_DIR}")
 configure_file(${PROJECT_SOURCE_DIR}/src/library/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/library/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c COPYONLY)
 
-set_source_files_properties(${PROJECT_SOURCE_DIR}/src/library/linalg_avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS ${AVX2_FLAG})
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/library/linalg_avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS "${AVX2_FLAG} ${OFAST_FLAG}")
 
 configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c COPYONLY)
 
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} ${OFAST_FLAG}")
 
 set(number ${FF_UNROLL})
 set(copied_files "")
 while( number GREATER 0 )
   configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG} -DFF_KERNEL_LEN=${number}")
 
   configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
 
   set(copied_files ${copied_files} ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c)
 
@@ -385,7 +395,7 @@ target_link_libraries(core PUBLIC fastfilters)
 
 
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
-  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -cs "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
   FILE(TO_CMAKE_PATH ${PYTHON_SITE_PACKAGES} FF_INSTALL_DIR)
 endif()
 
