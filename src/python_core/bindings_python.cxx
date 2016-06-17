@@ -229,11 +229,13 @@ struct ConvolveGaussian : ConvolveBase {
 
     bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &out)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_gaussian2d(&in, order, sigma, &out, &opt);
     }
 
     bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_gaussian3d(&in, order, sigma, &out, &opt);
     }
 };
@@ -247,11 +249,13 @@ struct ConvolveGradMag : ConvolveBase {
 
     bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &out)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_gradmag2d(&in, sigma, &out, &opt);
     }
 
     bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_gradmag3d(&in, sigma, &out, &opt);
     }
 };
@@ -265,11 +269,13 @@ struct ConvolveLaPlacian : ConvolveBase {
 
     bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &out)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_laplacian2d(&in, sigma, &out, &opt);
     }
 
     bool operator()(fastfilters_array3d_t &in, fastfilters_array3d_t &out)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_laplacian3d(&in, sigma, &out, &opt);
     }
 };
@@ -284,6 +290,7 @@ struct ConvolveHessian : ConvolveBase {
     bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &xx, fastfilters_array2d_t &xy,
                     fastfilters_array2d_t &yy)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_hog2d(&in, sigma, &xx, &xy, &yy, &opt);
     }
 
@@ -291,6 +298,7 @@ struct ConvolveHessian : ConvolveBase {
                     fastfilters_array3d_t &zz, fastfilters_array3d_t &xy, fastfilters_array3d_t &xz,
                     fastfilters_array3d_t &yz)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_hog3d(&in, sigma, &xx, &yy, &zz, &xy, &xz, &yz, &opt);
     }
 };
@@ -305,6 +313,7 @@ struct ConvolveST : ConvolveBase {
     bool operator()(fastfilters_array2d_t &in, fastfilters_array2d_t &xx, fastfilters_array2d_t &xy,
                     fastfilters_array2d_t &yy)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_structure_tensor2d(&in, sigma_inner, sigma_outer, &xx, &xy, &yy, &opt);
     }
 
@@ -312,6 +321,7 @@ struct ConvolveST : ConvolveBase {
                     fastfilters_array3d_t &zz, fastfilters_array3d_t &xy, fastfilters_array3d_t &xz,
                     fastfilters_array3d_t &yz)
     {
+        py::gil_scoped_release release;
         return fastfilters_fir_structure_tensor3d(&in, sigma_inner, sigma_outer, &xx, &yy, &zz, &xy, &xz, &yz, &opt);
     }
 };
@@ -441,8 +451,8 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::arr
         strides.push_back(sizeof(float));
     }
 
-    auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value, n_dim,
-                                            shape, strides));
+    auto result =
+        py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value, n_dim, shape, strides));
     py::buffer_info info_out = result.request();
 
     float *xx = ff_out_xx.ptr;
@@ -489,6 +499,7 @@ template <typename T> py::arg arg_wrapper()
 template <typename ConvolveFunctor, typename... args> void bind2d3d(py::module &m, const std::string prefix)
 {
     m.def((prefix + "2d").c_str(), [](py::array_t<float> &input, args... E, float window_ratio) {
+
         ConvolveFunctor fn(E...);
         fn.set_window_ratio(window_ratio);
         return filter_binding<2>(input, fn);
