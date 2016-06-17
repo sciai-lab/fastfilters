@@ -6,7 +6,6 @@ include(GetGitRevisionDescription.cmake)
 git_describe(FF_VERSION --tags)
 string(SUBSTRING ${FF_VERSION} 1 -1 FF_VERSION)
 
-add_definitions(-DFF_VERSION_STR=\"${FF_VERSION}\")
 
 set(FF_UNROLL 10)
 
@@ -52,9 +51,6 @@ if(HAS_WEXTRA_FLAG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
 endif()
-
-add_definitions(-DFF_VERSION=${FF_VERSION})
-
 
 check_cxx_compiler_flag("-std=c++14" HAS_CPP14_FLAG)
 check_cxx_compiler_flag("-std=c++11" HAS_CPP11_FLAG)
@@ -393,9 +389,10 @@ set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 pybind11_add_module(core src/python_core/bindings_python.cxx)
 target_link_libraries(core PUBLIC fastfilters)
 
+set_source_files_properties(src/python_core/bindings_python.cxx PROPERTIES COMPILE_FLAGS "-DFF_VERSION_STR=\\\"${FF_VERSION}\\\"")
 
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
-  execute_process(COMMAND ${PYTHON_EXECUTABLE} -cs "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
   FILE(TO_CMAKE_PATH ${PYTHON_SITE_PACKAGES} FF_INSTALL_DIR)
 endif()
 
