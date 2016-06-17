@@ -26,7 +26,8 @@ IUSE=""
 
 RDEPEND="
 	${PYTHON_DEPS}
-"
+	dev-python/numpy[${PYTHON_USEDEP}]
+	"
 
 DEPEND="${RDEPEND}"
 
