@@ -6,19 +6,8 @@ __all__ = ["gaussianSmoothing", "gaussianGradientMagnitude", "hessianOfGaussianE
 
 def __p_fix_array(func):
 	def func_wrapper(array, *args, **kwargs):
-		permutation = []
-		if array.dtype == np.float32 and not array.flags['C_CONTIGUOUS']:
-			permutation = np.argsort(array.strides)[::-1]
-			array = array.transpose(permutation)
-
-			if array.strides[-1] != array.dtype.itemsize:
-				array = np.ascontiguousarray(array)
-
+		np.ascontiguousarray(array)
 		res = func(array, *args, **kwargs)
-
-		if len(permutation) > 0:
-			res = res.transpose(permutation[::-1])
-
 		return res
 
 	return func_wrapper

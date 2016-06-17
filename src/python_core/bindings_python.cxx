@@ -118,7 +118,7 @@ template <> struct ff_ndim_t<fastfilters_array3d_t> {
     }
 };
 
-template <typename fastfilters_array_t> void convert_py2ff(py::array_t<float> &np, fastfilters_array_t &ff)
+template <typename fastfilters_array_t, int flags> void convert_py2ff(py::array_t<float, flags> &np, fastfilters_array_t &ff)
 {
     const unsigned int ff_ndim = ff_ndim_t<fastfilters_array_t>::ndim;
     py::buffer_info np_info = np.request();
@@ -150,7 +150,7 @@ template <typename fastfilters_array_t> void convert_py2ff(py::array_t<float> &n
     }
 }
 
-py::array_t<float> array_like(py::array_t<float> &base)
+py::array_t<float> array_like(py::array_t<float, py::array::c_style | py::array::forcecast> &base)
 {
     py::buffer_info info = base.request();
     auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value, info.ndim,
@@ -159,7 +159,7 @@ py::array_t<float> array_like(py::array_t<float> &base)
     return result;
 }
 
-py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1)
+py::array_t<float> convolve_2d_fir(py::array_t<float, py::array::c_style | py::array::forcecast> &input, FIRKernel *k0, FIRKernel *k1)
 {
     fastfilters_array2d_t ff;
     fastfilters_array2d_t ff_out;
@@ -177,7 +177,7 @@ py::array_t<float> convolve_2d_fir(py::array_t<float> &input, FIRKernel *k0, FIR
     return result;
 }
 
-py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2)
+py::array_t<float> convolve_3d_fir(py::array_t<float, py::array::c_style | py::array::forcecast> &input, FIRKernel *k0, FIRKernel *k1, FIRKernel *k2)
 {
     fastfilters_array3d_t ff;
     fastfilters_array3d_t ff_out;
@@ -195,7 +195,7 @@ py::array_t<float> convolve_3d_fir(py::array_t<float> &input, FIRKernel *k0, FIR
     return result;
 }
 
-py::array_t<float> convolve_fir(py::array_t<float> &input, std::vector<FIRKernel *> k)
+py::array_t<float> convolve_fir(py::array_t<float, py::array::c_style | py::array::forcecast> &input, std::vector<FIRKernel *> k)
 {
     if (k.size() == 2)
         return convolve_2d_fir(input, k[0], k[1]);
@@ -326,7 +326,7 @@ struct ConvolveST : ConvolveBase {
     }
 };
 
-template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::array_t<float, py::array::c_style | py::array::forcecast> &input, ConvolveFunctor &fn)
 {
     fastfilters_array2d_t ff;
     fastfilters_array2d_t ff_out_xx, ff_out_yy, ff_out_xy;
@@ -392,7 +392,7 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_2d_binding(py::arr
     return result;
 }
 
-template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::array_t<float, py::array::c_style | py::array::forcecast> &input, ConvolveFunctor &fn)
 {
     fastfilters_array3d_t ff;
     fastfilters_array3d_t ff_out_xx, ff_out_yy, ff_out_zz, ff_out_xy, ff_out_xz, ff_out_yz;
@@ -475,7 +475,7 @@ template <class ConvolveFunctor> py::array_t<float> filter_ev_3d_binding(py::arr
 }
 
 template <unsigned ndim, typename ConvolveFunctor>
-py::array_t<float> filter_binding(py::array_t<float> &input, ConvolveFunctor &fn)
+py::array_t<float> filter_binding(py::array_t<float, py::array::c_style | py::array::forcecast> &input, ConvolveFunctor &fn)
 {
     typedef typename std::conditional<ndim == 2, fastfilters_array2d_t, fastfilters_array3d_t>::type ff_array_t;
     ff_array_t ff;
@@ -498,13 +498,13 @@ template <typename T> py::arg arg_wrapper()
 
 template <typename ConvolveFunctor, typename... args> void bind2d3d(py::module &m, const std::string prefix)
 {
-    m.def((prefix + "2d").c_str(), [](py::array_t<float> &input, args... E, float window_ratio) {
+    m.def((prefix + "2d").c_str(), [](py::array_t<float, py::array::c_style | py::array::forcecast> &input, args... E, float window_ratio) {
 
         ConvolveFunctor fn(E...);
         fn.set_window_ratio(window_ratio);
         return filter_binding<2>(input, fn);
     }, py::arg("input"), arg_wrapper<args *>()..., py::arg("window_ratio") = 0.0);
-    m.def((prefix + "3d").c_str(), [](py::array_t<float> &input, args... E, float window_ratio) {
+    m.def((prefix + "3d").c_str(), [](py::array_t<float, py::array::c_style | py::array::forcecast> &input, args... E, float window_ratio) {
         ConvolveFunctor fn(E...);
         fn.set_window_ratio(window_ratio);
         return filter_binding<3>(input, fn);
@@ -513,12 +513,12 @@ template <typename ConvolveFunctor, typename... args> void bind2d3d(py::module &
 
 template <typename ConvolveFunctor, typename... args> void bind2d3d_ev(py::module &m, const std::string prefix)
 {
-    m.def((prefix + "2d").c_str(), [](py::array_t<float> &input, args... E, float window_ratio) {
+    m.def((prefix + "2d").c_str(), [](py::array_t<float, py::array::c_style | py::array::forcecast> &input, args... E, float window_ratio) {
         ConvolveFunctor fn(E...);
         fn.set_window_ratio(window_ratio);
         return filter_ev_2d_binding(input, fn);
     }, py::arg("input"), arg_wrapper<args *>()..., py::arg("window_ratio") = 0.0);
-    m.def((prefix + "3d").c_str(), [](py::array_t<float> &input, args... E, float window_ratio) {
+    m.def((prefix + "3d").c_str(), [](py::array_t<float, py::array::c_style | py::array::forcecast> &input, args... E, float window_ratio) {
         ConvolveFunctor fn(E...);
         fn.set_window_ratio(window_ratio);
         return filter_ev_3d_binding(input, fn);
