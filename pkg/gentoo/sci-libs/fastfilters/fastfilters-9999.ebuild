@@ -5,12 +5,19 @@
 EAPI=6
 PYTHON_COMPAT=( python2_7 python3_4 )
 PYTHON_REQ_USE="threads,xml"
-inherit python-r1 python-utils-r1 git-r3 cmake-utils
 
 DESCRIPTION="fast gaussian and derivative convolutional filters"
 HOMEPAGE="https://github.com/svenpeter42/fastfilters"
+
+if [[ $PV = *9999* ]]; then
+	EGIT_BRANCH="devel"
+else
+	EGIT_COMMIT="v${PV}"
+fi
+
 EGIT_REPO_URI="https://github.com/svenpeter42/fastfilters.git"
-EGIT_BRANCH="devel"
+
+inherit flag-o-matic python-r1 python-utils-r1 git-r3 cmake-utils
 
 LICENSE="MIT"
 SLOT="0"
@@ -33,6 +40,7 @@ pkg_setup() {
 
 src_configure() {
 	fastfilters_configure() {
+		filter-flags -mavx -mfma -mavx2 -march=* -mtune=*
 		cmake-utils_src_configure
 	}
 	python_setup

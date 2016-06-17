@@ -1,7 +1,8 @@
-from .core import *
+from __future__ import absolute_import
+from .core import __version__, gaussian2d, gaussian3d, gradmag2d, gradmag3d, hog2d, hog3d, laplacian2d, laplacian3d, st2d, st3d
 import numpy as np
 
-__version__ = core.__version__
+__all__ = ["gaussianSmoothing", "gaussianGradientMagnitude", "hessianOfGaussianEigenvalues", "laplacianOfGaussian", "structureTensorEigenvalues"]
 
 def __p_fix_array(func):
 	def func_wrapper(array, *args, **kwargs):

@@ -324,25 +324,25 @@ if(NOT CAN_COMPILE_FMA)
 endif(NOT CAN_COMPILE_FMA)
 
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/config.h.in"
+  "${PROJECT_SOURCE_DIR}/src/library/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
   )
 
-include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/src/library/")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories("${PROJECT_SOURCE_DIR}/pybind11/include")
 include_directories("${PROJECT_SOURCE_DIR}/boost-preprocessor/include")
 include_directories("${PROJECT_BINARY_DIR}")
 
-configure_file(${PROJECT_SOURCE_DIR}/src/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/library/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/library/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c COPYONLY)
 
-set_source_files_properties(${PROJECT_SOURCE_DIR}/src/linalg_avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/library/linalg_avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
 set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
 set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS ${AVX2_FLAG})
 
-configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c COPYONLY)
 
 set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
 set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG}")
@@ -350,10 +350,10 @@ set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROP
 set(number ${FF_UNROLL})
 set(copied_files "")
 while( number GREATER 0 )
-  configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c COPYONLY)
+  configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c COPYONLY)
   set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} -DFF_KERNEL_LEN=${number}")
 
-  configure_file(${PROJECT_SOURCE_DIR}/src/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c COPYONLY)
+  configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c COPYONLY)
   set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
 
   set(copied_files ${copied_files} ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c)
@@ -361,26 +361,26 @@ while( number GREATER 0 )
   math( EXPR number "${number} - 1" ) # decrement number
 endwhile( number GREATER 0 )
 
-add_library(fastfilters SHARED src/array.c
-src/cpu.c
-src/dummy.c
-src/fastfilters.c
-src/fir_convolve.c
-src/fir_convolve_nosimd.c
-src/fir_filters.c
-src/fir_kernel.c
+add_library(fastfilters SHARED src/library/array.c
+src/library/cpu.c
+src/library/dummy.c
+src/library/fastfilters.c
+src/library/fir_convolve.c
+src/library/fir_convolve_nosimd.c
+src/library/fir_filters.c
+src/library/fir_kernel.c
 ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c
 ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c
-src/linalg_avx.c
-src/linalg.c
-src/memory.c
+src/library/linalg_avx.c
+src/library/linalg.c
+src/library/memory.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c
 ${copied_files})
 
 set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
-pybind11_add_module(core src/bindings_python.cxx)
+pybind11_add_module(core src/python_core/bindings_python.cxx)
 target_link_libraries(core PUBLIC fastfilters)
 
 
@@ -394,4 +394,4 @@ file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
 install(TARGETS fastfilters LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
-install(FILES ${PROJECT_SOURCE_DIR}/fastfilters/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/src/python_fastfilters/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
