@@ -4,31 +4,62 @@ import numpy as np
 
 __all__ = ["gaussianSmoothing", "gaussianGradientMagnitude", "hessianOfGaussianEigenvalues", "laplacianOfGaussian", "structureTensorEigenvalues"]
 
+try:
+	import vigra
+except ImportError:
+	pass
+
 def __p_fix_array(func):
+	"""
+	Decorator.
+	Remove singleton dimensions from the input array before calling the wrapped function,
+	then "unsqueeze" the result so it corresponds to the shape of the input data.
+	
+	Note: Singleton dimensions are only permitted if the input array has axistags.
+		  Otherwise, there is no way to know which singleton dimensions (if any) correspond to channel.
+	"""
 	def func_wrapper(array, *args, **kwargs):
-		np.ascontiguousarray(array)
-		res = func(array, *args, **kwargs)
-		return res
+		if hasattr(array, 'axistags'):
+			array = vigra.taggedView( np.ascontiguousarray(array), array.axistags )
+			squeezed = array.squeeze()
+			res = func(squeezed, *args, **kwargs)
+
+			if res.shape == squeezed.shape:
+				res = vigra.taggedView( res, squeezed.axistags )
+			else:
+				res = vigra.taggedView( res, list(squeezed.axistags) + [vigra.AxisInfo('c')] )
+			return res.withAxes(array.axistags)
+		else:
+			assert not any( np.array(array.shape) == 1 ), \
+				"Can't handle arrays with singleton dimensions (unless they are tagged VigraArrays)."
+			return func(array, *args, **kwargs)
 
 	return func_wrapper
 
 def __get_fn(array, fn_2d, fn_3d):
+	"""
+	Decide whether or not the given array is really 2D or 3D, and return the corresponding function.
+	"""
 	if hasattr(array, 'axistags'):
-		if len(array.shape) == 2: return fn_2d
-		elif len(array.shape) == 3:
-			if array.axistags[2].isSpatial(): return fn_3d
-			elif array.axistags[2].isChannel(): return fn_2d
-			else: raise NotImplementedError("Invalid array shape.")
-		elif len(array.shape) == 4 and array.axistags[3].isChannel(): return fn_3d
-		else: raise NotImplementedError("Invalid array shape.")
+		assert array.channels == 1, \
+		 	"Can't handle multi-channel data. " \
+			"(Your image has {} channels.)".format(array.channels)
+
+		time_index = array.axistags.index('t')
+		assert time_index == len(array.axistags) or array.shape[time_index] == 1 , \
+			"Can't handle arrays with multiple time steps. " \
+			"(Your image has {})".format(array.shape[time_index])
+
+		assert array.squeeze().ndim in (2,3), \
+			"Invalid array axes/dimensions: '{}'/{}".format(array.axistags, array.shape)
+
+	squeezed = array.squeeze()
+	if squeezed.ndim == 2:
+		return fn_2d
+	elif squeezed.ndim == 3:
+		return fn_3d
 	else:
-		if len(array.shape) == 2: return fn_2d
-		elif len(array.shape) == 3:
-			if array.shape[2] > 3: return fn_3d
-			else: return fn_2d
-		elif len(array.shape) == 4: return fn_3d
-		else: return NotImplementedError("Invalid array shape.")
-	raise NotImplementedError("Invalid array shape.")
+		raise NotImplementedError("Invalid array dimensions: {}".format(  array.shape ))
 
 @__p_fix_array
 def gaussianSmoothing(array, sigma, window_size=0.0):
