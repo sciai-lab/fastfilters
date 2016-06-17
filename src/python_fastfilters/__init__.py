@@ -1,8 +1,9 @@
 from __future__ import absolute_import
-from .core import __version__, gaussian2d, gaussian3d, gradmag2d, gradmag3d, hog2d, hog3d, laplacian2d, laplacian3d, st2d, st3d
+from . import core
 import numpy as np
 
 __all__ = ["gaussianSmoothing", "gaussianGradientMagnitude", "hessianOfGaussianEigenvalues", "laplacianOfGaussian", "structureTensorEigenvalues"]
+__version__ = core.__version__
 
 try:
 	import vigra
@@ -63,22 +64,30 @@ def __get_fn(array, fn_2d, fn_3d):
 
 @__p_fix_array
 def gaussianSmoothing(array, sigma, window_size=0.0):
-	return __get_fn(array, gaussian2d, gaussian3d)(array, 0, sigma, window_size)
+	return __get_fn(array, core.gaussian2d, core.gaussian3d)(array, 0, sigma, window_size)
 
 @__p_fix_array
 def gaussianGradientMagnitude(array, sigma, window_size=0.0):
-	return __get_fn(array, gradmag2d, gradmag3d)(array, sigma, window_size)
+	return __get_fn(array, core.gradmag2d, core.gradmag3d)(array, sigma, window_size)
 
 @__p_fix_array
 def hessianOfGaussianEigenvalues(image, scale, window_size=0.0):
-	res = __get_fn(image, hog2d, hog3d)(image, scale, window_size)
+	res = __get_fn(image, core.hog2d, core.hog3d)(image, scale, window_size)
 	return np.rollaxis(res, 0, len(res.shape))
 
 @__p_fix_array
 def laplacianOfGaussian(array, scale=1.0, window_size=0.0):
-	return __get_fn(array, laplacian2d, laplacian3d)(array, scale, window_size)
+	return __get_fn(array, core.laplacian2d, core.laplacian3d)(array, scale, window_size)
 
 @__p_fix_array
 def structureTensorEigenvalues(image, innerScale, outerScale, window_size=0.0):
-	res = __get_fn(image, st2d, st3d)(image, innerScale, outerScale, window_size)
+	res = __get_fn(image, core.st2d, core.st3d)(image, innerScale, outerScale, window_size)
 	return np.rollaxis(res, 0, len(res.shape))
+
+@__p_fix_array
+def gaussianDerivative(array, sigma, order, window_size=0.0):
+    if isinstance(order, list):
+        assert(len(order) == len(array.shape))
+        assert(len(np.unique(order)) == 1)
+        order = order[0]
+    return __get_fn(array, core.gaussian2d, core.gaussian3d)(array, order, sigma, window_size)

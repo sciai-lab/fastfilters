@@ -17,7 +17,7 @@ sigmas = [1.0, 5.0, 10.0]
 
 for order in [0,1,2]:
 	for sigma in sigmas:
-		res_ff = ff.gaussian2d(a, order, sigma)
+		res_ff = ff.gaussianDerivative(a, sigma, order)
 		res_vigra = vigra.filters.gaussianDerivative(a, sigma, [order,order])
 
 		print("gaussian ", order, sigma, np.max(np.abs(res_ff - res_vigra)))

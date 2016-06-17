@@ -1,4 +1,4 @@
-import fastfilters as ff
+import fastfilters.core as ff
 import numpy as np
 import sys
 
