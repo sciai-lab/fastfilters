@@ -54,7 +54,6 @@ script:
   - cmake -DCMAKE_INSTALL_PREFIX=`pwd`/install_dir ..
   - make VERBOSE=1
   - make install
-  - make test
 
 after_failure:
   - cat build/config.log
