@@ -15,7 +15,7 @@ def __p_fix_array(func):
 	Decorator.
 	Remove singleton dimensions from the input array before calling the wrapped function,
 	then "unsqueeze" the result so it corresponds to the shape of the input data.
-	
+
 	Note: Singleton dimensions are only permitted if the input array has axistags.
 		  Otherwise, there is no way to know which singleton dimensions (if any) correspond to channel.
 	"""
@@ -43,7 +43,7 @@ def __get_fn(array, fn_2d, fn_3d):
 	"""
 	if hasattr(array, 'axistags'):
 		assert array.channels == 1, \
-		 	"Can't handle multi-channel data. " \
+			"Can't handle multi-channel data. " \
 			"(Your image has {} channels.)".format(array.channels)
 
 		time_index = array.axistags.index('t')
