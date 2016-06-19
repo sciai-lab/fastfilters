@@ -12,7 +12,7 @@ package:
 
 source:
   git_url: https://github.com/svenpeter42/fastfilters
-  git_tag: v0.2.3
+  git_tag: v0.2.4
 
 build:
   number: 0
@@ -24,10 +24,12 @@ requirements:
     - python 2.7*|3.4*|3.5*
     - python {{PY_VER}}*
     - binutils
+    - numpy
 
   run:
     - libgcc 4.8* # [unix]
     - python {{PY_VER}}*
+    - numpy
 
 test:
   requires:

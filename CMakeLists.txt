@@ -6,7 +6,6 @@ include(GetGitRevisionDescription.cmake)
 git_describe(FF_VERSION --tags)
 string(SUBSTRING ${FF_VERSION} 1 -1 FF_VERSION)
 
-add_definitions(-DFF_VERSION_STR=\"${FF_VERSION}\")
 
 set(FF_UNROLL 10)
 
@@ -25,9 +24,19 @@ endif()
 include(CheckCXXCompilerFlag)
 
 check_cxx_compiler_flag("-Ofast" HAS_OFAST_FLAG)
+check_cxx_compiler_flag("-O3" HAS_O2_FLAG)
+check_cxx_compiler_flag("-O2" HAS_O3_FLAG)
+
+if(HAS_O3_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+elseif(HAS_O2_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+endif()
 
 if(HAS_OFAST_FLAG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
+  set(OFAST_FLAG "-Ofast")
+else()
+  set(OFAST_FLAG "")
 endif()
 
 check_cxx_compiler_flag("-Wall" HAS_WALL_FLAG)
@@ -42,9 +51,6 @@ if(HAS_WEXTRA_FLAG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
 endif()
-
-add_definitions(-DFF_VERSION=${FF_VERSION})
-
 
 check_cxx_compiler_flag("-std=c++14" HAS_CPP14_FLAG)
 check_cxx_compiler_flag("-std=c++11" HAS_CPP11_FLAG)
@@ -337,24 +343,24 @@ include_directories("${PROJECT_BINARY_DIR}")
 configure_file(${PROJECT_SOURCE_DIR}/src/library/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/library/linalg_avx2.c ${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c COPYONLY)
 
-set_source_files_properties(${PROJECT_SOURCE_DIR}/src/library/linalg_avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
-set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS ${AVX2_FLAG})
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/library/linalg_avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/linalg_avx2.avx2.c PROPERTIES COMPILE_FLAGS "${AVX2_FLAG} ${OFAST_FLAG}")
 
 configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c COPYONLY)
 
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS ${AVX_FLAG})
-set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG}")
+set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} ${OFAST_FLAG}")
 
 set(number ${FF_UNROLL})
 set(copied_files "")
 while( number GREATER 0 )
   configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG} -DFF_KERNEL_LEN=${number}")
 
   configure_file(${PROJECT_SOURCE_DIR}/src/library/fir_convolve_avx_impl.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c COPYONLY)
-  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
+  set_source_files_properties(${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c PROPERTIES COMPILE_FLAGS "${AVX_FLAG} ${OFAST_FLAG} ${FMA_FLAG} -DFF_KERNEL_LEN=${number}")
 
   set(copied_files ${copied_files} ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avx.c ${PROJECT_BINARY_DIR}/fir_convolve_avx_impl.${number}.avxfma.c)
 
@@ -380,9 +386,10 @@ ${copied_files})
 
 set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
-pybind11_add_module(core src/python_core/bindings_python.cxx)
+pybind11_add_module(core src/python/core.cxx)
 target_link_libraries(core PUBLIC fastfilters)
 
+set_source_files_properties(src/python/core.cxx PROPERTIES COMPILE_FLAGS "-DFF_VERSION_STR=\\\"${FF_VERSION}\\\"")
 
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
   execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -394,4 +401,10 @@ file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
 install(TARGETS fastfilters LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
-install(FILES ${PROJECT_SOURCE_DIR}/src/python_fastfilters/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+
+enable_testing()
+foreach(testName "vigra_compare" "vigra_compare3d" "vigra_compare_rgb" "border_bug")
+  add_test(${testName} ${PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tests/${testName}.py")
+  set_tests_properties(${testName} PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FF_INSTALL_DIR};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
+endforeach()
