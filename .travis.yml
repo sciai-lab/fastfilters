@@ -50,8 +50,11 @@ script:
   - if [ "$CXX" = "clang++" ]; then export CXX=$BASEDIR/llvm-$LLVM_VERSION/bin/clang++; export CC=$BASEDIR/llvm-$LLVM_VERSION/bin/clang; fi
   - mkdir build
   - cd build
-  - cmake ..
+  - mkdir -p install_dir
+  - cmake -DCMAKE_INSTALL_PREFIX=`pwd`/install_dir ..
   - make VERBOSE=1
+  - make install
+  - make test
 
 after_failure:
   - cat build/config.log

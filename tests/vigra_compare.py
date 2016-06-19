@@ -61,6 +61,3 @@ for sigma in sigmas:
 
 		if not np.allclose(res_ff, res_vigra, atol=1e-6) or np.any(np.isnan(np.abs(res_ff - res_vigra))):
 			raise Exception("FAIL: ST", sigma, sigma2, np.max(np.abs(res_ff - res_vigra)))
-
-with open(sys.argv[1], 'w') as f:
-	f.write('')
