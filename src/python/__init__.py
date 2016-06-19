@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from . import core
 import numpy as np
 
-__all__ = ["gaussianSmoothing", "gaussianGradientMagnitude", "hessianOfGaussianEigenvalues", "laplacianOfGaussian", "structureTensorEigenvalues"]
+__all__ = ["gaussianSmoothing", "gaussianGradientMagnitude", "hessianOfGaussianEigenvalues", "laplacianOfGaussian", "structureTensorEigenvalues", "gaussianDerivative"]
 __version__ = core.__version__
 
 try:
