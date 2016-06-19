@@ -386,10 +386,10 @@ ${copied_files})
 
 set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
-pybind11_add_module(core src/python_core/bindings_python.cxx)
+pybind11_add_module(core src/python/core.cxx)
 target_link_libraries(core PUBLIC fastfilters)
 
-set_source_files_properties(src/python_core/bindings_python.cxx PROPERTIES COMPILE_FLAGS "-DFF_VERSION_STR=\\\"${FF_VERSION}\\\"")
+set_source_files_properties(src/python/core.cxx PROPERTIES COMPILE_FLAGS "-DFF_VERSION_STR=\\\"${FF_VERSION}\\\"")
 
 if(NOT DEFINED FF_INSTALL_DIR OR FF_INSTALL_DIR MATCHES "^$")
   execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import *; print(get_python_lib(1))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -401,4 +401,4 @@ file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
 install(TARGETS fastfilters LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
-install(FILES ${PROJECT_SOURCE_DIR}/src/python_fastfilters/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
