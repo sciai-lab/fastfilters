@@ -18,7 +18,7 @@ check_c_compiler_flag("-std=c99" HAS_C99_FLAG)
 if (HAS_C99_FLAG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 else()
-  message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
+  # message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -73,7 +73,11 @@ endif()
 if (HAS_AVX2_FLAG)
   set(AVX2_FLAG "-mavx2")
 elseif(HAS_ARCH_AVX2_FLAG)
+  if (MSVC)
+  set(AVX2_FLAG "/arch:AVX2 ")
+  else()
   set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
+  endif()
 else()
   set(AVX2_FLAG "")
 endif()
@@ -81,7 +85,11 @@ endif()
 if (HAS_FMA_FLAG)
   set(FMA_FLAG "-mfma")
 elseif(HAS_ARCH_AVX2_FLAG)
+  if (MSVC)
+  set(AVX2_FLAG "/arch:AVX2 ")
+  else()
   set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
+  endif()
 else()
   set(FMA_FLAG "")
 endif()
@@ -91,7 +99,7 @@ if (HAS_CPP14_FLAG)
 elseif (HAS_CPP11_FLAG)
   set(PYBIND11_CPP_STANDARD -std=c++11)
 else()
-  message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
+  # message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
 endif()
 set(PYBIND11_CPP_STANDARD ${PYBIND11_CPP_STANDARD} CACHE STRING
     "C++ standard flag, e.g. -std=c++11 or -std=c++14. Defaults to latest available.")
@@ -240,7 +248,7 @@ set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_FLAG}")
 
 check_cxx_source_compiles( "
-#include <immintrin.h>
+    #include <immintrin.h>
     #include <stdlib.h>
     #include <stdio.h>
     int main()
@@ -384,6 +392,8 @@ ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c
 ${copied_files})
 
+target_compile_options(fastfilters PRIVATE ${AVX2_FLAG})
+target_compile_definitions(fastfilters PRIVATE FASTFILTERS_SHARED_LIBRARY)
 set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
 pybind11_add_module(core src/python/core.cxx)
@@ -399,7 +409,7 @@ endif()
 set(FF_INSTALL_DIR ${FF_INSTALL_DIR} CACHE PATH "install directory for ff python extension." FORCE)
 file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
-install(TARGETS fastfilters LIBRARY DESTINATION lib)
+install(TARGETS fastfilters ARCHIVE DESTINATION lib RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 

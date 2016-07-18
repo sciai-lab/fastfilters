@@ -33,12 +33,21 @@
 #define AVX_MATHFUN_H
 
 #include <immintrin.h>
+
+#include <intrin.h>
+//#include <dvec.h>
+
 #include <math.h>
 
 /* yes I know, the top of this file is quite ugly */
+#ifdef _WIN32
+#define ALIGN32_BEG __declspec(align(32))
+#define ALIGN32_END
+#define __attribute__(X)
+#else
 #define ALIGN32_BEG
 #define ALIGN32_END __attribute__((aligned(32)))
-
+#endif
 /* __m128 is ugly to write */
 typedef __m256 v8sf;  // vector of 8 float (avx)
 typedef __m256i v8si; // vector of 8 int   (avx)
@@ -778,6 +787,7 @@ Author : Naoki Shibata
 
 Main download page : http://shibatch.sourceforge.net/
 */
+
 
 static inline __m256 atan2_256_ps(__m256 y, __m256 x)
 {
