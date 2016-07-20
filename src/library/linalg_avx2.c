@@ -55,29 +55,37 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 v_a12 = _mm256_loadu_ps(a12 + i);
         __m256 v_a22 = _mm256_loadu_ps(a22 + i);
 
-        __m256 c0 = v_a00 * v_a11 * v_a22 + two * v_a01 * v_a02 * v_a12 - v_a00 * v_a12 * v_a12 -
-                    v_a11 * v_a02 * v_a02 - v_a22 * v_a01 * v_a01;
-        __m256 c1 = v_a00 * v_a11 - v_a01 * v_a01 + v_a00 * v_a22 - v_a02 * v_a02 + v_a11 * v_a22 - v_a12 * v_a12;
-        __m256 c2 = v_a00 + v_a11 + v_a22;
-        __m256 c2Div3 = c2 * v_inv3;
-        __m256 aDiv3 = (c1 - c2 * c2Div3) * v_inv3;
+        __m256 c0 = _avx_sub(_avx_sub(_avx_sub(_avx_add(_avx_mul(_avx_mul(v_a00, v_a11), v_a22),
+            _avx_mul(_avx_mul(_avx_mul(two, v_a01), v_a02), v_a12)),
+            _avx_mul(_avx_mul(v_a00, v_a12), v_a12)),
+            _avx_mul(_avx_mul(v_a11, v_a02), v_a02)),
+            _avx_mul(_avx_mul(v_a22, v_a01), v_a01));
+        __m256 c1 = _avx_sub(_avx_add(_avx_sub(_avx_add(_avx_sub(_avx_mul(v_a00, v_a11),
+            _avx_mul(v_a01, v_a01)),
+            _avx_mul(v_a00, v_a22)),
+            _avx_mul(v_a02, v_a02)),
+            _avx_mul(v_a11, v_a22)),
+            _avx_mul(v_a12, v_a12));
+        __m256 c2 = _avx_add(_avx_add(v_a00, v_a11), v_a22);
+        __m256 c2Div3 = _avx_mul(c2, v_inv3);
+        __m256 aDiv3 = _avx_mul(_avx_sub(c1, _avx_mul(c2, c2Div3)), v_inv3);
 
         aDiv3 = _mm256_min_ps(aDiv3, zero);
 
-        __m256 mbDiv2 = half * (c0 + c2Div3 * (two * c2Div3 * c2Div3 - c1));
-        __m256 q = mbDiv2 * mbDiv2 + aDiv3 * aDiv3 * aDiv3;
+        __m256 mbDiv2 = _avx_mul(half, _avx_add(c0, _avx_mul(c2Div3, _avx_sub(_avx_mul(_avx_mul(two, c2Div3), c2Div3), c1))));
+        __m256 q = _avx_add(_avx_mul(mbDiv2, mbDiv2), _avx_mul(_avx_mul(aDiv3, aDiv3), aDiv3));
 
         q = _mm256_min_ps(q, zero);
 
-        __m256 magnitude = _mm256_sqrt_ps(-aDiv3);
-        __m256 angle = atan2_256_ps(_mm256_sqrt_ps(-q), mbDiv2) * v_inv3;
+        __m256 magnitude = _mm256_sqrt_ps(_avx_neg(aDiv3));
+        __m256 angle = _avx_mul(atan2_256_ps(_mm256_sqrt_ps(_avx_neg(q)), mbDiv2), v_inv3);
         __m256 cs, sn;
 
         sincos256_ps(angle, &sn, &cs);
 
-        __m256 r0 = (c2Div3 + two * magnitude * cs);
-        __m256 r1 = (c2Div3 - magnitude * (cs + v_root3 * sn));
-        __m256 r2 = (c2Div3 - magnitude * (cs - v_root3 * sn));
+        __m256 r0 = _avx_add(c2Div3, _avx_mul(_avx_mul(two, magnitude), cs));
+        __m256 r1 = _avx_sub(c2Div3, _avx_mul(magnitude, _avx_add(cs, _avx_mul(v_root3, sn))));
+        __m256 r2 = _avx_sub(c2Div3, _avx_mul(magnitude, _avx_sub(cs, _avx_mul(v_root3, sn))));
 
         __m256 v_r0_tmp = _mm256_min_ps(r0, r1);
         __m256 v_r1_tmp = _mm256_max_ps(r0, r1);
