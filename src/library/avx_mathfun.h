@@ -28,19 +28,14 @@
 
   (this is the zlib license)
 */
-
 #ifndef AVX_MATHFUN_H
 #define AVX_MATHFUN_H
 
 #include <immintrin.h>
-
-#include <intrin.h>
-//#include <dvec.h>
-
 #include <math.h>
 
 /* yes I know, the top of this file is quite ugly */
-#ifdef _WIN32
+#ifdef _MSC_VER
 #define ALIGN32_BEG __declspec(align(32))
 #define ALIGN32_END
 #define __attribute__(X)
@@ -789,7 +784,7 @@ Main download page : http://shibatch.sourceforge.net/
 */
 static inline __m256 _avx_neg(__m256 x)
 {
-#ifdef _WIN32  
+#ifdef _MSC_VER  
     return _mm256_sub_ps(_mm256_setzero_ps(), x);
 #else
     return -x;
@@ -798,7 +793,7 @@ static inline __m256 _avx_neg(__m256 x)
 
 static inline __m256 _avx_sub(__m256 a, __m256 b)
 {
-#ifdef _WIN32  
+#ifdef _MSC_VER  
     return _mm256_sub_ps(a, b);
 #else
     return a - b;
@@ -807,7 +802,7 @@ static inline __m256 _avx_sub(__m256 a, __m256 b)
 
 static inline __m256 _avx_add(__m256 a, __m256 b)
 {
-#ifdef _WIN32  
+#ifdef _MSC_VER  
     return _mm256_add_ps(a, b);
 #else
     return a + b;
@@ -816,7 +811,7 @@ static inline __m256 _avx_add(__m256 a, __m256 b)
 
 static inline void _avx_iadd(__m256 *a, __m256 b)
 {
-#ifdef _WIN32  
+#ifdef _MSC_VER  
     *a = _mm256_add_ps(*a, b);
 #else
     *a += b;
@@ -825,7 +820,7 @@ static inline void _avx_iadd(__m256 *a, __m256 b)
 
 static inline __m256 _avx_mul(__m256 a, __m256 b)
 {
-#ifdef _WIN32  
+#ifdef _MSC_VER  
     return _mm256_mul_ps(a, b);
 #else
     return a * b;
