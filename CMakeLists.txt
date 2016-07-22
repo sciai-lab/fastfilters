@@ -15,14 +15,22 @@ include("pybind11/tools/FindPythonLibsNew.cmake")
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-std=c99" HAS_C99_FLAG)
 
+include(CheckCSourceCompiles)
+
+check_c_source_compiles( "
+int main()
+{
+    for(int i = 0; i < 5; ++i) { }
+    return 0;
+} " CAN_COMPILE_C99_FEAT)
+
 if (HAS_C99_FLAG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-else()
-  # message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
+elseif(!CAN_COMPILE_C99_FEAT)
+  message(FATAL_ERROR "Unsupported compiler - fastfilters requires some C99 features!")
 endif()
 
 include(CheckCXXCompilerFlag)
-
 check_cxx_compiler_flag("-Ofast" HAS_OFAST_FLAG)
 check_cxx_compiler_flag("-O3" HAS_O2_FLAG)
 check_cxx_compiler_flag("-O2" HAS_O3_FLAG)
@@ -91,7 +99,9 @@ if (HAS_CPP14_FLAG)
 elseif (HAS_CPP11_FLAG)
   set(PYBIND11_CPP_STANDARD -std=c++11)
 else()
-  # message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
+  if(NOT DEFINED MSVC_VERSION OR MSVC_VERSION LESS 1800)
+    message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
+  endif()
 endif()
 set(PYBIND11_CPP_STANDARD ${PYBIND11_CPP_STANDARD} CACHE STRING
     "C++ standard flag, e.g. -std=c++11 or -std=c++14. Defaults to latest available.")
@@ -260,7 +270,7 @@ check_cxx_source_compiles( "
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_OLD}")
 
 function(check_cpu_supports flagname defname)
-	check_cxx_source_compiles( "#include <stdio.h> \n int main() { return __builtin_cpu_supports(\"${flagname}\"); }" ${defname})
+    check_cxx_source_compiles( "#include <stdio.h> \n int main() { return __builtin_cpu_supports(\"${flagname}\"); }" ${defname})
 endfunction()
 
 check_cpu_supports("avx" "HAVE_GNU_CPU_SUPPORTS_AVX")
@@ -272,11 +282,11 @@ check_cxx_source_compiles( "
     #include <stdio.h>
     int main()
     {
-	    unsigned int a, b, c, d;
+        unsigned int a, b, c, d;
 
-		a = 1;
-		c = 0;
-		__asm__ __volatile__ (\"cpuid\" : \"+a\"(a), \"+b\"(b), \"+c\"(c), \"=d\"(d));
+        a = 1;
+        c = 0;
+        __asm__ __volatile__ (\"cpuid\" : \"+a\"(a), \"+b\"(b), \"+c\"(c), \"=d\"(d));
         return a;
     }" HAVE_ASM_CPUID)
 
@@ -305,32 +315,32 @@ check_cxx_source_compiles( "
     #include <stdio.h>
     int main()
     {
-	    unsigned int a, b, c;
+        unsigned int a, b, c;
 
-		c = 0;
-		__asm__ __volatile__(\"xgetbv\" : \"=a\"(a), \"=d\"(b) : \"c\"(c));
+        c = 0;
+        __asm__ __volatile__(\"xgetbv\" : \"=a\"(a), \"=d\"(b) : \"c\"(c));
         return a;
     }" HAVE_ASM_XGETBV)
 
 check_cxx_source_compiles( "
-		#include <stdbool.h>
-		int main(int argc, char *argv[])
-		{
-			(void)argv;
-			return __builtin_expect(argc > 2, false);
-		}" HAVE_BUILTIN_EXPECT)
+        #include <stdbool.h>
+        int main(int argc, char *argv[])
+        {
+            (void)argv;
+            return __builtin_expect(argc > 2, false);
+        }" HAVE_BUILTIN_EXPECT)
 
 include(CheckIncludeFiles)
 check_include_files(cpuid.h HAVE_CPUID_H)
 
 if(NOT CAN_COMPILE_AVX)
-	message( FATAL_ERROR "Compiler cannot emit avx instructions.")
+    message( FATAL_ERROR "Compiler cannot emit avx instructions.")
 endif(NOT CAN_COMPILE_AVX)
 if(NOT CAN_COMPILE_AVX2)
-	message( FATAL_ERROR "Compiler cannot emit avx2 instructions.")
+    message( FATAL_ERROR "Compiler cannot emit avx2 instructions.")
 endif(NOT CAN_COMPILE_AVX2)
 if(NOT CAN_COMPILE_FMA)
-	message( FATAL_ERROR "Compiler cannot emit fma instructions.")
+    message( FATAL_ERROR "Compiler cannot emit fma instructions.")
 endif(NOT CAN_COMPILE_FMA)
 
 configure_file (
