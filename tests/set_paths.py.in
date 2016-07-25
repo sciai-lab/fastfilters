@@ -1,0 +1,11 @@
+import sys, os, re
+
+if len(sys.argv) == 3:
+    outdir = '/' + sys.argv[-1]
+else:
+    outdir = ''
+
+fastfilters_dir = re.sub('/Release$', outdir, r'$<TARGET_FILE_DIR:fastfilters>')
+
+os.environ['PATH'] = os.pathsep.join([fastfilters_dir.replace('/', os.sep), os.environ['PATH']])
+sys.path.insert(0, r'@fastfilters_py_tmp_dir@')
