@@ -17,6 +17,10 @@ check_c_compiler_flag("-std=c99" HAS_C99_FLAG)
 
 include(CheckCSourceCompiles)
 
+if (HAS_C99_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+endif()
+
 check_c_source_compiles( "
 int main()
 {
@@ -24,9 +28,7 @@ int main()
     return 0;
 } " CAN_COMPILE_C99_FEAT)
 
-if (HAS_C99_FLAG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-elseif(!CAN_COMPILE_C99_FEAT)
+if(NOT CAN_COMPILE_C99_FEAT)
   message(FATAL_ERROR "Unsupported compiler - fastfilters requires some C99 features!")
 endif()
 
