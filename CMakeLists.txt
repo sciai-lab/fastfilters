@@ -404,6 +404,7 @@ target_compile_definitions(fastfilters PRIVATE FASTFILTERS_SHARED_LIBRARY)
 set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
 pybind11_add_module(core src/python/core.cxx)
+pybind11_enable_warnings (core)
 target_link_libraries(core PUBLIC fastfilters)
 
 set_source_files_properties(src/python/core.cxx PROPERTIES COMPILE_FLAGS "-DFF_VERSION_STR=\\\"${FF_VERSION}\\\"")
