@@ -16,10 +16,16 @@ add_custom_COMMAND(
     ARGS -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${test_file}" "${CMAKE_CURRENT_BINARY_DIR}/${test_file}"
     COMMENT "Copying Python tests")
 endforeach()
+if (MSVC)
+    add_custom_COMMAND(
+        TARGET fastfilters_py_test
+        POST_BUILD
+        COMMAND if not exist "${CMAKE_CFG_INTDIR}" mkdir "${CMAKE_CFG_INTDIR}"
+endif()
 add_custom_COMMAND(
     TARGET fastfilters_py_test
     POST_BUILD
-    COMMAND nosetests -a ${CMAKE_CFG_INTDIR})
+    COMMAND python -c "import nose; nose.main()" . "${CMAKE_CFG_INTDIR}")
 
 
 if(CMAKE_MAJOR_VERSION LESS 3)

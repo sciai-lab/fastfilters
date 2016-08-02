@@ -3,16 +3,9 @@ print("\nexecuting test file", __file__, file=sys.stderr)
 exec(compile(open('set_paths.py', "rb").read(), 'set_paths.py', 'exec'))
 import fastfilters as ff
 import numpy as np
+import vigra
 
-def test_vigra_compare3d():
-    try:
-        import vigra
-    except ImportError:
-        print("WARNING: vigra not available - skipping tests.")
-        with open(sys.argv[1], 'w') as f:
-            f.write('')
-        exit()
-
+def donttest_vigra_compare3d():
     a = np.random.randn(1000000).reshape(100,100,100).astype(np.float32)[:,:90,:80]
     a = np.ascontiguousarray(a)
 
