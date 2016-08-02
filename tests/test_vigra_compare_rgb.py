@@ -5,7 +5,7 @@ import fastfilters.core as ff
 import numpy as np
 import vigra
 
-def donttest_vigra_compare_rgb():
+def test_vigra_compare_rgb():
     a = np.random.randn(3000000).reshape(1000,1000,3).astype(np.float32)
     avigra = vigra.RGBImage(a)
 

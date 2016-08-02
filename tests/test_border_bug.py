@@ -5,10 +5,7 @@ import fastfilters as ff
 import numpy as np
 from nose.tools import ok_
 
-def test_dummy():
-    ok_(True)
-
-def donttest_border_bug():
+def test_border_bug():
     a = np.ones((150,150), dtype=np.float32)
     a[:] = np.nan
     a[25:125, 25:125] = 0

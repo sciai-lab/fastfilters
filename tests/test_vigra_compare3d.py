@@ -5,7 +5,7 @@ import fastfilters as ff
 import numpy as np
 import vigra
 
-def donttest_vigra_compare3d():
+def test_vigra_compare3d():
     a = np.random.randn(1000000).reshape(100,100,100).astype(np.float32)[:,:90,:80]
     a = np.ascontiguousarray(a)
 

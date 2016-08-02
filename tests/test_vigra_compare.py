@@ -5,7 +5,7 @@ import fastfilters as ff
 import numpy as np
 import vigra
 
-def donttest_vigra_compare():
+def test_vigra_compare():
     a = np.random.randn(1000000).reshape(1000,1000).astype(np.float32)[:,:900]
     a = np.ascontiguousarray(a)
 

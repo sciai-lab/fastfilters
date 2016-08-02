@@ -20,7 +20,7 @@ if (MSVC)
     add_custom_COMMAND(
         TARGET fastfilters_py_test
         POST_BUILD
-        COMMAND if not exist "${CMAKE_CFG_INTDIR}" mkdir "${CMAKE_CFG_INTDIR}"
+        COMMAND if not exist "${CMAKE_CFG_INTDIR}" mkdir "${CMAKE_CFG_INTDIR}")
 endif()
 add_custom_COMMAND(
     TARGET fastfilters_py_test
