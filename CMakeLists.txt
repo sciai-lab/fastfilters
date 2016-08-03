@@ -448,11 +448,4 @@ install(TARGETS fastfilters ARCHIVE DESTINATION lib RUNTIME DESTINATION bin LIBR
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 
-
 ADD_SUBDIRECTORY(tests)
-
-enable_testing()
-foreach(testName "vigra_compare" "vigra_compare3d" "vigra_compare_rgb" "border_bug")
-  add_test(${testName} ${PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tests/${testName}.py")
-  set_tests_properties(${testName} PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FF_INSTALL_DIR};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
-endforeach()
