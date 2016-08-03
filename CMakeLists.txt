@@ -419,6 +419,7 @@ file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
 set(fastfilters_py_tmp_dir "${CMAKE_CURRENT_BINARY_DIR}/python")
 file(MAKE_DIRECTORY "${fastfilters_py_tmp_dir}")
+file(MAKE_DIRECTORY "${fastfilters_py_tmp_dir}/fastfilters")
 
 add_custom_target(fastfilters_py_lib)
 SET(PY_SOURCES
