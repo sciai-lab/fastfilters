@@ -111,7 +111,7 @@ set(PYBIND11_CPP_STANDARD ${PYBIND11_CPP_STANDARD} CACHE STRING
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PYBIND11_CPP_STANDARD}")
 
 if (MSVC) #disable specific VS warnings
-  set(disabled_warnings "/wd4305 /wd4127 /wd4571 /wd4514 /wd4820 /wd4668 /wd4623 /wd4626 /wd5027 /wd4625 /wd4191 /wd4371 /wd4710 /wd4244")
+  set(disabled_warnings "/wd4305 /wd4127 /wd4571 /wd4514 /wd4820 /wd4668 /wd4623 /wd4626 /wd5027 /wd4625 /wd4191 /wd4371 /wd4710 /wd4244 /wd4267 /wd4456")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${disabled_warnings}")
 endif()
 
@@ -417,9 +417,38 @@ endif()
 set(FF_INSTALL_DIR ${FF_INSTALL_DIR} CACHE PATH "install directory for ff python extension." FORCE)
 file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
+set(fastfilters_py_tmp_dir "${CMAKE_CURRENT_BINARY_DIR}/python")
+file(MAKE_DIRECTORY "${fastfilters_py_tmp_dir}")
+
+add_custom_target(fastfilters_py_lib)
+SET(PY_SOURCES
+    __init__.py
+    )
+foreach(lib_file ${PY_SOURCES})
+add_custom_COMMAND(
+    TARGET fastfilters_py_lib
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+    ARGS -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/src/python/${lib_file}" "${fastfilters_py_tmp_dir}/fastfilters/${lib_file}"
+    COMMENT "Copying Python sources to temporary module directory")
+endforeach(lib_file)
+
+add_custom_target(fastfilters_py)
+add_dependencies(fastfilters_py fastfilters_py_lib core fastfilters)
+
+ADD_CUSTOM_COMMAND(
+        TARGET core
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+        ARGS -E copy "$<TARGET_FILE:core>" "${fastfilters_py_tmp_dir}/fastfilters/"
+        COMMENT "Copying pyd file to temporary module directory")
+
 install(TARGETS fastfilters ARCHIVE DESTINATION lib RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+
+
+ADD_SUBDIRECTORY(tests)
 
 enable_testing()
 foreach(testName "vigra_compare" "vigra_compare3d" "vigra_compare_rgb" "border_bug")

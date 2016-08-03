@@ -80,5 +80,5 @@ void fastfilters_memory_align_free(void *ptr)
     assert((magic & ~0xff) == ALIGN_MAGIC);
 
     ptr_cast -= magic & 0xff;
-    free(ptr_cast);
+    fastfilters_memory_free(ptr_cast);
 }
