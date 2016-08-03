@@ -25,7 +25,8 @@ endif()
 add_custom_COMMAND(
     TARGET fastfilters_py_test
     POST_BUILD
-    COMMAND python -c "import nose; nose.main()" . "${CMAKE_CFG_INTDIR}")
+    COMMAND python -c "import nose; nose.main()" . "${CMAKE_CFG_INTDIR}" 
+    VERBATIM)
 
 
 if(CMAKE_MAJOR_VERSION LESS 3)
