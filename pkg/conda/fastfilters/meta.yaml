@@ -11,7 +11,7 @@ package:
   version: {{tagged_version}}
 
 source:
-  path: ../../../../
+  path: ../../../
 
 build:
   number: 0
@@ -33,6 +33,9 @@ requirements:
 test:
   requires:
     - vigra >=1.11.0
+
+  source_files:
+    - tests
 
   imports:
     - fastfilters
