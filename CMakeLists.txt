@@ -402,6 +402,7 @@ file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 install(TARGETS fastfilters LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/include/fastfilters.h DESTINATION include)
 
 enable_testing()
 foreach(testName "vigra_compare" "vigra_compare3d" "vigra_compare_rgb" "border_bug")
