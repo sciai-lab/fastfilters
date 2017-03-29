@@ -447,5 +447,6 @@ ADD_CUSTOM_COMMAND(
 install(TARGETS fastfilters ARCHIVE DESTINATION lib RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
+install(FILES ${PROJECT_SOURCE_DIR}/include/fastfilters.h DESTINATION include)
 
 ADD_SUBDIRECTORY(tests)
