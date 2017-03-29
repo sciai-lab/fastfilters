@@ -21,7 +21,7 @@ for order in [0,1,2]:
 			resvigra = vigra.filters.gaussianDerivative(a, sigma, [order, order])
 
 		with Timer() as tff:
-			resff = ff.gaussian2d(a, int(order), float(sigma))
+			resff = ff.gaussianDerivative(a, sigma, [order, order])
 
 		fact = tvigra.delta / tff.delta
 
@@ -33,7 +33,7 @@ for sigma in [1,2,3,4,5,6,7,8,9,10]:
 			resvigra = vigra.filters.gaussianGradientMagnitude(a, sigma)
 
 		with Timer() as tff:
-			resff = ff.gradmag2d(a, sigma)
+			resff = ff.gaussianGradientMagnitude(a, sigma)
 
 		fact = tvigra.delta / tff.delta
 
@@ -44,7 +44,7 @@ for sigma in [1,2,3,4,5,6,7,8,9,10]:
 			resvigra = vigra.filters.laplacianOfGaussian(a, sigma)
 
 		with Timer() as tff:
-			resff = ff.laplacian2d(a, sigma)
+			resff = ff.laplacianOfGaussian(a, sigma)
 
 		fact = tvigra.delta / tff.delta
 
@@ -57,7 +57,7 @@ for sigma in [1,2,3,4,5,6,7,8,9,10]:
 			resvigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma)
 
 		with Timer() as tff:
-			resff = ff.hog2d(a, sigma)
+			resff = ff.hessianOfGaussianEigenvalues(a, sigma)
 
 		fact = tvigra.delta / tff.delta
 
@@ -70,7 +70,7 @@ for sigma in [1,2,3,4,5,6,7,8,9,10]:
 		resvigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2)
 
 	with Timer() as tff:
-		resff = ff.st2d(a, sigma2, sigma)
+		resff = ff.structureTensorEigenvalues(a, sigma, sigma2)
 
 	fact = tvigra.delta / tff.delta
 
@@ -80,59 +80,59 @@ for sigma in [1,2,3,4,5,6,7,8,9,10]:
 a = np.zeros((100,100,100)).astype(np.float32)
 
 for order in [0,1,2]:
-	for sigma in [1,2,3,4,5,6,7,8,9,10]:
+	for sigma in [1,2,3,4,5]:
 		with Timer() as tvigra:
 			resvigra = vigra.filters.gaussianDerivative(a, sigma, [order, order, order])
 
 		with Timer() as tff:
-			resff = ff.gaussian3d(a, int(order), float(sigma))
+			resff = ff.gaussianDerivative(a, sigma, [order, order, order])
 
 		fact = tvigra.delta / tff.delta
 
 		print("Timing gaussian 3D with order = %d and sigma = %d:  vigra = %f, ff = %f --> speedup: %f" % (order, sigma, tvigra.delta, tff.delta, fact))
 
-for sigma in [1,2,3,4,5,6,7,8,9,10]:
+for sigma in [1,2,3,4,5]:
 		with Timer() as tvigra:
 			resvigra = vigra.filters.gaussianGradientMagnitude(a, sigma)
 
 		with Timer() as tff:
-			resff = ff.gradmag3d(a, sigma)
+			resff = ff.gaussianGradientMagnitude(a, sigma)
 
 		fact = tvigra.delta / tff.delta
 
 		print("Timing gradient magnitude 3D with sigma = %f:  vigra = %f, ff = %f --> speedup: %f" % (sigma, tvigra.delta, tff.delta, fact))
 
 
-for sigma in [1,2,3,4,5,6,7,8,9,10]:
+for sigma in [1,2,3,4,5]:
 		with Timer() as tvigra:
 			resvigra = vigra.filters.laplacianOfGaussian(a, sigma)
 
 		with Timer() as tff:
-			resff = ff.laplacian3d(a, sigma)
+			resff = ff.laplacianOfGaussian(a, sigma)
 
 		fact = tvigra.delta / tff.delta
 
 		print("Timing laplacian 3D with sigma = %f:  vigra = %f, ff = %f --> speedup: %f" % (sigma, tvigra.delta, tff.delta, fact))
 
-for sigma in [1,2,3,4,5,6,7,8,9,10]:
+for sigma in [1,2,3,4,5]:
 		with Timer() as tvigra:
 			resvigra = vigra.filters.hessianOfGaussianEigenvalues(a, sigma)
 
 		with Timer() as tff:
-			resff = ff.hog3d(a, sigma)
+			resff = ff.hessianOfGaussianEigenvalues(a, sigma)
 
 		fact = tvigra.delta / tff.delta
 
 		print("Timing HOG 3D with sigma = %f:  vigra = %f, ff = %f --> speedup: %f" % (sigma, tvigra.delta, tff.delta, fact))
 
 
-for sigma in [1,2,3,4,5,6,7,8,9,10]:
+for sigma in [1,2,3,4,5]:
 	sigma2 = 2*sigma
 	with Timer() as tvigra:
 		resvigra = vigra.filters.structureTensorEigenvalues(a, sigma, sigma2)
 
 	with Timer() as tff:
-		resff = ff.st3d(a, sigma2, sigma)
+		resff = ff.structureTensorEigenvalues(a, sigma, sigma2)
 
 	fact = tvigra.delta / tff.delta
 

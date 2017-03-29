@@ -1,0 +1,7 @@
+version: 1.0.{build}
+platform: x64
+image: Visual Studio 2015
+before_build:
+- cmake .
+build:
+ project: INSTALL.vcxproj

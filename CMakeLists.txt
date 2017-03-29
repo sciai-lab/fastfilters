@@ -15,14 +15,24 @@ include("pybind11/tools/FindPythonLibsNew.cmake")
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-std=c99" HAS_C99_FLAG)
 
+include(CheckCSourceCompiles)
+
 if (HAS_C99_FLAG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-else()
-  message(FATAL_ERROR "Unsupported compiler - fastfilters required C99 support!")
+endif()
+
+check_c_source_compiles( "
+int main()
+{
+    for(int i = 0; i < 5; ++i) { }
+    return 0;
+} " CAN_COMPILE_C99_FEAT)
+
+if(NOT CAN_COMPILE_C99_FEAT)
+  message(FATAL_ERROR "Unsupported compiler - fastfilters requires some C99 features!")
 endif()
 
 include(CheckCXXCompilerFlag)
-
 check_cxx_compiler_flag("-Ofast" HAS_OFAST_FLAG)
 check_cxx_compiler_flag("-O3" HAS_O2_FLAG)
 check_cxx_compiler_flag("-O2" HAS_O3_FLAG)
@@ -81,7 +91,7 @@ endif()
 if (HAS_FMA_FLAG)
   set(FMA_FLAG "-mfma")
 elseif(HAS_ARCH_AVX2_FLAG)
-  set(AVX2_FLAG "/arch:AVX2 -D__AVX__=1 -D__FMA__=1 -D__AVX2__=1")
+  set(FMA_FLAG "/arch:AVX -D__AVX__=1 -D__FMA__=1")
 else()
   set(FMA_FLAG "")
 endif()
@@ -91,13 +101,19 @@ if (HAS_CPP14_FLAG)
 elseif (HAS_CPP11_FLAG)
   set(PYBIND11_CPP_STANDARD -std=c++11)
 else()
-  message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
+  if(NOT DEFINED MSVC_VERSION OR MSVC_VERSION LESS 1800)
+    message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
+  endif()
 endif()
 set(PYBIND11_CPP_STANDARD ${PYBIND11_CPP_STANDARD} CACHE STRING
     "C++ standard flag, e.g. -std=c++11 or -std=c++14. Defaults to latest available.")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PYBIND11_CPP_STANDARD}")
 
+if (MSVC) #disable specific VS warnings
+  set(disabled_warnings "/wd4305 /wd4127 /wd4571 /wd4514 /wd4820 /wd4668 /wd4623 /wd4626 /wd5027 /wd4625 /wd4191 /wd4371 /wd4710 /wd4244 /wd4267 /wd4456")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${disabled_warnings}")
+endif()
 
 set(PYBIND11_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include" CACHE INTERNAL "")
 set(PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS} CACHE INTERNAL "")
@@ -240,7 +256,7 @@ set(CMAKE_REQUIRED_FLAGS_OLD "${CMAKE_REQUIRED_FLAGS}")
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_FLAG}")
 
 check_cxx_source_compiles( "
-#include <immintrin.h>
+    #include <immintrin.h>
     #include <stdlib.h>
     #include <stdio.h>
     int main()
@@ -256,7 +272,7 @@ check_cxx_source_compiles( "
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_OLD}")
 
 function(check_cpu_supports flagname defname)
-	check_cxx_source_compiles( "#include <stdio.h> \n int main() { return __builtin_cpu_supports(\"${flagname}\"); }" ${defname})
+    check_cxx_source_compiles( "#include <stdio.h> \n int main() { return __builtin_cpu_supports(\"${flagname}\"); }" ${defname})
 endfunction()
 
 check_cpu_supports("avx" "HAVE_GNU_CPU_SUPPORTS_AVX")
@@ -268,11 +284,11 @@ check_cxx_source_compiles( "
     #include <stdio.h>
     int main()
     {
-	    unsigned int a, b, c, d;
+        unsigned int a, b, c, d;
 
-		a = 1;
-		c = 0;
-		__asm__ __volatile__ (\"cpuid\" : \"+a\"(a), \"+b\"(b), \"+c\"(c), \"=d\"(d));
+        a = 1;
+        c = 0;
+        __asm__ __volatile__ (\"cpuid\" : \"+a\"(a), \"+b\"(b), \"+c\"(c), \"=d\"(d));
         return a;
     }" HAVE_ASM_CPUID)
 
@@ -301,32 +317,32 @@ check_cxx_source_compiles( "
     #include <stdio.h>
     int main()
     {
-	    unsigned int a, b, c;
+        unsigned int a, b, c;
 
-		c = 0;
-		__asm__ __volatile__(\"xgetbv\" : \"=a\"(a), \"=d\"(b) : \"c\"(c));
+        c = 0;
+        __asm__ __volatile__(\"xgetbv\" : \"=a\"(a), \"=d\"(b) : \"c\"(c));
         return a;
     }" HAVE_ASM_XGETBV)
 
 check_cxx_source_compiles( "
-		#include <stdbool.h>
-		int main(int argc, char *argv[])
-		{
-			(void)argv;
-			return __builtin_expect(argc > 2, false);
-		}" HAVE_BUILTIN_EXPECT)
+        #include <stdbool.h>
+        int main(int argc, char *argv[])
+        {
+            (void)argv;
+            return __builtin_expect(argc > 2, false);
+        }" HAVE_BUILTIN_EXPECT)
 
 include(CheckIncludeFiles)
 check_include_files(cpuid.h HAVE_CPUID_H)
 
 if(NOT CAN_COMPILE_AVX)
-	message( FATAL_ERROR "Compiler cannot emit avx instructions.")
+    message( FATAL_ERROR "Compiler cannot emit avx instructions.")
 endif(NOT CAN_COMPILE_AVX)
 if(NOT CAN_COMPILE_AVX2)
-	message( FATAL_ERROR "Compiler cannot emit avx2 instructions.")
+    message( FATAL_ERROR "Compiler cannot emit avx2 instructions.")
 endif(NOT CAN_COMPILE_AVX2)
 if(NOT CAN_COMPILE_FMA)
-	message( FATAL_ERROR "Compiler cannot emit fma instructions.")
+    message( FATAL_ERROR "Compiler cannot emit fma instructions.")
 endif(NOT CAN_COMPILE_FMA)
 
 configure_file (
@@ -384,9 +400,11 @@ ${PROJECT_BINARY_DIR}/fir_convolve_avx.avx.c
 ${PROJECT_BINARY_DIR}/fir_convolve_avx.avxfma.c
 ${copied_files})
 
+target_compile_definitions(fastfilters PRIVATE FASTFILTERS_SHARED_LIBRARY)
 set_target_properties(fastfilters PROPERTIES SOVERSION ${FF_VERSION})
 
 pybind11_add_module(core src/python/core.cxx)
+pybind11_enable_warnings (core)
 target_link_libraries(core PUBLIC fastfilters)
 
 set_source_files_properties(src/python/core.cxx PROPERTIES COMPILE_FLAGS "-DFF_VERSION_STR=\\\"${FF_VERSION}\\\"")
@@ -399,13 +417,36 @@ endif()
 set(FF_INSTALL_DIR ${FF_INSTALL_DIR} CACHE PATH "install directory for ff python extension." FORCE)
 file(RELATIVE_PATH FF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} ${FF_INSTALL_DIR})
 
-install(TARGETS fastfilters LIBRARY DESTINATION lib)
+set(fastfilters_py_tmp_dir "${CMAKE_CURRENT_BINARY_DIR}/python")
+file(MAKE_DIRECTORY "${fastfilters_py_tmp_dir}")
+file(MAKE_DIRECTORY "${fastfilters_py_tmp_dir}/fastfilters")
+
+add_custom_target(fastfilters_py_lib)
+SET(PY_SOURCES
+    __init__.py
+    )
+foreach(lib_file ${PY_SOURCES})
+add_custom_COMMAND(
+    TARGET fastfilters_py_lib
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+    ARGS -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/src/python/${lib_file}" "${fastfilters_py_tmp_dir}/fastfilters/${lib_file}"
+    COMMENT "Copying Python sources to temporary module directory")
+endforeach(lib_file)
+
+add_custom_target(fastfilters_py)
+add_dependencies(fastfilters_py fastfilters_py_lib core fastfilters)
+
+ADD_CUSTOM_COMMAND(
+        TARGET core
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+        ARGS -E copy "$<TARGET_FILE:core>" "${fastfilters_py_tmp_dir}/fastfilters/"
+        COMMENT "Copying pyd file to temporary module directory")
+
+install(TARGETS fastfilters ARCHIVE DESTINATION lib RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 install(TARGETS core LIBRARY DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/src/python/__init__.py DESTINATION ${FF_INSTALL_DIR}/fastfilters/)
 install(FILES ${PROJECT_SOURCE_DIR}/include/fastfilters.h DESTINATION include)
 
-enable_testing()
-foreach(testName "vigra_compare" "vigra_compare3d" "vigra_compare_rgb" "border_bug")
-  add_test(${testName} ${PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tests/${testName}.py")
-  set_tests_properties(${testName} PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FF_INSTALL_DIR};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
-endforeach()
+ADD_SUBDIRECTORY(tests)
