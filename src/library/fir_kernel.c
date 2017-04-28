@@ -74,8 +74,7 @@ fastfilters_kernel_fir_t DLL_PUBLIC fastfilters_kernel_fir_gaussian(unsigned int
     if (window_ratio > 0)
         kernel->len = floor(window_ratio * sigma + 0.5);
     else
-        kernel->len = floor(3.0 * sigma + 0.5 * order + 0.5); // FIXME: this is the formula currently used by vigra
-    // kernel->len = ceil((3.0 + 0.5 * (double)order) * sigma);
+        kernel->len = ceil((3.0 + 0.5 * (double)order) * sigma);
 
     if (fabs(sigma) < 1e-6)
         kernel->len = 0;
