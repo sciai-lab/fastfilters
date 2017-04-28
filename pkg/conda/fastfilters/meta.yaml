@@ -23,8 +23,9 @@ requirements:
     - gcc 4.8.5 # [unix]
     - python 2.7*|3.4*|3.5*
     - python {{PY_VER}}*
-    - binutils
     - numpy
+    - nose
+    - vigra
 
   run:
     - libgcc 4.8* # [unix]
@@ -34,6 +35,8 @@ requirements:
 test:
   requires:
     - vigra >=1.11.0
+    - nose
+    - numpy
 
   source_files:
     - tests
