@@ -20,7 +20,7 @@ build:
 
 requirements:
   build:
-    - gcc 4.8.5 # [unix]
+    - gcc 4.8.5 # [linux]
     - python 2.7*|3.4*|3.5*
     - python {{PY_VER}}*
     - numpy
@@ -28,7 +28,7 @@ requirements:
     - vigra
 
   run:
-    - libgcc 4.8* # [unix]
+    - libgcc 4.8* # [linux]
     - python {{PY_VER}}*
     - numpy
 

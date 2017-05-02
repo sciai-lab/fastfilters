@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [ $(uname) == Darwin ]; then
+    CC=clang
+    CXX=clang++
+    CXXFLAGS="-stdlib=libc++"
+else
+    CC=${PREFIX}/bin/gcc
+    CXX=${PREFIX}bin/g++
+fi
+
 mkdir build_conda
 cd build_conda
 cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ..
