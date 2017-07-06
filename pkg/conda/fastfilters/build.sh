@@ -5,8 +5,8 @@ if [ $(uname) == Darwin ]; then
     CXX=clang++
     CXXFLAGS="-stdlib=libc++"
 else
-    CC=${PREFIX}/bin/gcc
-    CXX=${PREFIX}bin/g++
+    CC=gcc
+    CXX=g++
 fi
 
 mkdir build_conda
