@@ -543,6 +543,7 @@ template <typename ConvolveFunctor, typename... args> void bind2d3d_ev(py::modul
 }
 };
 
+#if PY_MAJOR_VERSION < 3
 extern "C" {
 static void *PyMem_SafeMalloc(size_t n)
 {
@@ -556,13 +557,17 @@ static void PyMem_SafeFree(void *p)
     PyMem_Free(p);
 }
 }
-
+#endif
 
 PYBIND11_PLUGIN(core)
 {
     py::module m_fastfilters("core", "fast gaussian kernel and derivative filters");
 
+#if PY_MAJOR_VERSION >= 3
+    fastfilters_init_ex(PyMem_RawMalloc, PyMem_RawFree);
+#else
     fastfilters_init_ex(PyMem_SafeMalloc, PyMem_SafeFree);
+#endif
 
     m_fastfilters.attr("__version__") = pybind11::str(FF_VERSION_STR);
 
