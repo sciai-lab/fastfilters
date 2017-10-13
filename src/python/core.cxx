@@ -543,11 +543,26 @@ template <typename ConvolveFunctor, typename... args> void bind2d3d_ev(py::modul
 }
 };
 
+extern "C" {
+static void *PyMem_SafeMalloc(size_t n)
+{
+    py::gil_scoped_acquire acquire;
+    return PyMem_Malloc(n);
+}
+
+static void PyMem_SafeFree(void *p)
+{
+    py::gil_scoped_acquire acquire;
+    PyMem_Free(p);
+}
+}
+
+
 PYBIND11_PLUGIN(core)
 {
     py::module m_fastfilters("core", "fast gaussian kernel and derivative filters");
 
-    fastfilters_init_ex(PyMem_Malloc, PyMem_Free);
+    fastfilters_init_ex(PyMem_SafeMalloc, PyMem_SafeFree);
 
     m_fastfilters.attr("__version__") = pybind11::str(FF_VERSION_STR);
 
