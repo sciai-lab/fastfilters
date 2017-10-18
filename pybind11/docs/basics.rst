@@ -5,7 +5,7 @@ First steps
 
 This sections demonstrates the basic features of pybind11. Before getting
 started, make sure that development environment is set up to compile the
-included set of examples, which also double as test cases.
+included set of test cases.
 
 
 Compiling the test cases
@@ -22,45 +22,58 @@ After installing the prerequisites, run
 
 .. code-block:: bash
 
-   cmake .
-   make -j 4
+   mkdir build
+   cd build
+   cmake ..
+   make check -j 4
 
-followed by
-
-.. code-block:: bash
-
-   make test
+The last line will both compile and run the tests.
 
 Windows
 -------
 
-On Windows, use the `CMake GUI`_ to create a Visual Studio project. Note that
-only the 2015 release and newer versions are supported since pybind11 relies on
-various C++11 language features that break older versions of Visual Studio.
-After running CMake, open the created :file:`pybind11.sln` file and perform a
-release build, which will will produce a file named
-:file:`Release\\example.pyd`. Copy this file to the :file:`example` directory
-and run :file:`example\\run_test.py` using the targeted Python version.
+On Windows, only **Visual Studio 2015** and newer are supported since pybind11 relies
+on various C++11 language features that break older versions of Visual Studio.
 
-.. _`CMake GUI`: https://cmake.org/runningcmake
+To compile and run the tests:
+
+.. code-block:: batch
+
+   mkdir build
+   cd build
+   cmake ..
+   cmake --build . --config Release --target check
+
+This will create a Visual Studio project, compile and run the target, all from the
+command line.
 
 .. Note::
 
-    When all tests fail, make sure that
-
-    1. The Python binary and the testcases are compiled for the same processor
-       type and bitness (i.e. either **i386** or **x86_64**)
-
-    2. The Python binary used to run :file:`example\\run_test.py` matches the
-       Python version specified in the CMake GUI. This is controlled via
-       the ``PYTHON_EXECUTABLE`` ``PYTHON_INCLUDE_DIR``, and
-       ``PYTHON_LIBRARY`` variables.
+    If all tests fail, make sure that the Python binary and the testcases are compiled
+    for the same processor type and bitness (i.e. either **i386** or **x86_64**). You
+    can specify **x86_64** as the target architecture for the generated Visual Studio
+    project using ``cmake -A x64 ..``.
 
 .. seealso::
 
     Advanced users who are already familiar with Boost.Python may want to skip
-    the tutorial and look at the test cases in the :file:`example` directory,
+    the tutorial and look at the test cases in the :file:`tests` directory,
     which exercise all features of pybind11.
+
+Header and namespace conventions
+================================
+
+For brevity, all code examples assume that the following two lines are present:
+
+.. code-block:: cpp
+
+    #include <pybind11/pybind11.h>
+
+    namespace py = pybind11;
+
+Some features may require additional headers, but those will be specified as needed.
+
+.. _simple_example:
 
 Creating bindings for a simple function
 =======================================
@@ -85,22 +98,21 @@ a file named :file:`example.cpp` with the following contents:
         return i + j;
     }
 
-    namespace py = pybind11;
-
-    PYBIND11_PLUGIN(example) {
-        py::module m("example", "pybind11 example plugin");
+    PYBIND11_MODULE(example, m) {
+        m.doc() = "pybind11 example plugin"; // optional module docstring
 
         m.def("add", &add, "A function which adds two numbers");
-
-        return m.ptr();
     }
 
-The :func:`PYBIND11_PLUGIN` macro creates a function that will be called when an
-``import`` statement is issued from within Python. The next line creates a
-module named ``example`` (with the supplied docstring). The method
-:func:`module::def` generates binding code that exposes the
-``add()`` function to Python. The last line returns the internal Python object
-associated with ``m`` to the Python interpreter.
+.. [#f1] In practice, implementation and binding code will generally be located
+         in separate files.
+
+The :func:`PYBIND11_MODULE` macro creates a function that will be called when an
+``import`` statement is issued from within Python. The module name (``example``)
+is given as the first macro argument (it should not be in quotes). The second
+argument (``m``) defines a variable of type :class:`py::module <module>` which
+is the main interface for creating bindings. The method :func:`module::def`
+generates binding code that exposes the ``add()`` function to Python.
 
 .. note::
 
@@ -110,23 +122,31 @@ associated with ``m`` to the Python interpreter.
     approach and the used syntax are borrowed from Boost.Python, though the
     underlying implementation is very different.
 
-pybind11 is a header-only-library, hence it is not necessary to link against
-any special libraries (other than Python itself). On Windows, use the CMake
-build file discussed in section :ref:`cmake`. On Linux and Mac OS, the above
-example can be compiled using the following command
+pybind11 is a header-only library, hence it is not necessary to link against
+any special libraries and there are no intermediate (magic) translation steps.
+On Linux, the above example can be compiled using the following command:
 
 .. code-block:: bash
 
-    $ c++ -O3 -shared -std=c++11 -I <path-to-pybind11>/include `python-config --cflags --ldflags` example.cpp -o example.so
+    $ c++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` example.cpp -o example`python3-config --extension-suffix`
 
-In general, it is advisable to include several additional build parameters
-that can considerably reduce the size of the created binary. Refer to section
-:ref:`cmake` for a detailed example of a suitable cross-platform CMake-based
-build system.
+For more details on the required compiler flags on Linux and MacOS, see
+:ref:`building_manually`. For complete cross-platform compilation instructions,
+refer to the :ref:`compiling` page.
 
-Assuming that the created file :file:`example.so` (:file:`example.pyd` on Windows)
-is located in the current directory, the following interactive Python session
-shows how to load and execute the example.
+The `python_example`_ and `cmake_example`_ repositories are also a good place
+to start. They are both complete project examples with cross-platform build
+systems. The only difference between the two is that `python_example`_ uses
+Python's ``setuptools`` to build the module, while `cmake_example`_ uses CMake
+(which may be preferable for existing C++ projects).
+
+.. _python_example: https://github.com/pybind/python_example
+.. _cmake_example: https://github.com/pybind/cmake_example
+
+Building the above C++ code will produce a binary module file that can be
+imported to Python. Assuming that the compiled module is located in the
+current directory, the following interactive Python session shows how to
+load and execute the example:
 
 .. code-block:: pycon
 
@@ -180,16 +200,16 @@ The keyword names also appear in the function signatures within the documentatio
 A shorter notation for named arguments is also available:
 
 .. code-block:: cpp
-    
+
     // regular notation
     m.def("add1", &add, py::arg("i"), py::arg("j"));
     // shorthand
     using namespace pybind11::literals;
     m.def("add2", &add, "i"_a, "j"_a);
 
-The :var:`_a` suffix forms a C++11 literal which is equivalent to :class:`arg`. 
-Note that the literal operator must first be made visible with the directive 
-``using namespace pybind11::literals``. This does not bring in anything else 
+The :var:`_a` suffix forms a C++11 literal which is equivalent to :class:`arg`.
+Note that the literal operator must first be made visible with the directive
+``using namespace pybind11::literals``. This does not bring in anything else
 from the ``pybind11`` namespace except for literals.
 
 .. _default_args:
@@ -231,79 +251,43 @@ The default values also appear within the documentation.
 The shorthand notation is also available for default arguments:
 
 .. code-block:: cpp
-    
+
     // regular notation
     m.def("add1", &add, py::arg("i") = 1, py::arg("j") = 2);
     // shorthand
     m.def("add2", &add, "i"_a=1, "j"_a=2);
+
+Exporting variables
+===================
+
+To expose a value from C++, use the ``attr`` function to register it in a
+module as shown below. Built-in types and general objects (more on that later)
+are automatically converted when assigned as attributes, and can be explicitly
+converted using the function ``py::cast``.
+
+.. code-block:: cpp
+
+    PYBIND11_MODULE(example, m) {
+        m.attr("the_answer") = 42;
+        py::object world = py::cast("World");
+        m.attr("what") = world;
+    }
+
+These are then accessible from Python:
+
+.. code-block:: pycon
+
+    >>> import example
+    >>> example.the_answer
+    42
+    >>> example.what
+    'World'
 
 .. _supported_types:
 
 Supported data types
 ====================
 
-The following basic data types are supported out of the box (some may require
-an additional extension header to be included). To pass other data structures
-as arguments and return values, refer to the section on binding :ref:`classes`.
-
-+---------------------------------+--------------------------+-------------------------------+
-|  Data type                      |  Description             | Header file                   |
-+=================================+==========================+===============================+
-| ``int8_t``, ``uint8_t``         | 8-bit integers           | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``int16_t``, ``uint16_t``       | 16-bit integers          | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``int32_t``, ``uint32_t``       | 32-bit integers          | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``int64_t``, ``uint64_t``       | 64-bit integers          | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``ssize_t``, ``size_t``         | Platform-dependent size  | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``float``, ``double``           | Floating point types     | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``bool``                        | Two-state Boolean type   | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``char``                        | Character literal        | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``wchar_t``                     | Wide character literal   | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``const char *``                | UTF-8 string literal     | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``const wchar_t *``             | Wide string literal      | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::string``                 | STL dynamic UTF-8 string | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::wstring``                | STL dynamic wide string  | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::pair<T1, T2>``           | Pair of two custom types | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::tuple<...>``             | Arbitrary tuple of types | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::reference_wrapper<...>`` | Reference type wrapper   | :file:`pybind11/pybind11.h`   |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::complex<T>``             | Complex numbers          | :file:`pybind11/complex.h`    |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::array<T, Size>``         | STL static array         | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::vector<T>``              | STL dynamic array        | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::list<T>``                | STL linked list          | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::map<T1, T2>``            | STL ordered map          | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::unordered_map<T1, T2>``  | STL unordered map        | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::set<T>``                 | STL ordered set          | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::unordered_set<T>``       | STL unordered set        | :file:`pybind11/stl.h`        |
-+---------------------------------+--------------------------+-------------------------------+
-| ``std::function<...>``          | STL polymorphic function | :file:`pybind11/functional.h` |
-+---------------------------------+--------------------------+-------------------------------+
-| ``Eigen::Matrix<...>``          | Dense Eigen matrices     | :file:`pybind11/eigen.h`      |
-+---------------------------------+--------------------------+-------------------------------+
-| ``Eigen::SparseMatrix<...>``    | Sparse Eigen matrices    | :file:`pybind11/eigen.h`      |
-+---------------------------------+--------------------------+-------------------------------+
-
-
-.. [#f1] In practice, implementation and binding code will generally be located
-         in separate files.
+A large number of data types are supported out of the box and can be used
+seamlessly as functions arguments, return values or with ``py::cast`` in general.
+For a full overview, see the :doc:`advanced/cast/index` section.

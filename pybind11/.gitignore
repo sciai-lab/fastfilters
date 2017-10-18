@@ -3,9 +3,9 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 .DS_Store
-/example/example.so
-/example/example.pyd
-/example/example*.dll
+*.so
+*.pyd
+*.dll
 *.sln
 *.sdf
 *.opensdf
@@ -30,3 +30,8 @@ MANIFEST
 .DS_Store
 /dist
 /build
+/cmake/
+.cache/
+sosize-*.txt
+pybind11Config*.cmake
+pybind11Targets.cmake

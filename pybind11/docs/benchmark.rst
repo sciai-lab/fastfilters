@@ -2,7 +2,10 @@ Benchmark
 =========
 
 The following is the result of a synthetic benchmark comparing both compilation
-time and module size of pybind11 against Boost.Python.
+time and module size of pybind11 against Boost.Python. A detailed report about a
+Boost.Python to pybind11 conversion of a real project is available here: [#f1]_.
+
+.. [#f1] http://graylab.jhu.edu/RosettaCon2016/PyRosetta-4.pdf
 
 Setup
 -----
@@ -28,8 +31,7 @@ Here is an example of the binding code for one class:
     };
     ...
 
-    PYBIND11_PLUGIN(example) {
-        py::module m("example");
+    PYBIND11_MODULE(example, m) {
         ...
         py::class_<cl034>(m, "cl034")
             .def("fn_000", &cl034::fn_000)
@@ -37,7 +39,6 @@ Here is an example of the binding code for one class:
             .def("fn_002", &cl034::fn_002)
             .def("fn_003", &cl034::fn_003)
         ...
-        return m.ptr();
     }
 
 The Boost.Python version looks almost identical except that a return value
