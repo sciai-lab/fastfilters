@@ -73,8 +73,10 @@ py::array_t<float> linalg_ev2d(py::array_t<float> &mtx)
     if (info.shape[0] != 3)
         throw std::runtime_error("1st dimension must have len = 3.");
 
+    ssize_t l0[2] = {2, info.shape[1]};
+    size_t l1[2] = {sizeof(float) * info.shape[1], sizeof(float)};
     auto result = py::array(py::buffer_info(nullptr, sizeof(float), py::format_descriptor<float>::value, 2,
-                                            {2, info.shape[1]}, {sizeof(float) * info.shape[1], sizeof(float)}));
+                                            l0, l1));
     py::buffer_info info_out = result.request();
 
     float *inptr = (float *)info.ptr;
@@ -559,9 +561,10 @@ static void PyMem_SafeFree(void *p)
 }
 #endif
 
-PYBIND11_PLUGIN(core)
+PYBIND11_MODULE(core, m_fastfilters)
 {
-    py::module m_fastfilters("core", "fast gaussian kernel and derivative filters");
+
+    m_fastfilters.doc() = "fast gaussian kernel and derivative filters";
 
 #if PY_MAJOR_VERSION >= 3
     fastfilters_init_ex(PyMem_RawMalloc, PyMem_RawFree);
@@ -586,6 +589,4 @@ PYBIND11_PLUGIN(core)
 
     bind2d3d_ev<ConvolveHessian, double>(m_fastfilters, "hog");
     bind2d3d_ev<ConvolveST, double, double>(m_fastfilters, "st");
-
-    return m_fastfilters.ptr();
 }
