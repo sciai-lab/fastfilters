@@ -190,8 +190,8 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         if (r1 < r2)
             swap(&r1, &r2);
 
-        ev0[i] = r0;
-        ev1[i] = r1;
-        ev2[i] = r2;
+        ev0[i] = r0 * maxElement;
+        ev1[i] = r1 * maxElement;
+        ev2[i] = r2 * maxElement;
     }
 }
