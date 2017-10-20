@@ -221,7 +221,7 @@ struct ConvolveBase {
 
     void set_window_ratio(double ratio)
     {
-        opt.window_ratio = ratio;
+        opt.window_ratio = (float)ratio;
     }
 };
 
