@@ -29,6 +29,15 @@ static inline void swap(float *a, float *b)
     *b = tmp;
 }
 
+static inline float max(float a, float b)
+{
+    if (a > b)
+        return a;
+    else
+        return b;
+}
+
+
 #ifdef __AVX2__
 #define fname _ev3d_avx2
 #elif defined(__AVX__)
@@ -36,6 +45,13 @@ static inline void swap(float *a, float *b)
 #else
 #error "linalg_avx2.c needs to be compiled with avx or avx2 support"
 #endif
+
+static inline __m256 _mm256_abs_ps(__m256 x)
+{
+    __m256 m = _mm256_set1_ps(-0.f);
+    return _mm256_andnot_ps(m, x);
+}
+
 
 DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
                      const float *a22, float *ev0, float *ev1, float *ev2, const size_t len)
@@ -54,6 +70,19 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 v_a11 = _mm256_loadu_ps(a11 + i);
         __m256 v_a12 = _mm256_loadu_ps(a12 + i);
         __m256 v_a22 = _mm256_loadu_ps(a22 + i);
+
+        // guard against float overflows
+        __m256 v_max0 = _mm256_max_ps(_mm256_abs_ps(v_a00), _mm256_abs_ps(v_a01));
+        __m256 v_max1 = _mm256_max_ps(_mm256_abs_ps(v_a02), _mm256_abs_ps(v_a11));
+        __m256 v_max2 = _mm256_max_ps(_mm256_abs_ps(v_a12), _mm256_abs_ps(v_a22));
+        __m256 v_max_element = _mm256_max_ps(_mm256_max_ps(v_max0, v_max1), v_max2);
+
+        v_a00 = _mm256_div_ps(v_a00, v_max_element);
+        v_a01 = _mm256_div_ps(v_a01, v_max_element);
+        v_a02 = _mm256_div_ps(v_a02, v_max_element);
+        v_a11 = _mm256_div_ps(v_a11, v_max_element);
+        v_a12 = _mm256_div_ps(v_a12, v_max_element);
+        v_a22 = _mm256_div_ps(v_a22, v_max_element);
 
         __m256 c0 = _avx_sub(_avx_sub(_avx_sub(_avx_add(_avx_mul(_avx_mul(v_a00, v_a11), v_a22),
             _avx_mul(_avx_mul(_avx_mul(two, v_a01), v_a02), v_a12)),
@@ -96,20 +125,44 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 v_r1 = _mm256_min_ps(v_r1_tmp, v_r2_tmp);
         __m256 v_r2 = _mm256_max_ps(v_r1_tmp, v_r2_tmp);
 
+        v_r0 = _mm256_mul_ps(v_r0, v_max_element);
+        v_r1 = _mm256_mul_ps(v_r1, v_max_element);
+        v_r2 = _mm256_mul_ps(v_r2, v_max_element);
+
         _mm256_storeu_ps(ev2 + i, v_r0);
         _mm256_storeu_ps(ev1 + i, v_r1);
         _mm256_storeu_ps(ev0 + i, v_r2);
     }
 
+    const float inv3 = 1.0 / 3.0;
+    const float root3 = sqrt(3.0);
     for (size_t i = avx_end; i < len; ++i) {
-        float inv3 = 1.0 / 3.0;
-        float root3 = sqrt(3.0);
+        float i_a00 = a00[i];
+        float i_a01 = a01[i];
+        float i_a02 = a02[i];
+        float i_a11 = a11[i];
+        float i_a12 = a12[i];
+        float i_a22 = a22[i];
 
-        float c0 = a00[i] * a11[i] * a22[i] + 2.0 * a01[i] * a02[i] * a12[i] - a00[i] * a12[i] * a12[i] -
-                   a11[i] * a02[i] * a02[i] - a22[i] * a01[i] * a01[i];
+        // guard against float overflows
+        float max0 = max(fabs(i_a00), fabs(i_a01));
+        float max1 = max(fabs(i_a02), fabs(i_a11));
+        float max2 = max(fabs(i_a12), fabs(i_a22));
+        float maxElement = max(max(max0, max1), max2);
+        float invMaxElement = 1/maxElement;
+
+        i_a00 *= invMaxElement;
+        i_a01 *= invMaxElement;
+        i_a02 *= invMaxElement;
+        i_a11 *= invMaxElement;
+        i_a12 *= invMaxElement;
+        i_a22 *= invMaxElement;
+
+        float c0 = i_a00 * i_a11 * i_a22 + 2.0 * i_a01 * i_a02 * i_a12 - i_a00 * i_a12 * i_a12 -
+                   i_a11 * i_a02 * i_a02 - i_a22 * i_a01 * i_a01;
         float c1 =
-            a00[i] * a11[i] - a01[i] * a01[i] + a00[i] * a22[i] - a02[i] * a02[i] + a11[i] * a22[i] - a12[i] * a12[i];
-        float c2 = a00[i] + a11[i] + a22[i];
+            i_a00 * i_a11 - i_a01 * i_a01 + i_a00 * i_a22 - i_a02 * i_a02 + i_a11 * i_a22 - i_a12 * i_a12;
+        float c2 = i_a00 + i_a11 + i_a22;
         float c2Div3 = c2 * inv3;
         float aDiv3 = (c1 - c2 * c2Div3) * inv3;
 

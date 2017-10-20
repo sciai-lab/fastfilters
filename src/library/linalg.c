@@ -124,6 +124,14 @@ static inline void swap(float *a, float *b)
     *b = tmp;
 }
 
+static inline float max(float a, float b)
+{
+    if (a > b)
+        return a;
+    else
+        return b;
+}
+
 static void _ev3d_default(const float *a00, const float *a01, const float *a02, const float *a11, const float *a12,
                           const float *a22, float *ev0, float *ev1, float *ev2, const size_t len)
 {
@@ -131,11 +139,32 @@ static void _ev3d_default(const float *a00, const float *a01, const float *a02, 
     const float root3 = sqrt(3.0);
 
     for (size_t i = 0; i < len; ++i) {
-        float c0 = a00[i] * a11[i] * a22[i] + 2.0 * a01[i] * a02[i] * a12[i] - a00[i] * a12[i] * a12[i] -
-                   a11[i] * a02[i] * a02[i] - a22[i] * a01[i] * a01[i];
+        float i_a00 = a00[i];
+        float i_a01 = a01[i];
+        float i_a02 = a02[i];
+        float i_a11 = a11[i];
+        float i_a12 = a12[i];
+        float i_a22 = a22[i];
+
+        // guard against float overflows
+        float max0 = max(fabs(i_a00), fabs(i_a01));
+        float max1 = max(fabs(i_a02), fabs(i_a11));
+        float max2 = max(fabs(i_a12), fabs(i_a22));
+        float maxElement = max(max(max0, max1), max2);
+        float invMaxElement = 1/maxElement;
+
+        i_a00 *= invMaxElement;
+        i_a01 *= invMaxElement;
+        i_a02 *= invMaxElement;
+        i_a11 *= invMaxElement;
+        i_a12 *= invMaxElement;
+        i_a22 *= invMaxElement;
+
+        float c0 = i_a00 * i_a11 * i_a22 + 2.0 * i_a01 * i_a02 * i_a12 - i_a00 * i_a12 * i_a12 -
+                   i_a11 * i_a02 * i_a02 - i_a22 * i_a01 * i_a01;
         float c1 =
-            a00[i] * a11[i] - a01[i] * a01[i] + a00[i] * a22[i] - a02[i] * a02[i] + a11[i] * a22[i] - a12[i] * a12[i];
-        float c2 = a00[i] + a11[i] + a22[i];
+            i_a00 * i_a11 - i_a01 * i_a01 + i_a00 * i_a22 - i_a02 * i_a02 + i_a11 * i_a22 - i_a12 * i_a12;
+        float c2 = i_a00 + i_a11 + i_a22;
         float c2Div3 = c2 * inv3;
         float aDiv3 = (c1 - c2 * c2Div3) * inv3;
 
@@ -163,9 +192,9 @@ static void _ev3d_default(const float *a00, const float *a01, const float *a02, 
         if (r1 < r2)
             swap(&r1, &r2);
 
-        ev0[i] = r0;
-        ev1[i] = r1;
-        ev2[i] = r2;
+        ev0[i] = r0 * maxElement;
+        ev1[i] = r1 * maxElement;
+        ev2[i] = r2 * maxElement;
     }
 }
 
