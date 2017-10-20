@@ -60,6 +60,7 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
     __m256 v_inv3 = _mm256_set1_ps(1.0 / 3.0);
     __m256 v_root3 = _mm256_sqrt_ps(_mm256_set1_ps(3.0));
     __m256 two = _mm256_set1_ps(2.0);
+    __m256 one = _mm256_set1_ps(1.0);
     __m256 half = _mm256_set1_ps(0.5);
     __m256 zero = _mm256_setzero_ps();
 
@@ -76,6 +77,9 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         __m256 v_max1 = _mm256_max_ps(_mm256_abs_ps(v_a02), _mm256_abs_ps(v_a11));
         __m256 v_max2 = _mm256_max_ps(_mm256_abs_ps(v_a12), _mm256_abs_ps(v_a22));
         __m256 v_max_element = _mm256_max_ps(_mm256_max_ps(v_max0, v_max1), v_max2);
+
+        // replace zeros with ones to avoid NaNs
+        v_max_element = _mm256_or_ps(v_max_element, _mm256_and_ps(one, _mm256_cmp_ps(v_max_element, zero, _CMP_EQ_UQ)));
 
         v_a00 = _mm256_div_ps(v_a00, v_max_element);
         v_a01 = _mm256_div_ps(v_a01, v_max_element);
@@ -149,8 +153,15 @@ DLL_LOCAL void fname(const float *a00, const float *a01, const float *a02, const
         float max1 = max(fabs(i_a02), fabs(i_a11));
         float max2 = max(fabs(i_a12), fabs(i_a22));
         float maxElement = max(max(max0, max1), max2);
-        float invMaxElement = 1/maxElement;
 
+        if (maxElement == 0) {
+            ev0[i] = 0;
+            ev1[i] = 0;
+            ev2[i] = 0;
+            continue;
+        }
+
+        float invMaxElement = 1/maxElement;
         i_a00 *= invMaxElement;
         i_a01 *= invMaxElement;
         i_a02 *= invMaxElement;

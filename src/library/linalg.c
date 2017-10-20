@@ -151,8 +151,15 @@ static void _ev3d_default(const float *a00, const float *a01, const float *a02, 
         float max1 = max(fabs(i_a02), fabs(i_a11));
         float max2 = max(fabs(i_a12), fabs(i_a22));
         float maxElement = max(max(max0, max1), max2);
-        float invMaxElement = 1/maxElement;
 
+        if (maxElement == 0) {
+            ev0[i] = 0;
+            ev1[i] = 0;
+            ev2[i] = 0;
+            continue;
+        }
+
+        float invMaxElement = 1/maxElement;
         i_a00 *= invMaxElement;
         i_a01 *= invMaxElement;
         i_a02 *= invMaxElement;
