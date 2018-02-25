@@ -7,6 +7,7 @@ if [ $(uname) == Darwin ]; then
 else
     CC=gcc
     CXX=g++
+    CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 ${CXXFLAGS}"
 fi
 
 mkdir build_conda
