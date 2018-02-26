@@ -23,19 +23,19 @@ requirements:
     - cmake
     - python 2.7*|3.4*|3.5*|3.6*
     - python {{PY_VER}}*
-    - numpy
+    - numpy {{NPY_VER}}*
     - nose
     - vigra
 
   run:
     - python {{PY_VER}}*
-    - numpy
+    - numpy {{NPY_VER}}*
 
 test:
   requires:
     - vigra >=1.11.0
     - nose
-    - numpy
+    - numpy {{NPY_VER}}*
 
   source_files:
     - tests
