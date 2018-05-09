@@ -28,7 +28,7 @@ def __p_fix_array(func):
 			if res.shape == squeezed.shape:
 				res = vigra.taggedView( res, squeezed.axistags )
 			else:
-				res = vigra.taggedView( res, list(squeezed.axistags) + [vigra.AxisInfo('c')] )
+				res = vigra.taggedView( res, list(squeezed.axistags) + [vigra.AxisInfo.c] )
 			return res.withAxes(array.axistags)
 		else:
 			assert not any( np.array(array.shape) == 1 ), \
